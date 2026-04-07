@@ -90,8 +90,8 @@ function mapEffectToDB(code: string): { effect_type: EffectTypeEnum; effect: str
   // Skip
   if (code === 'SKIP_HOMEWORK')       return { effect_type: 'skip_day',       effect: 'skip_day',              effect_value: 1 };
   // Boss
-  if (code === 'FLAT_BOSS_XP_200')    return { effect_type: 'xp_boost',       effect: 'boss_dmg',              effect_value: 200 };
-  if (code === 'BOSS_MULTIPLIER_3X')  return { effect_type: 'xp_boost',       effect: 'boss_dmg',              effect_value: 200 };
+  if (code === 'FLAT_BOSS_XP_200')    return { effect_type: 'xp_boost',       effect: 'xp_boost',              effect_value: 200 };
+  if (code === 'BOSS_MULTIPLIER_3X')  return { effect_type: 'xp_boost',       effect: 'xp_boost',              effect_value: 200 };
   if (code === 'CLASSWORK_XP_50')     return { effect_type: 'xp_boost',       effect: 'xp_boost',              effect_value: 50 };
   if (code === 'CLASSWORK_XP_200')    return { effect_type: 'xp_boost',       effect: 'xp_boost',              effect_value: 200 };
   if (code === 'FLAT_XP_100')         return { effect_type: 'xp_boost',       effect: 'xp_instant',            effect_value: 100 };
@@ -101,7 +101,7 @@ function mapEffectToDB(code: string): { effect_type: EffectTypeEnum; effect: str
   if (code === 'TEAM_XP_10')          return { effect_type: 'xp_boost',  effect: 'team_xp',               effect_value: 10 };
   if (code === 'TEAM_XP_GOLD_10')    return { effect_type: 'xp_boost',  effect: 'team_xp,team_gold',     effect_value: 10 };
   if (code === 'TEAM_DMG_REDUCE_20') return { effect_type: 'damage_reduce', effect: 'team_dmg_reduce',    effect_value: 20 };
-  if (code === 'TEAM_BOSS_20')        return { effect_type: 'xp_boost',  effect: 'team_boss_dmg',         effect_value: 20 };
+  if (code === 'TEAM_BOSS_20')        return { effect_type: 'xp_boost',  effect: 'team_xp',               effect_value: 20 };
   if (code === 'ROYAL_PIECE')         return { effect_type: 'xp_boost',       effect: 'royal_set_piece',       effect_value: 0 };
   // Lootboxes
   if (code === 'LOOTBOX_COMMON')      return { effect_type: 'lootbox',        effect: 'lootbox',               effect_value: 0 };
@@ -129,7 +129,7 @@ function mapEffectToDB(code: string): { effect_type: EffectTypeEnum; effect: str
   if (code === 'FIRE_RANDOM_STUDENT') return { effect_type: 'xp_boost',       effect: 'consumable_random_student', effect_value: 50 };
   // Fire season — passives
   if (code === 'FIRE_GOLD_MULT_10')   return { effect_type: 'gold_bonus',     effect: 'gold_boost',            effect_value: 10 };
-  if (code === 'FIRE_BOSS_MULT_20')   return { effect_type: 'xp_boost',       effect: 'boss_dmg',              effect_value: 20 };
+  if (code === 'FIRE_BOSS_MULT_20')   return { effect_type: 'xp_boost',       effect: 'xp_boost',              effect_value: 20 };
   if (code === 'FIRE_REGEN_2')        return { effect_type: 'hp_shield',      effect: 'passive_hp_regen',      effect_value: 2 };
   if (code === 'FIRE_STREAK_SHIELD')  return { effect_type: 'streak_protect', effect: 'streak_protect',        effect_value: 1 };
   if (code === 'FIRE_AUTO_RESURRECT') return { effect_type: 'hp_shield',      effect: 'auto_resurrect',        effect_value: 50 };
@@ -206,7 +206,7 @@ export const ARTIFACT_REGISTRY: ArtifactEntry[] = [
   art('epi_cup',       'Золотая Чаша',           'Gold +100% на 48 часов',                    'epic', '🏆', 'passive',    'GOLD_BOOST_100',    { duration_hours: 48, req_level: 16 }),
   art('epi_rune',      'Руна Знаний',            'XP +50% на 48 часов',                      'epic', '🔷', 'passive',    'XP_BOOST_50',       { duration_hours: 48, req_level: 17 }),
   art('epi_armor',     'Адамантитовый Нагрудник', '-70% к урону (3 заряда)',                   'epic', '🦺', 'passive',    'DMG_REDUCE_70',     { max_charges: 3, req_level: 18 }),
-  art('epi_crystal',   'Кристалл Охотника',      '+200 XP за босс-битву (1 заряд)',           'epic', '💎', 'passive',    'FLAT_BOSS_XP_200',  { max_charges: 1, req_level: 19 }),
+  art('epi_crystal',   'Кристалл Охотника',      '+200% к опыту (1 заряд)',           'epic', '💎', 'passive',    'FLAT_BOSS_XP_200',  { max_charges: 1, req_level: 19 }),
   art('epi_ring',      'Кольцо Алхимика',        'XP +50%, Gold +50% на 24 часа',            'epic', '💍', 'passive',    'XP_GOLD_50',        { duration_hours: 24, req_level: 20 }),
   art('epi_feather',   'Младшее Перо Феникса',   'Спасает от гибели, оставляя 30 HP (1 заряд)', 'epic', '🪶', 'passive',    'PREVENT_DEATH_30',  { max_charges: 1, req_level: 20 }),
 
@@ -219,7 +219,7 @@ export const ARTIFACT_REGISTRY: ArtifactEntry[] = [
   art('leg_aegis',     'Непробиваемая Эгида',    'Блокирует любой урон (3 заряда)',            'legendary', '🛡️', 'passive',    'BLOCK_ALL_MISTAKES',{ max_charges: 3, req_level: 29 }),
   art('leg_elixir',    'Эликсир Гения',          'Мгновенное повышение уровня',               'legendary', '🧪', 'consumable', 'FORCE_LEVEL_UP',    { req_level: 30 }),
   art('leg_ringall',   'Кольцо Всевластия',      '+10% XP всему классу на 7 дней',            'legendary', '💍', 'passive',    'TEAM_XP_10',        { duration_hours: 168, req_level: 32 }),
-  art('leg_scroll',    'Свиток Истины',           'Урон боссу ×3 (1 заряд)',                   'legendary', '📜', 'passive',    'BOSS_MULTIPLIER_3X',{ max_charges: 1, req_level: 35 }),
+  art('leg_scroll',    'Свиток Истины',           '+200% к опыту (1 заряд)',                   'legendary', '📜', 'passive',    'BOSS_MULTIPLIER_3X',{ max_charges: 1, req_level: 35 }),
   art('leg_star',      'Звезда Академии',        'Бесконечный стрик на 30 дней',              'legendary', '⭐', 'passive',    'INFINITE_STREAK',   { duration_hours: 720, req_level: 40 }),
 
   // ── 👑 ROYAL SET (5) ──
@@ -254,8 +254,8 @@ export const ARTIFACT_REGISTRY: ArtifactEntry[] = [
   art('fire_boom',             'Огненный Бум',       '+100 XP каждому ученику в классе',    'common', '💥', 'consumable', 'FIRE_CLASS_XP_100',    { season_tag: 'fire' }),
   art('fire_dragon_hoard',     'Драконий Клад',      '+50 Gold каждому ученику в классе',   'common', '💰', 'consumable', 'FIRE_CLASS_GOLD_50',   { season_tag: 'fire' }),
   art('fire_friendship_match', 'Спичка Дружбы',      '+50 XP и Gold случайному однокласснику', 'common', '🔥', 'consumable', 'FIRE_RANDOM_STUDENT',  { season_tag: 'fire' }),
-  art('fire_dragon_claw',      'Коготь Дракона',     '+20% урона боссу постоянно',         'common', '🐲', 'passive',    'FIRE_BOSS_MULT_20',    { season_tag: 'fire' }),
-  art('fire_team_boss_potion', 'Огненный Натиск',    '+20% урона боссу всему классу на 24 часа', 'rare', '🔥', 'passive',    'TEAM_BOSS_20',         { duration_hours: 24, season_tag: 'fire' }),
+  art('fire_dragon_claw',      'Коготь Дракона',     '+20% к опыту постоянно',         'common', '🐲', 'passive',    'FIRE_BOSS_MULT_20',    { season_tag: 'fire' }),
+  art('fire_team_boss_potion', 'Огненный Натиск',    '+20% к опыту всему классу на 24 часа', 'rare', '🔥', 'passive',    'TEAM_BOSS_20',         { duration_hours: 24, season_tag: 'fire' }),
 ];
 
 // ─── Indexed lookups ─────────────────────────────────────────

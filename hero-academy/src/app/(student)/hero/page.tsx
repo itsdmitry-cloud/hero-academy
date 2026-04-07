@@ -42,7 +42,7 @@ const SHELF_EFFECT_LABELS: Record<string, (v: number) => string> = {
   streak_protect: () => 'Иммунитет к потере стрика',
   skip_quest:     () => 'Пропуск ДЗ без потери HP',
   level_up:       () => '+1 уровень',
-  passive_boss_dmg_multiplier: v => `Урон по Боссу +${v}%`,
+  passive_boss_dmg_multiplier: v => `Опыт +${v}%`,
   passive_damage_resist:       v => `Сопротивление урону ${v}%`,
   passive_gold_multiplier:     v => `Золото +${v}%`,
   auto_resurrect:              v => `Воскрешение (на ${v} HP)`,

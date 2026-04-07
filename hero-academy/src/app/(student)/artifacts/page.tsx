@@ -52,7 +52,7 @@ const EFFECT_LABELS: Record<string, (v: number) => string> = {
   streak_protect: () => 'Иммунитет к потере стрика',
   passive_hp_regen: v => `+${v} HP в день`,
   auto_resurrect: v => `Авто-воскрешение с ${v} HP`,
-  boss_dmg:       v => `+${v}% урона боссу`,
+  boss_dmg:       v => `+${v}% к опыту`,
   skip_quest:     () => 'Пропуск ДЗ без потери HP и стрика',
   level_up:       () => '+1 уровень мгновенно',
   lootbox:        () => 'Случайный артефакт',

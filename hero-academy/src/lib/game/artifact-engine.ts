@@ -48,11 +48,9 @@ export interface HeroMods {
   xpBoost: number;
   passiveDmgReduce: number;
   passiveDmgArts: PassiveDmgArt[];
-  bossDmgBoost: number;
   goldBoost: number;
   xpArtifacts: string[];
   xpChargeArts: ChargeArt[];
-  bossArtifacts: string[];
   goldArtifacts: string[];
   goldChargeArts: ChargeArt[];
   shield: ShieldInfo | null;
@@ -97,7 +95,7 @@ export async function decrementCharge(heroArtifactId: string, currentCharges: nu
 
 // ─── Hero Modifier Resolution ────────────────────────────────
 
-const classAurasCache = new Map<string, { data: { xpBoost: number, bossDmgBoost: number, goldBoost: number, dmgReduce: number, applied: string[] }, expires: number }>();
+const classAurasCache = new Map<string, { data: { xpBoost: number, goldBoost: number, dmgReduce: number, applied: string[] }, expires: number }>();
 
 export async function getClassAuras(heroId: string) {
   // Check local short-lived cache (prevents DB spam during grade-batch loops)
@@ -107,11 +105,10 @@ export async function getClassAuras(heroId: string) {
   }
 
   let xpBoost = 0;
-  let bossDmgBoost = 0;
   let goldBoost = 0;
   let dmgReduce = 0;
   const applied: string[] = [];
-  const emptyResult = { xpBoost, bossDmgBoost, goldBoost, dmgReduce, applied };
+  const emptyResult = { xpBoost, goldBoost, dmgReduce, applied };
 
   // 1. Get classId of current hero
   const { data: heroData } = await admin.from('heroes').select('user_id').eq('id', heroId).single();
@@ -123,16 +120,16 @@ export async function getClassAuras(heroId: string) {
 
   // 2. Get other heroes in class
   const { data: students } = await admin.from('users').select('id, display_name').eq('class_id', classId).eq('role', 'student');
-  if (!students || students.length === 0) return { xpBoost, bossDmgBoost, goldBoost, dmgReduce, applied };
+  if (!students || students.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
 
   const studentMap = new Map<string, string>(); // user_id -> name
   students.forEach(s => studentMap.set(s.id, s.display_name));
 
   const { data: cHeroes } = await admin.from('heroes').select('id, user_id').in('user_id', students.map(s => s.id));
-  if (!cHeroes || cHeroes.length === 0) return { xpBoost, bossDmgBoost, goldBoost, dmgReduce, applied };
+  if (!cHeroes || cHeroes.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
 
   const otherHeroIds = cHeroes.filter((h: any) => h.id !== heroId).map((h: any) => h.id);
-  if (otherHeroIds.length === 0) return { xpBoost, bossDmgBoost, goldBoost, dmgReduce, applied };
+  if (otherHeroIds.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
 
   const heroNameMap = new Map<string, string>();
   cHeroes.forEach((h: any) => {
@@ -149,7 +146,7 @@ export async function getClassAuras(heroId: string) {
     .in('hero_id', otherHeroIds)
     .eq('is_equipped', true);
 
-  if (!artifacts) return { xpBoost, bossDmgBoost, goldBoost, dmgReduce, applied };
+  if (!artifacts) return { xpBoost, goldBoost, dmgReduce, applied };
 
   for (const a of artifacts as Record<string, any>[]) {
     // Check expiration
@@ -178,8 +175,8 @@ export async function getClassAuras(heroId: string) {
       applied.push(`Аура: ${art.name} от ${ownerName} (+${val}% XP)`);
     }
     if (isTeamBoss) {
-      bossDmgBoost += val;
-      applied.push(`Аура: ${art.name} от ${ownerName} (+${val}% Урон Боссу)`);
+      xpBoost += val;
+      applied.push(`Аура: ${art.name} от ${ownerName} (+${val}% Опыт)`);
     }
     if (isTeamGold) {
       goldBoost += val;
@@ -191,7 +188,7 @@ export async function getClassAuras(heroId: string) {
     }
   }
 
-  const result = { xpBoost, bossDmgBoost, goldBoost, dmgReduce, applied };
+  const result = { xpBoost, goldBoost, dmgReduce, applied };
   
   // Cache for 5 seconds (grade-batch protection)
   classAurasCache.set(heroId, { data: result, expires: Date.now() + 5000 });
@@ -201,7 +198,7 @@ export async function getClassAuras(heroId: string) {
 
 /**
  * Load all equipped artifact modifiers for a hero.
- * Resolves: xp boost, gold boost, boss damage boost,
+ * Resolves: xp boost, gold boost,
  * passive dmg reduction, full shield, and protective arts.
  */
 export async function getHeroMods(heroId: string): Promise<HeroMods> {
@@ -212,11 +209,10 @@ export async function getHeroMods(heroId: string): Promise<HeroMods> {
     .eq('is_equipped', true)
     .gt('charges_remaining', 0);
 
-  let xpBoost = 0, passiveDmgReduce = 0, bossDmgBoost = 0, goldBoost = 0;
+  let xpBoost = 0, passiveDmgReduce = 0, goldBoost = 0;
   const xpArtifacts: string[] = [];
   const xpChargeArts: ChargeArt[] = [];
   const passiveDmgArts: PassiveDmgArt[] = [];
-  const bossArtifacts: string[] = [];
   const goldArtifacts: string[] = [];
   const goldChargeArts: ChargeArt[] = [];
   let shield: ShieldInfo | null = null;
@@ -253,9 +249,9 @@ export async function getHeroMods(heroId: string): Promise<HeroMods> {
         xpArtifacts.push(`${name} (+${val}%)`);
         if (maxCh > 0) xpChargeArts.push({ heroArtifactId: haId, chargesLeft: charges });
       }
-      // Boss damage multiplier
+      // Boss damage (now feeds into XP boost)
       if (eff.includes('boss_dmg') || effType.includes('boss_dmg')) {
-        bossDmgBoost += val; bossArtifacts.push(`${name} (+${val}%)`);
+        xpBoost += val; xpArtifacts.push(`${name} (+${val}%)`);
       }
       // Gold multiplier
       if (eff.includes('gold_multiplier') || eff.includes('gold_boost') || eff.includes('extra_gold') ||
@@ -275,22 +271,18 @@ export async function getHeroMods(heroId: string): Promise<HeroMods> {
   // ─── Incorporate Class Auras ───
   const auras = await getClassAuras(heroId);
   xpBoost += auras.xpBoost;
-  bossDmgBoost += auras.bossDmgBoost;
   goldBoost += auras.goldBoost;
   passiveDmgReduce += auras.dmgReduce;
-  xpArtifacts.push(...auras.applied.filter(a => a.includes('XP')));
-  bossArtifacts.push(...auras.applied.filter(a => a.includes('Урон Боссу')));
+  xpArtifacts.push(...auras.applied.filter(a => a.includes('XP') || a.includes('Опыт')));
   goldArtifacts.push(...auras.applied.filter(a => a.includes('Золото')));
 
   return {
     xpBoost:          Math.min(xpBoost, 200),
     passiveDmgReduce: Math.min(passiveDmgReduce, 90),
     passiveDmgArts,
-    bossDmgBoost:     Math.min(bossDmgBoost, 100),
     goldBoost:        Math.min(goldBoost, 100),
     xpArtifacts,
     xpChargeArts,
-    bossArtifacts,
     goldArtifacts,
     goldChargeArts,
     shield,
@@ -312,7 +304,6 @@ export async function getArtifactModifiers(heroId: string, actionType: 'damage' 
   let passive_dmg_reduction = 0;
   let xp_boost = 0;
   let gold_boost = 0;
-  let boss_dmg_boost = 0;
   const applied: string[] = [];
   const toDecrement: string[] = [];
   const passiveDmgArts: PassiveDmgArt[] = [];
@@ -365,8 +356,9 @@ export async function getArtifactModifiers(heroId: string, actionType: 'damage' 
           gold_boost += effectValue;
           contributed = true;
         }
-        if (eff.includes('boss_dmg')) {
-          boss_dmg_boost += effectValue;
+        // boss_dmg now feeds into XP boost (only for grant_xp actions)
+        if (actionType === 'grant_xp' && eff.includes('boss_dmg')) {
+          xp_boost += effectValue;
           contributed = true;
         }
       }
@@ -384,7 +376,7 @@ export async function getArtifactModifiers(heroId: string, actionType: 'damage' 
   const auras = await getClassAuras(heroId);
   if (actionType === 'grant_xp') {
     xp_boost += auras.xpBoost;
-    applied.push(...auras.applied.filter(a => a.includes('XP')));
+    applied.push(...auras.applied.filter(a => a.includes('XP') || a.includes('Опыт')));
   }
   if (actionType === 'grant_gold') {
     gold_boost += auras.goldBoost;
@@ -408,7 +400,6 @@ export async function getArtifactModifiers(heroId: string, actionType: 'damage' 
     passiveDmgArts,
     xp_boost,
     gold_boost,
-    boss_dmg_boost: Math.min(boss_dmg_boost, 100),
     applied,
     shield,
   };
