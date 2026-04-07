@@ -99,6 +99,8 @@ function mapEffectToDB(code: string): { effect_type: EffectTypeEnum; effect: str
   if (code === 'RETRY_QUEST')         return { effect_type: 'skip_day',       effect: 'retry_quest',           effect_value: 1 };
   if (code === 'FORCE_LEVEL_UP')      return { effect_type: 'xp_boost',       effect: 'force_level_up',        effect_value: 1 };
   if (code === 'TEAM_XP_10')          return { effect_type: 'xp_boost',  effect: 'team_xp',               effect_value: 10 };
+  if (code === 'TEAM_XP_GOLD_10')    return { effect_type: 'xp_boost',  effect: 'team_xp,team_gold',     effect_value: 10 };
+  if (code === 'TEAM_DMG_REDUCE_20') return { effect_type: 'damage_reduce', effect: 'team_dmg_reduce',    effect_value: 20 };
   if (code === 'TEAM_BOSS_20')        return { effect_type: 'xp_boost',  effect: 'team_boss_dmg',         effect_value: 20 };
   if (code === 'ROYAL_PIECE')         return { effect_type: 'xp_boost',       effect: 'royal_set_piece',       effect_value: 0 };
   // Lootboxes
@@ -199,7 +201,7 @@ export const ARTIFACT_REGISTRY: ArtifactEntry[] = [
   // ── 🟣 EPIC (10) ──
   art('epi_orb',       'Сфера Архимага',         'XP +50% за классную работу (3 заряда)',      'epic', '🔮', 'passive',    'CLASSWORK_XP_50',   { max_charges: 3, req_level: 15 }),
   art('epi_shield',    'Мифриловый Щит',         'Блокирует критический урон (2 заряда)',      'epic', '🛡️', 'passive',    'BLOCK_CRITICAL_DMG',{ max_charges: 2, req_level: 15 }),
-  art('epi_scroll',    'Свиток Выходного Дня',   'Пропуск домашки без потери HP',              'epic', '📜', 'consumable', 'SKIP_HOMEWORK',     { req_level: 15 }),
+  art('epi_scroll',    'Свиток Единства',        '+10% XP и Gold всему классу на 2 дня',      'epic', '📜', 'passive',    'TEAM_XP_GOLD_10',   { duration_hours: 48, req_level: 15 }),
   art('epi_potion',    'Большое Зелье',          'Полностью восстанавливает HP',              'epic', '🧪', 'consumable', 'HEAL_100',          { req_level: 15, is_shopable: true }),
   art('epi_cup',       'Золотая Чаша',           'Gold +100% на 48 часов',                    'epic', '🏆', 'passive',    'GOLD_BOOST_100',    { duration_hours: 48, req_level: 16 }),
   art('epi_rune',      'Руна Знаний',            'XP +50% на 48 часов',                      'epic', '🔷', 'passive',    'XP_BOOST_50',       { duration_hours: 48, req_level: 17 }),
@@ -210,7 +212,7 @@ export const ARTIFACT_REGISTRY: ArtifactEntry[] = [
 
   // ── 🟡 LEGENDARY (10) ──
   art('leg_crown',     'Корона Академии',        'XP +100%, Gold +50% на 7 дней',             'legendary', '👑', 'passive',    'XP_GOLD_MASSIVE',   { duration_hours: 168, req_level: 25 }),
-  art('leg_hourglass', 'Песочные Часы Времени',  'Позволяет переделать квест',                'legendary', '⏳', 'consumable', 'RETRY_QUEST',       { req_level: 25 }),
+  art('leg_hourglass', 'Песочные Часы Стойкости','−20% урона всему классу на 4 дня',          'legendary', '⏳', 'passive',    'TEAM_DMG_REDUCE_20',{ duration_hours: 96, req_level: 25 }),
   art('leg_cross',     'Крест Возрождения',      'Спасает от гибели, оставляя 50 HP (1 заряд)', 'legendary', '✝️',  'passive',    'PREVENT_DEATH_50',  { max_charges: 1, req_level: 26 }),
   art('leg_staff',     'Посох Властителя',       '+200 XP за классную работу (5 зарядов)',    'legendary', '🏑', 'passive',    'CLASSWORK_XP_200',  { max_charges: 5, req_level: 27 }),
   art('leg_dragon',    'Золотой Дракон',         'Gold ×3 на 7 дней',                         'legendary', '🐉', 'passive',    'GOLD_MULTIPLIER_3X',{ duration_hours: 168, req_level: 28 }),
