@@ -128,7 +128,10 @@ export function useArtifacts() {
 
   /* ── Slot limits by hero level ── */
   const getMaxSlots = (heroLevel: number): number => {
-    if (heroLevel >= 25) return 3;
+    if (heroLevel >= 30) return 6;
+    if (heroLevel >= 25) return 5;
+    if (heroLevel >= 20) return 4;
+    if (heroLevel >= 15) return 3;
     if (heroLevel >= 10) return 2;
     return 1;
   };

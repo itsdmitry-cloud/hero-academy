@@ -133,13 +133,14 @@ export default function HeroPage() {
     );
   }
 
-  const activeSlotsCount = hero.level >= 25 ? 3 : hero.level >= 10 ? 2 : 1;
+  const activeSlotsCount = hero.level >= 30 ? 6 : hero.level >= 25 ? 5 : hero.level >= 20 ? 4 : hero.level >= 15 ? 3 : hero.level >= 10 ? 2 : 1;
   const totalSlots = 6;
   const equippedItems = dbInventory.filter(i => i.is_equipped);
   
+  const slotUnlockLevels = [1, 10, 15, 20, 25, 30];
   const shelfSlots = Array.from({ length: totalSlots }).map((_, i) => {
     if (i >= activeSlotsCount) {
-      return { id: `locked_${i}`, name: 'locked', rarity: null, icon: '🔒', equipped: false, defId: null };
+      return { id: `locked_${i}`, name: 'locked', rarity: null, icon: '🔒', equipped: false, defId: null, unlockLevel: slotUnlockLevels[i] };
     }
     const item = equippedItems[i];
     if (!item) {
@@ -261,6 +262,9 @@ export default function HeroPage() {
                   {artifact.icon.includes('/') ? <img src={artifact.icon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : artifact.icon}
                 </span>
               ) : null}
+              {artifact.name === 'locked' && (artifact as any).unlockLevel && (
+                <span className={styles.artifactName} style={{ fontSize: '0.6rem', opacity: 0.5 }}>Лвл {(artifact as any).unlockLevel}</span>
+              )}
               {artifact.name && artifact.name !== 'locked' && (
                 <span className={styles.artifactName}>{artifact.name}</span>
               )}

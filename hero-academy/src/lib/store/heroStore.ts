@@ -98,8 +98,7 @@ export const useHeroStore = create<HeroStore>()(
 
           if (item.is_equipped) return state; // Already equipped
 
-          // Replace an existing artifact if slots are full (simplified, assuming 2 slots for lvl 15)
-          const maxSlots = state.hero.level >= 25 ? 3 : state.hero.level >= 10 ? 2 : 1;
+          const maxSlots = state.hero.level >= 30 ? 6 : state.hero.level >= 25 ? 5 : state.hero.level >= 20 ? 4 : state.hero.level >= 15 ? 3 : state.hero.level >= 10 ? 2 : 1;
           let newActive = [...state.hero.activeArtifacts];
 
           if (newActive.length >= maxSlots) {
