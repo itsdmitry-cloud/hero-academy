@@ -461,6 +461,7 @@ export function useAdminData() {
     setLoading(true);
     Promise.all([
       fetchSchools(),
+      fetchClasses(),
       fetchUsers(),
       fetchAnalytics(),
       fetchShop(),
@@ -468,7 +469,7 @@ export function useAdminData() {
       fetchEconomy(),
       fetchSubjects(),
     ]).finally(() => setLoading(false));
-  }, [fetchSchools, fetchUsers, fetchAnalytics, fetchShop, fetchSeasons, fetchEconomy, fetchSubjects]);
+  }, [fetchSchools, fetchClasses, fetchUsers, fetchAnalytics, fetchShop, fetchSeasons, fetchEconomy, fetchSubjects]);
 
   return {
     schools, classes, users, shopItems, seasons, subjects, analytics, economyConfig,
@@ -479,7 +480,7 @@ export function useAdminData() {
     updateSchool, updateClass, updateUser,
     resetHeroHp, grantXpToUser,
     refetch: () => {
-      fetchSchools(); fetchUsers(); fetchAnalytics(); fetchShop(); fetchSeasons(); fetchEconomy(); fetchSubjects();
+      fetchSchools(); fetchClasses(); fetchUsers(); fetchAnalytics(); fetchShop(); fetchSeasons(); fetchEconomy(); fetchSubjects();
     },
   };
 }

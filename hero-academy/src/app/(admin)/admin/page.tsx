@@ -43,7 +43,7 @@ function ChartCard({ title, icon, children }: { title: string; icon: string; chi
 const supabase = createClient();
 
 export default function AdminDashboard() {
-  const { schools, analytics, loading } = useAdminData();
+  const { schools, classes, analytics, loading } = useAdminData();
   const [schoolFilter, setSchoolFilter] = useState('all');
   const [heroStats, setHeroStats] = useState<{ xp: number; status: string }[]>([]);
   const [questStats, setQuestStats] = useState<{ status: string }[]>([]);
@@ -178,14 +178,21 @@ export default function AdminDashboard() {
           <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>⏳ Загрузка...</div>
         ) : schools.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Нет школ. Создайте в разделе Школы.</div>
-        ) : schools.map(s => (
-          <div key={s.id} className={styles.tRow} style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr' }}>
-            <span style={{ fontWeight: 700 }}>{s.name}</span>
-            <span style={{ opacity: 0.5 }}>—</span>
-            <span style={{ opacity: 0.5 }}>—</span>
-            <span style={{ color: 'var(--accent-xp)' }}>🟢</span>
-          </div>
-        ))}
+        ) : schools.map(s => {
+          const schoolClasses = classes.filter(c => c.school_id === s.id);
+          const classCount = schoolClasses.length;
+          const studentCount = schoolClasses.reduce((sum, c) => sum + c.student_count, 0);
+          return (
+            <div key={s.id} className={styles.tRow} style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr' }}>
+              <span style={{ fontWeight: 700 }}>{s.name}</span>
+              <span>{classCount}</span>
+              <span>{studentCount}</span>
+              <span style={{ color: studentCount > 0 ? 'var(--accent-xp)' : 'var(--text-muted)' }}>
+                {studentCount > 0 ? '🟢 Активна' : '⚪ Пусто'}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
