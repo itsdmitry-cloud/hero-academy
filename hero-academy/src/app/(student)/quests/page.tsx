@@ -70,28 +70,38 @@ export default function QuestsPage() {
 
   const fetchQuests = useCallback(async () => {
     setQuestsLoading(true);
+    // Step 1: get session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) { setQuestsLoading(false); return; }
+    const userId = session.user.id;
 
-    const { data: hero } = await supabase.from('heroes').select('id').eq('user_id', session.user.id).single();
-    const { data: profile } = await supabase.from('users').select('class_id').eq('id', session.user.id).single();
-    if (!profile?.class_id) { setQuestsLoading(false); return; }
+    // Step 2: hero + profile in parallel (was sequential before)
+    const [heroRes, profileRes] = await Promise.all([
+      supabase.from('heroes').select('id').eq('user_id', userId).single(),
+      supabase.from('users').select('class_id').eq('id', userId).single(),
+    ]);
 
+    const classId = (profileRes.data as any)?.class_id;
+    if (!classId) { setQuestsLoading(false); return; }
+    const heroId = (heroRes.data as any)?.id;
+
+    // Step 2: fetch quests
     const { data: rawQuests } = await supabase
       .from('quests')
       .select('id, title, subject, type, difficulty, xp_reward, gold_reward, hp_damage, deadline, status, created_at')
-      .eq('class_id', profile.class_id)
+      .eq('class_id', classId)
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (!rawQuests) { setQuestsLoading(false); return; }
 
+    // Step 3: fetch attempts (needs quest IDs)
     let attemptsMap: Record<string, { status: string; score: number | null }> = {};
-    if (hero) {
+    if (heroId && rawQuests.length > 0) {
       const { data: attempts } = await supabase
         .from('quest_attempts')
         .select('quest_id, status, score')
-        .eq('hero_id', hero.id)
+        .eq('hero_id', heroId)
         .in('quest_id', rawQuests.map((q: Quest) => q.id));
       if (attempts) {
         attempts.forEach((a: { quest_id: string; status: string; score: number | null }) => {

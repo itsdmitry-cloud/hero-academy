@@ -22,7 +22,7 @@ export function useSeasonBosses() {
         return;
       }
 
-      // Find active season for the school
+      // Step 1: find active season
       const { data: activeSeason, error: seasonError } = await supabase
         .from('seasons')
         .select('id')
@@ -37,37 +37,39 @@ export function useSeasonBosses() {
         return;
       }
 
-      // Fetch bosses for the current class in this season
+      // Step 2: fetch bosses
       let query = supabase
         .from('subject_bosses')
         .select('*')
         .eq('season_id', activeSeason.id)
         .eq('class_id', profile.class_id);
 
-      // Only show bosses for the subjects the student is attached to
       if (profile.role === 'student' && profile.subjects && profile.subjects.length > 0) {
         query = query.in('subject_id', profile.subjects);
       }
 
       const { data: bossesData, error: bossesError } = await query.order('created_at', { ascending: true });
 
-      if (bossesError || !bossesData) {
-        setBosses([]);
+      if (bossesError || !bossesData || bossesData.length === 0) {
+        setBosses(bossesData?.map(b => ({ ...b, damageLogs: [] })) ?? []);
         setLoading(false);
         return;
       }
 
-      // Fetch damage logs for these bosses
-      if (bossesData.length > 0) {
-        const bossIds = bossesData.map(b => b.id);
-        const { data: logsData } = await supabase
-          .from('boss_damage_logs')
-          .select('id, boss_id, hero_id, damage_dealt, action_type, created_at, heroes:hero_id(name)')
-          .in('boss_id', bossIds)
-          .order('created_at', { ascending: false });
+      // Step 3: fetch logs — render bosses immediately, logs arrive async
+      setBosses(bossesData.map(b => ({ ...b, damageLogs: [] })));
+      setLoading(false);
 
-        const mappedBosses = bossesData.map(boss => {
-          const bossLogs = (logsData || []).filter(log => log.boss_id === boss.id).map(log => ({
+      const bossIds = bossesData.map(b => b.id);
+      const { data: logsData } = await supabase
+        .from('boss_damage_logs')
+        .select('id, boss_id, hero_id, damage_dealt, action_type, created_at, heroes:hero_id(name)')
+        .in('boss_id', bossIds)
+        .order('created_at', { ascending: false });
+
+      if (logsData) {
+        setBosses(bossesData.map(boss => {
+          const bossLogs = logsData.filter(log => log.boss_id === boss.id).map(log => ({
             id: log.id,
             boss_id: log.boss_id,
             hero_id: log.hero_id,
@@ -77,14 +79,8 @@ export function useSeasonBosses() {
             hero: log.heroes ? { name: (log.heroes as any).name } : undefined
           }));
           return { ...boss, damageLogs: bossLogs };
-        });
-
-        setBosses(mappedBosses);
-      } else {
-        setBosses([]);
+        }));
       }
-      
-      setLoading(false);
     }
 
     fetchBosses();

@@ -24,11 +24,17 @@ export interface RealtimeHeroUpdate {
 export function useRealtimeHero() {
   const supabase = createClient();
   const { user } = useAuth();
+  // Read heroId from Zustand store (populated by useSupabaseSync) — avoids extra DB query
+  const storeHeroId = useHeroStore(s => s.hero?.heroId);
   const [heroId, setHeroId] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<RealtimeHeroUpdate | null>(null);
 
-  // Get hero ID first
+  // Use store heroId when available; fall back to DB query only if store is empty
   useEffect(() => {
+    if (storeHeroId && storeHeroId !== 'h1') {
+      setHeroId(storeHeroId);
+      return;
+    }
     if (!user) return;
     supabase
       .from('heroes')
@@ -36,7 +42,7 @@ export function useRealtimeHero() {
       .eq('user_id', user.id)
       .single()
       .then(({ data }) => { if (data) setHeroId(data.id); });
-  }, [user, supabase]);
+  }, [user, storeHeroId, supabase]);
 
   // Subscribe to real-time changes
   useEffect(() => {
