@@ -171,19 +171,19 @@ export default function AdminDashboard() {
       {/* Schools Table */}
       <h2 className="text-display" style={{ marginBottom: '0.75rem' }}>🏫 Школы</h2>
       <div className={styles.tableWrap}>
-        <div className={styles.tHeader} style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr' }}>
+        <div className={styles.tableHeader} style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr' }}>
           <span>Школа</span><span>Классов</span><span>Учеников</span><span>Статус</span>
         </div>
         {loading ? (
           <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>⏳ Загрузка...</div>
         ) : schools.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Нет школ. Создайте в разделе Школы.</div>
-        ) : schools.map(s => {
+        ) : schools.filter(s => !s.name.startsWith('__TEST_')).map(s => {
           const schoolClasses = classes.filter(c => c.school_id === s.id);
           const classCount = schoolClasses.length;
           const studentCount = schoolClasses.reduce((sum, c) => sum + c.student_count, 0);
           return (
-            <div key={s.id} className={styles.tRow} style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr' }}>
+            <div key={s.id} className={styles.tableRow} style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr' }}>
               <span style={{ fontWeight: 700 }}>{s.name}</span>
               <span>{classCount}</span>
               <span>{studentCount}</span>
