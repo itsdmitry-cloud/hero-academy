@@ -69,7 +69,6 @@
 - **State:** Zustand + React Query (TanStack)
 - **Тесты:** Vitest
 - **Аутентификация:** Пригласительные коды
-- **Анимации:** Framer Motion
 
 ## Команды
 

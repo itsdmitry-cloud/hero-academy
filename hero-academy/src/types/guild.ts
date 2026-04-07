@@ -11,14 +11,3 @@ export interface Guild {
   season_id: string | null;
   updated_at: string;
 }
-
-export interface SeasonRanking {
-  id: string;
-  season_id: string;
-  entity_type: 'hero' | 'guild';
-  entity_id: string;
-  rank: number;
-  xp_total: number;
-  score: number;
-  rewards_given: Record<string, unknown>;
-}

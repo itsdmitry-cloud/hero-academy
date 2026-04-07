@@ -1,3 +1,5 @@
+> ⚠️ DEPRECATED: Проект мигрирован на Claude Code (апрель 2026). Актуальная конфигурация: `CLAUDE.md`. Этот файл сохранён для истории.
+
 # Hero Academy: Balance & Simulation Workspace
 
 Welcome to the **Hero Academy** repository. This is not just a straightforward Next.js web application—it is a **simulation-first balance-testing environment**.
