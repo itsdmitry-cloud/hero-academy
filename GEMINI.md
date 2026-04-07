@@ -1,4 +1,6 @@
 1001"}
+> ⚠️ DEPRECATED: Проект мигрирован на Claude Code (апрель 2026). Актуальная конфигурация: `hero-academy/CLAUDE.md`. Этот файл сохранён для истории.
+
 # PROJECT: HERO ACADEMY
 
 You are designing a complex gamified educational web application.
