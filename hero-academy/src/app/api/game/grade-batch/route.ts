@@ -191,18 +191,18 @@ async function processHero(
       artNames:    mods.goldBoost > 0 ? mods.goldArtifacts : [],
       final:       finalGold,
     } : null,
-    hp: (baseHp > 0) ? {
+    hp: {
       base:        baseHp,
       balancePct:  eco.dmg_multiplier,
-      afterBalance: afterBalanceHp,
+      afterBalance: baseHp > 0 ? afterBalanceHp : 0,
       shield:      shieldUsed ? shieldName : null,
       passivePct:  mods.passiveDmgReduce > 0 ? mods.passiveDmgReduce : null,
-      passiveNames: mods.passiveDmgArts.map(a => `${a.name} (-${a.value}%)`),
-      randomPct:   shieldUsed ? 0 : randomPct,
+      passiveNames: baseHp > 0 ? mods.passiveDmgArts.map(a => `${a.name} (-${a.value}%)`) : [],
+      randomPct:   baseHp > 0 ? (shieldUsed ? 0 : randomPct) : 0,
       undoCrit:    undoCrit ? saveArtName : null,
       deathSaved:  deathSaved ? saveArtName : null,
       final:       finalHp,
-    } : null,
+    },
     bossDmg: null,
   };
 

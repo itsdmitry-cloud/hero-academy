@@ -426,24 +426,37 @@ export default function HeroPage() {
                           {hp && (
                             <div style={colStyle}>
                               <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f87171', marginBottom: '2px' }}>❤️ Урон</span>
-                              <Row label="Базовое" value={Number(hp.base)} />
-                              <Row label={`Баланс ×${hp.balancePct}%`} value={`→ ${hp.afterBalance}`} dim />
-                              {hp.shield
-                                ? <><Row label="🛡️ Щит" value={String(hp.shield)} /><Row label="Заряд -1" value="Заблокировано" /></>
-                                : hp.passivePct
-                                  ? <Row label={`Защита -${hp.passivePct}%`} value={`→ ${Math.round(Number(hp.afterBalance) * (1 - Number(hp.passivePct)/100))}`} dim />
-                                  : null
-                              }
-                              {!hp.shield && <Row label={`Рандом ${Number(hp.randomPct) >= 0 ? '+' : ''}${hp.randomPct}%`} value={`→ ${hp.final}`} dim />}
-                              {Boolean(hp.undoCrit) && <><Row label="⏪ Отмена смерти" value={String(hp.undoCrit)} /><Row label="Заряд -1" value="Обнулён" /></>}
-                              {Boolean(hp.deathSaved) && <><Row label="🔥 Выживание" value={String(hp.deathSaved)} /><Row label="Заряд -1" value="Спасён" /></>}
-                              <Divider />
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f87171' }}>Итого</span>
-                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: hp.shield || hp.undoCrit ? '#4ade80' : (hp.deathSaved ? '#fbbf24' : '#f87171') }}>
-                                  {hp.shield ? '0 HP 🛡️' : (hp.undoCrit ? '0 HP ⏪' : (hp.deathSaved ? `Спасён 🔥` : `-${hp.final} HP`))}
-                                </span>
-                              </div>
+                              {Number(hp.base) === 0 ? (
+                                <>
+                                  <Row label="Базовое" value={0} />
+                                  <Divider />
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#4ade80' }}>Итого</span>
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#4ade80' }}>-0 HP</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Row label="Базовое" value={Number(hp.base)} />
+                                  <Row label={`Баланс ×${hp.balancePct}%`} value={`→ ${hp.afterBalance}`} dim />
+                                  {hp.shield
+                                    ? <><Row label="🛡️ Щит" value={String(hp.shield)} /><Row label="Заряд -1" value="Заблокировано" /></>
+                                    : hp.passivePct
+                                      ? <Row label={`Защита -${hp.passivePct}%`} value={`→ ${Math.round(Number(hp.afterBalance) * (1 - Number(hp.passivePct)/100))}`} dim />
+                                      : null
+                                  }
+                                  {!hp.shield && <Row label={`Рандом ${Number(hp.randomPct) >= 0 ? '+' : ''}${hp.randomPct}%`} value={`→ ${hp.final}`} dim />}
+                                  {Boolean(hp.undoCrit) && <><Row label="⏪ Отмена смерти" value={String(hp.undoCrit)} /><Row label="Заряд -1" value="Обнулён" /></>}
+                                  {Boolean(hp.deathSaved) && <><Row label="🔥 Выживание" value={String(hp.deathSaved)} /><Row label="Заряд -1" value="Спасён" /></>}
+                                  <Divider />
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f87171' }}>Итого</span>
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: hp.shield || hp.undoCrit ? '#4ade80' : (hp.deathSaved ? '#fbbf24' : '#f87171') }}>
+                                      {hp.shield ? '0 HP 🛡️' : (hp.undoCrit ? '0 HP ⏪' : (hp.deathSaved ? `Спасён 🔥` : `-${hp.final} HP`))}
+                                    </span>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
