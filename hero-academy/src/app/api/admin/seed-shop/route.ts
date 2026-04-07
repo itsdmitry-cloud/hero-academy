@@ -10,12 +10,11 @@ const admin = createClient(
  * POST /api/admin/seed-shop
  * Populates shop with: consumables (potions, boosts) + loot boxes.
  * Artifacts are NOT sold directly — only via loot boxes or quest drops.
+ *
+ * Safe: updates existing items by name (preserving IDs/FKs), inserts missing ones.
  */
 export async function POST() {
   try {
-    // Clear old shop items
-    await admin.from('shop_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
     // ═══ Get consumable artifacts (potions, xp instant, etc.) ═══
     const { data: consumables } = await admin
       .from('artifacts')
@@ -29,7 +28,7 @@ export async function POST() {
       return eff.includes('hp_restore') || eff.includes('xp_instant');
     });
 
-    const records = [];
+    const records: Record<string, unknown>[] = [];
 
     // ── Consumable artifacts (potions) ──
     const RARITY_PRICE: Record<string, number> = {
@@ -132,19 +131,37 @@ export async function POST() {
       }
     }
 
-    // Insert all shop items
-    const { error: insertErr } = await admin.from('shop_items').insert(records);
-    if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    // Safe upsert: update existing items by name, insert missing ones
+    let updated = 0;
+    let inserted = 0;
+
+    for (const rec of records) {
+      const { data: existing } = await admin
+        .from('shop_items')
+        .select('id')
+        .eq('name', rec.name as string)
+        .single();
+
+      if (existing) {
+        await admin.from('shop_items').update(rec).eq('id', existing.id);
+        updated++;
+      } else {
+        await admin.from('shop_items').insert(rec);
+        inserted++;
+      }
+    }
 
     return NextResponse.json({
       success: true,
       count: records.length,
+      updated,
+      inserted,
       breakdown: {
         potions: shopConsumables.length,
         streak_protect: records.filter(r => r.category === 'artifact').length,
         lootboxes: lootBoxes.length,
       },
-      note: `Магазин обновлён: зелья + свеча + ${lootBoxes.length} сундука. Артефакты НЕ продаются напрямую.`,
+      note: `Магазин обновлён: ${updated} обновлено, ${inserted} добавлено.`,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

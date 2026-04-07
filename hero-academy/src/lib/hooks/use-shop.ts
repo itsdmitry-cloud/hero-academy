@@ -46,9 +46,23 @@ export function useShop() {
     const item = items.find(i => i.id === itemId);
     if (!item) return { error: 'Товар не найден' };
 
-    // Items that give inventory must have artifact_id linked
-    if (!item.artifact_id && item.category !== 'hp_potion') {
-      return { error: 'Товар повреждён (нет привязки к артефакту). Сообщите учителю.' };
+    // Resolve artifact_id: use FK if present, otherwise look up by item name
+    let artifactId = item.artifact_id;
+    if (!artifactId && item.category !== 'hp_potion') {
+      // FK broken (ON DELETE SET NULL) — try to find artifact by name
+      const { data: matchedArt } = await supabase
+        .from('artifacts')
+        .select('id')
+        .eq('name', item.name)
+        .single();
+
+      if (matchedArt) {
+        artifactId = matchedArt.id;
+        // Self-heal: restore the FK for future purchases
+        await supabase.from('shop_items').update({ artifact_id: matchedArt.id }).eq('id', item.id);
+      } else {
+        return { error: 'Товар повреждён (артефакт не найден). Сообщите учителю.' };
+      }
     }
 
     // Get hero
@@ -69,17 +83,15 @@ export function useShop() {
 
     if (goldError) return { error: goldError.message };
 
-    // Add artifact to hero's inventory (if linked)
-    if (item.artifact_id) {
-      // Get artifact catalog data for charges and duration
+    // Add artifact to hero's inventory
+    if (artifactId) {
       const { data: artCatalog } = await supabase
         .from('artifacts')
         .select('max_charges, duration_hours')
-        .eq('id', item.artifact_id)
+        .eq('id', artifactId)
         .single();
 
       if (!artCatalog) {
-        // Artifact missing from catalog — refund gold
         await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
         return { error: 'Артефакт не найден в каталоге. Золото возвращено.' };
       }
@@ -88,7 +100,7 @@ export function useShop() {
 
       const { error: insertError } = await supabase.from('hero_artifacts').insert({
         hero_id: hero.id,
-        artifact_id: item.artifact_id,
+        artifact_id: artifactId,
         source: 'shop',
         quantity: 1,
         charges_remaining: artCatalog.max_charges ?? 1,
@@ -98,7 +110,6 @@ export function useShop() {
       });
 
       if (insertError) {
-        // Insert failed — refund gold
         await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
         return { error: `Не удалось добавить предмет: ${insertError.message}` };
       }
