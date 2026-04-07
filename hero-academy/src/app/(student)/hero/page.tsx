@@ -286,11 +286,6 @@ export default function HeroPage() {
             <div className={styles.shelfDetailRarity} style={{ color: (selectedShelfObj.artifact as any).season_pool ? '#f97316' : selectedShelfObj.rarity === 'epic' ? '#a855f7' : selectedShelfObj.rarity === 'legendary' ? '#eab308' : selectedShelfObj.rarity === 'rare' ? '#3b82f6' : '#6b7280' }}>
               {(selectedShelfObj.artifact as any).season_pool ? '🔥 Сезонный' : selectedShelfObj.rarity === 'common' ? '🟢 Обычный' : selectedShelfObj.rarity === 'rare' ? '🔵 Редкий' : selectedShelfObj.rarity === 'epic' ? '🟣 Эпический' : '🟡 Легендарный'}
             </div>
-            {selectedShelfObj.artifact.description && (
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', textAlign: 'center', margin: '0.5rem 0', lineHeight: 1.5 }}>
-                {selectedShelfObj.artifact.description}
-              </div>
-            )}
             <div className={styles.shelfDetailMeta}>
               {((selectedShelfObj.artifact as any).effect || (selectedShelfObj.artifact as any).effect_type) && (
                 <span style={{ color: 'var(--accent-xp)', fontWeight: 700 }}>
