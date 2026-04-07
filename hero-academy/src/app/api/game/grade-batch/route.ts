@@ -348,10 +348,10 @@ export async function POST(req: Request) {
       }
       await admin.from(bossTable).update(bossUpdate).eq('id', bossId);
 
-      // Log individual boss damage per hero (parallel: boss_damage_logs + activity_log)
+      // Log individual boss damage per hero (boss_damage_logs only, no separate activity_log entry)
       const heroHits = results.filter(r => r.bossDamage > 0 && r.heroId);
       await Promise.all(
-        heroHits.flatMap(r => [
+        heroHits.map(r =>
           Promise.resolve(
             admin.from('boss_damage_logs').insert({
               boss_id: bossId,
@@ -359,25 +359,8 @@ export async function POST(req: Request) {
               damage_dealt: r.bossDamage,
               action_type: 'quest_grade_batch',
             })
-          ).catch(() => {}),
-          Promise.resolve(
-            admin.from('activity_log').insert({
-              hero_id: r.heroId,
-              user_id: teacherId,
-              action: ACTIVITY_ACTIONS.BOSS_DAMAGE,
-              xp_change: 0,
-              gold_change: 0,
-              hp_change: 0,
-              metadata: {
-                boss_id: bossId,
-                boss_name: bossName,
-                damage_dealt: r.bossDamage,
-                subject,
-                quest_id: questId,
-              },
-            })
-          ).catch(() => {}),
-        ])
+          ).catch(() => {})
+        )
       );
 
       // ── BOSS DEFEATED: distribute rewards to all class heroes ──
