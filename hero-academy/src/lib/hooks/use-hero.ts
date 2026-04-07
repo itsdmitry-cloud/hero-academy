@@ -242,13 +242,13 @@ export function useHero() {
     const heroRow = heroRes.data as HeroData;
     setHero(heroRow);
 
-    // Fetch stats separately
-    const { data: statsData } = await supabase
+    // Fetch stats in parallel (non-blocking — don't delay render)
+    supabase
       .from('hero_stats')
       .select('strength, knowledge, endurance, luck, wisdom')
       .eq('hero_id', heroRow.id)
-      .single();
-    if (statsData) setStats(statsData as HeroStats);
+      .single()
+      .then(({ data: statsData }) => { if (statsData) setStats(statsData as HeroStats); });
 
     // Merge achievements with unlocked status
     const achievementList: Achievement[] = [];

@@ -49,49 +49,57 @@ export function useArtifacts() {
   const fetchArtifacts = useCallback(async () => {
     setLoading(true);
     try {
-      // Get session directly from Supabase — no dependency on auth context timing
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { setLoading(false); return; }
-      const userId = session.user.id;
-
-      // Fetch global catalog in parallel with hero lookup
+      // Resolve heroId from cache or Zustand store first — avoids waiting for session
       const globalHeroId = useHeroStore.getState().hero?.heroId;
-      const validGlobalHeroId = globalHeroId && globalHeroId !== 'h1' ? globalHeroId : null;
+      const cachedHeroId = heroIdRef.current
+        || (globalHeroId && globalHeroId !== 'h1' ? globalHeroId : null);
 
-      const [catalogResult, heroResult] = await Promise.all([
-        supabase.from('artifacts').select('*').order('rarity'),
-        heroIdRef.current
-          ? Promise.resolve({ data: { id: heroIdRef.current } })
-          : validGlobalHeroId
-            ? Promise.resolve({ data: { id: validGlobalHeroId } })
-            : supabase.from('heroes').select('id').eq('user_id', userId).single()
-      ]);
+      if (cachedHeroId) {
+        // Fast path: heroId known — fire ALL three queries in parallel
+        heroIdRef.current = cachedHeroId;
+        const [catalogResult, invResult] = await Promise.all([
+          supabase.from('artifacts').select('*').order('rarity'),
+          supabase.from('hero_artifacts').select('*, artifact:artifact_id(*)').eq('hero_id', cachedHeroId),
+        ]);
+        if (catalogResult.data) setCatalog(catalogResult.data as ArtifactCatalog[]);
+        if (invResult.data) {
+          const heroArtifacts = invResult.data as HeroArtifact[];
+          setInventory(heroArtifacts);
+          const equipped = heroArtifacts.filter(i => i.is_equipped).map(i => ({
+            id: i.id, defId: i.artifact_id, is_equipped: true,
+            charges_left: i.charges_remaining,
+            expires_at: i.expires_at ? new Date(i.expires_at) : undefined,
+          }));
+          useHeroStore.setState({ inventory: equipped as any });
+        }
+      } else {
+        // Cold path: need session to find heroId — still parallel where possible
+        const [sessionResult, catalogResult] = await Promise.all([
+          supabase.auth.getSession(),
+          supabase.from('artifacts').select('*').order('rarity'),
+        ]);
+        if (catalogResult.data) setCatalog(catalogResult.data as ArtifactCatalog[]);
 
-      if (catalogResult.data) setCatalog(catalogResult.data as ArtifactCatalog[]);
+        const userId = sessionResult.data.session?.user?.id;
+        if (!userId) { setLoading(false); return; }
 
-      const heroId = (heroResult.data as any)?.id;
-      if (!heroId) { setLoading(false); return; }
-      heroIdRef.current = heroId;
+        const { data: heroData } = await supabase.from('heroes').select('id').eq('user_id', userId).single();
+        const heroId = heroData?.id;
+        if (!heroId) { setLoading(false); return; }
+        heroIdRef.current = heroId;
 
-      // Load inventory with joined artifact data
-      const { data: inv } = await supabase
-        .from('hero_artifacts')
-        .select('*, artifact:artifact_id(*)')
-        .eq('hero_id', heroId);
-
-      if (inv) {
-        const heroArtifacts = inv as HeroArtifact[];
-        setInventory(heroArtifacts);
-
-        // Sync equipped items to global Zustand store for game action calculations
-        const equipped = heroArtifacts.filter(i => i.is_equipped).map(i => ({
-          id: i.id,
-          defId: i.artifact_id,
-          is_equipped: true,
-          charges_left: i.charges_remaining,
-          expires_at: i.expires_at ? new Date(i.expires_at) : undefined,
-        }));
-        useHeroStore.setState({ inventory: equipped as any });
+        const { data: inv } = await supabase
+          .from('hero_artifacts').select('*, artifact:artifact_id(*)').eq('hero_id', heroId);
+        if (inv) {
+          const heroArtifacts = inv as HeroArtifact[];
+          setInventory(heroArtifacts);
+          const equipped = heroArtifacts.filter(i => i.is_equipped).map(i => ({
+            id: i.id, defId: i.artifact_id, is_equipped: true,
+            charges_left: i.charges_remaining,
+            expires_at: i.expires_at ? new Date(i.expires_at) : undefined,
+          }));
+          useHeroStore.setState({ inventory: equipped as any });
+        }
       }
     } finally {
       setLoading(false);
