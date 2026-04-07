@@ -344,9 +344,10 @@ export default function ArtifactsPage() {
               <>
                 <div className={styles.detailStats}>
                   <div className={styles.detailRow}><span>Эффект</span><strong>{selected.effectLabel}</strong></div>
-                  {selected.duration !== 'Постоянный' && <div className={styles.detailRow}><span>Длительность</span><strong>{selected.duration}</strong></div>}
+                  {/* Заряды ИЛИ длительность — не оба */}
+                  {selected.charges > 0 && selected.duration === 'Постоянный' && <div className={styles.detailRow}><span>Заряды</span><strong>{'⚡'.repeat(Math.min(selected.charges, 5))} {selected.charges}</strong></div>}
+                  {selected.duration !== 'Постоянный' && !selected.expiresAt && <div className={styles.detailRow}><span>Длительность</span><strong>{selected.duration}</strong></div>}
                   {selected.expiresAt && <div className={styles.detailRow}><span>Осталось</span><strong style={{ color: new Date(selected.expiresAt) < new Date() ? 'var(--accent-hp)' : 'var(--accent-xp)' }}>{formatTimeLeft(selected.expiresAt)}</strong></div>}
-                  {selected.charges > 0 && <div className={styles.detailRow}><span>Заряды</span><strong>{'⚡'.repeat(Math.min(selected.charges, 5))} {selected.charges}</strong></div>}
                   <div className={styles.detailRow}><span>Количество</span><strong>{selected.quantity}</strong></div>
                   <div className={styles.detailRow}><span>Источник</span><strong>{selected.source === 'drop' ? '🎲 Дроп' : selected.source === 'shop' ? '🛒 Магазин' : selected.source === 'reward' ? '🏆 Награда' : selected.source === 'teacher_gift' ? '🎁 Учитель' : selected.source}</strong></div>
                 </div>

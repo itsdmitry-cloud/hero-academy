@@ -297,13 +297,15 @@ export default function HeroPage() {
                   {shelfEffectLabel((selectedShelfObj.artifact as any).effect || '', (selectedShelfObj.artifact as any).effect_type || '', (selectedShelfObj.artifact as any).effect_value ?? 0)}
                 </span>
               )}
-              {((selectedShelfObj.charges ?? 0) > 0) && !String((selectedShelfObj.artifact as any).effect ?? (selectedShelfObj.artifact as any).effect_type ?? '').includes('passive') && <span>⚡ {selectedShelfObj.charges} зар{'.'}</span>}
-              {(selectedShelfObj as any).expiresAt && (
+              {/* Заряды ИЛИ время — не оба */}
+              {(selectedShelfObj as any).expiresAt ? (
                 <span style={{ color: new Date((selectedShelfObj as any).expiresAt) < new Date() ? 'var(--accent-hp)' : 'var(--accent-gold)' }}>
                   ⏳ {shelfTimeLeft((selectedShelfObj as any).expiresAt)}
                 </span>
-              )}
-              {!(selectedShelfObj.artifact as any).effect && !selectedShelfObj.charges && <span>Ур. {(selectedShelfObj.artifact as any).min_level || 1}</span>}
+              ) : ((selectedShelfObj.charges ?? 0) > 0) && !String((selectedShelfObj.artifact as any).effect ?? (selectedShelfObj.artifact as any).effect_type ?? '').includes('passive') ? (
+                <span>⚡ {selectedShelfObj.charges} зар{'.'}</span>
+              ) : null}
+              {!(selectedShelfObj.artifact as any).effect && !selectedShelfObj.charges && !(selectedShelfObj as any).expiresAt && <span>Ур. {(selectedShelfObj.artifact as any).min_level || 1}</span>}
             </div>
             <div className={styles.shelfDetailActions}>
               {(() => {
