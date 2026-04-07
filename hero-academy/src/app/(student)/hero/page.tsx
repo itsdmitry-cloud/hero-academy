@@ -389,7 +389,6 @@ export default function HeroPage() {
                     const xp   = bd.xp   as Record<string, unknown> | null;
                     const hp   = bd.hp   as Record<string, unknown> | null;
                     const gold = bd.gold as Record<string, unknown> | null;
-                    const bossDmg = bd.bossDmg as Record<string, unknown> | null;
 
                     const Row = ({ label, value, dim }: { label: string; value: string | number; dim?: boolean }) => (
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', opacity: dim ? 0.6 : 1 }}>
@@ -418,7 +417,7 @@ export default function HeroPage() {
                               <Divider />
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-xp)' }}>Итого</span>
-                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-xp)' }}>+{String(xp.final)} XP</span>
+                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-xp)' }}>+{String(xp.final)} XP = ⚔️ Урон</span>
                               </div>
                             </div>
                           )}
@@ -449,38 +448,21 @@ export default function HeroPage() {
                           )}
                         </div>
 
-                        {/* Row 2: Gold | Boss Damage */}
-                        {(gold || bossDmg) && (
+                        {/* Row 2: Gold */}
+                        {gold && (
                           <div style={{ display: 'flex', gap: '8px' }}>
                             {/* Gold Column */}
-                            {gold && (
-                              <div style={colStyle}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-gold)', marginBottom: '2px' }}>💰 Золото</span>
-                                <Row label="Базовое" value={Number(gold.base)} />
-                                <Row label={`Баланс ×${gold.balancePct}%`} value={`→ ${gold.afterBalance}`} dim />
-                                {Boolean(gold.artBoost) && <Row label={`Арт. +${String(gold.artBoost)}%${Array.isArray(gold.artNames) && gold.artNames.length > 0 ? ` (${gold.artNames.map((n: string) => n.split(' (')[0]).join(', ')})` : ''}`} value={`→ ${String(gold.final)}`} dim />}
-                                <Divider />
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-gold)' }}>Итого</span>
-                                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-gold)' }}>+{String(gold.final)}</span>
-                                </div>
+                            <div style={colStyle}>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-gold)', marginBottom: '2px' }}>💰 Золото</span>
+                              <Row label="Базовое" value={Number(gold.base)} />
+                              <Row label={`Баланс ×${gold.balancePct}%`} value={`→ ${gold.afterBalance}`} dim />
+                              {Boolean(gold.artBoost) && <Row label={`Арт. +${String(gold.artBoost)}%${Array.isArray(gold.artNames) && gold.artNames.length > 0 ? ` (${gold.artNames.map((n: string) => n.split(' (')[0]).join(', ')})` : ''}`} value={`→ ${String(gold.final)}`} dim />}
+                              <Divider />
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-gold)' }}>Итого</span>
+                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-gold)' }}>+{String(gold.final)}</span>
                               </div>
-                            )}
-
-                            {/* Boss Damage Column */}
-                            {bossDmg && (
-                              <div style={colStyle}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#a78bfa', marginBottom: '2px' }}>⚔️ Урон Боссу</span>
-                                <Row label="Базовое (= Base XP)" value={Number(bossDmg.base)} />
-                                {Boolean(bossDmg.artBoost) && <Row label={`Арт. +${String(bossDmg.artBoost)}%${Array.isArray(bossDmg.artNames) && bossDmg.artNames.length > 0 ? ` (${bossDmg.artNames.map((n: string) => n.split(' (')[0]).join(', ')})` : ''}`} value={`→ ${String(bossDmg.final)}`} dim />}
-                                {!bossDmg.artBoost && <Row label="Бусты отсутствуют" value="—" dim />}
-                                <Divider />
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#a78bfa' }}>Итого</span>
-                                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#a78bfa' }}>{String(bossDmg.final)} Ур.</span>
-                                </div>
-                              </div>
-                            )}
+                            </div>
                           </div>
                         )}
                       </div>
