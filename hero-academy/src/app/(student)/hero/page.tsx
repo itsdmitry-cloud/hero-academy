@@ -133,11 +133,11 @@ export default function HeroPage() {
     );
   }
 
-  const activeSlotsCount = hero.level >= 30 ? 6 : hero.level >= 25 ? 5 : hero.level >= 20 ? 4 : hero.level >= 15 ? 3 : hero.level >= 10 ? 2 : 1;
+  const activeSlotsCount = hero.level >= 50 ? 6 : hero.level >= 40 ? 5 : hero.level >= 30 ? 4 : hero.level >= 20 ? 3 : hero.level >= 10 ? 2 : 1;
   const totalSlots = 6;
   const equippedItems = dbInventory.filter(i => i.is_equipped);
   
-  const slotUnlockLevels = [1, 10, 15, 20, 25, 30];
+  const slotUnlockLevels = [1, 10, 20, 30, 40, 50];
   const shelfSlots = Array.from({ length: totalSlots }).map((_, i) => {
     if (i >= activeSlotsCount) {
       return { id: `locked_${i}`, name: 'locked', rarity: null, icon: '🔒', equipped: false, defId: null, unlockLevel: slotUnlockLevels[i] };
