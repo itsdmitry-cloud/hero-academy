@@ -130,7 +130,7 @@ function mapEffectToDB(code: string): { effect_type: EffectTypeEnum; effect: str
   // Fire season — passives
   if (code === 'FIRE_GOLD_MULT_10')   return { effect_type: 'gold_bonus',     effect: 'gold_boost',            effect_value: 10 };
   if (code === 'FIRE_BOSS_MULT_20')   return { effect_type: 'xp_boost',       effect: 'boss_dmg',              effect_value: 20 };
-  if (code === 'FIRE_DMG_REDUCE_1')   return { effect_type: 'damage_reduce',  effect: 'passive_damage_reduction', effect_value: 1 };
+  if (code === 'FIRE_REGEN_2')        return { effect_type: 'hp_shield',      effect: 'passive_hp_regen',      effect_value: 2 };
   if (code === 'FIRE_STREAK_SHIELD')  return { effect_type: 'streak_protect', effect: 'streak_protect',        effect_value: 1 };
   if (code === 'FIRE_AUTO_RESURRECT') return { effect_type: 'hp_shield',      effect: 'auto_resurrect',        effect_value: 50 };
   if (code === 'COSMETIC')            return { effect_type: 'xp_boost',       effect: 'cosmetic',              effect_value: 0 };
@@ -241,7 +241,7 @@ export const ARTIFACT_REGISTRY: ArtifactEntry[] = [
   art('fire_hellfire_elixir',  'Эликсир Пекла',      '+100 XP, +50 Gold, +25 HP',           'common', '⚗️', 'consumable', 'FIRE_COMBO',           { season_tag: 'fire' }),
   art('fire_ring',             'Кольцо Огня',        'Gold +10% постоянно',                 'common', '💍', 'passive',    'FIRE_GOLD_MULT_10',    { season_tag: 'fire' }),
   art('fire_berserker',        'Зелье Берсерка',     'Наносит 100 урона боссу',             'common', '🧪', 'consumable', 'FIRE_BOSS_RANDOM',     { season_tag: 'fire' }),
-  art('fire_lava_amulet',      'Лавовый Амулет',     '-1 к урону постоянно',                'common', '📿', 'passive',    'FIRE_DMG_REDUCE_1',    { season_tag: 'fire' }),
+  art('fire_lava_amulet',      'Лавовый Амулет',     '+2 HP в день (пассивная регенерация)', 'common', '📿', 'passive',    'FIRE_REGEN_2',         { season_tag: 'fire' }),
   art('fire_dragon_scale',     'Драконья Чешуйка',   'Защищает стрик от сброса (1 заряд)',  'common', '🐉', 'passive',    'FIRE_STREAK_SHIELD',   { max_charges: 1, season_tag: 'fire' }),
   art('fire_phoenix_feather',  'Огненное Перо',      'Авто-воскрешение с 50 HP (1 заряд)',  'common', '🪶', 'passive',    'FIRE_AUTO_RESURRECT',  { max_charges: 1, season_tag: 'fire' }),
   art('fire_banner',           'Багровое Знамя',     'Украшение профиля героя',             'common', '🏴', 'passive',    'COSMETIC',             { season_tag: 'fire' }),

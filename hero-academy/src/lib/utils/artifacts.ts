@@ -203,9 +203,7 @@ export function calculateQuestResult(
 
       // === 🔥 FIRE SEASON PASSIVES ===
       case 'FIRE_GOLD_MULT_10': goldMultiplier += 0.10; break;
-      case 'FIRE_DMG_REDUCE_1':
-        if (result.finalDamage > 0) { flatDamageReduction += 1; triggered = true; }
-        break;
+      case 'FIRE_REGEN_2': break; // daily regen, handled by /api/streak/update
       case 'FIRE_BOSS_MULT_20':
         if (rawResult.isBossType) { xpMultiplier += 0.20; triggered = true; }
         break;

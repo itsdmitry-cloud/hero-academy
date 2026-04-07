@@ -90,5 +90,42 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ─── Passive HP Regen from equipped artifacts ───
+  const { data: regenArts } = await admin
+    .from('hero_artifacts')
+    .select('artifacts!inner(effect, effect_value, name)')
+    .eq('hero_id', hero.id)
+    .eq('is_equipped', true);
+
+  if (regenArts) {
+    let regenTotal = 0;
+    const regenNames: string[] = [];
+    for (const ra of regenArts) {
+      const rec = ra as Record<string, unknown>;
+      const artData = rec.artifacts as Record<string, unknown> | Record<string, unknown>[] | null;
+      const art = Array.isArray(artData) ? artData[0] : artData;
+      if (!art) continue;
+      const eff = String(art.effect ?? '');
+      if (eff !== 'passive_hp_regen') continue;
+      regenTotal += Number(art.effect_value ?? 0);
+      regenNames.push(String(art.name));
+    }
+
+    if (regenTotal > 0) {
+      const { data: heroFull } = await admin.from('heroes').select('hp, hp_max').eq('id', hero.id).single();
+      if (heroFull && heroFull.hp < heroFull.hp_max) {
+        const newHp = Math.min(heroFull.hp_max, heroFull.hp + regenTotal);
+        await admin.from('heroes').update({ hp: newHp }).eq('id', hero.id);
+        await admin.from('activity_log').insert({
+          hero_id: hero.id,
+          user_id: session.user.id,
+          action: 'passive_regen',
+          hp_change: newHp - heroFull.hp,
+          metadata: { artifacts: regenNames, regen: regenTotal },
+        });
+      }
+    }
+  }
+
   return NextResponse.json(data);
 }
