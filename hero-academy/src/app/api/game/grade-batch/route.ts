@@ -167,11 +167,8 @@ async function processHero(
     }
   }
 
-  // Декаплинг: урон боссу считается от БАЗОВОГО опыта, чтобы личные XP артефакты не ломали общий баланс босса
-  let bossDamage = baseXp;
-  if (mods.bossDmgBoost > 0) {
-    bossDamage = Math.round(baseXp * (1 + mods.bossDmgBoost / 100));
-  }
+  // Boss damage = final XP (после всего пайплайна: баланс, артефакты, рандом)
+  const bossDamage = finalXp;
 
   // Structured breakdown for rich two-column UI rendering
   const breakdown = {
@@ -206,12 +203,7 @@ async function processHero(
       deathSaved:  deathSaved ? saveArtName : null,
       final:       finalHp,
     } : null,
-    bossDmg: bossDamage > 0 ? {
-       base: baseXp,
-       artBoost: mods.bossDmgBoost > 0 ? mods.bossDmgBoost : null,
-       artNames: mods.bossDmgBoost > 0 ? mods.bossArtifacts : [],
-       final: bossDamage
-    } : null,
+    bossDmg: null,
   };
 
   // Build hero update (includes season_xp for Battle Pass)
