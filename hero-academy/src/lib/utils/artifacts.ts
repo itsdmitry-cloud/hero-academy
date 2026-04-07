@@ -155,6 +155,10 @@ export function calculateQuestResult(
         if (result.finalXp > 0) { flatGoldAdd += 5; triggered = true; } 
         break;
 
+      // CLASSWORK XP (passive boost per graded assignment)
+      case 'CLASSWORK_XP_50': xpMultiplier += 0.50; break;
+      case 'CLASSWORK_XP_200': xpMultiplier += 2.00; break;
+
       // SPECIFIC QUEST TYPES
       case 'FLAT_BOSS_XP_200':
         if (rawResult.isBossType) { flatXpAdd += 200; triggered = true; }
@@ -207,6 +211,7 @@ export function calculateQuestResult(
         break;
       case 'PROTECT_STREAK':
       case 'FIRE_STREAK_SHIELD':
+      case 'INFINITE_STREAK':
         result.protectedStreak = true;
         result.messages.push(`🐉 ${def.name} защитит ваш стрик!`);
         triggered = true;

@@ -48,7 +48,7 @@ export async function setupTestSandbox(testPrefix = 'TEST_SANDBOX') {
   }).select('id').single();
 
   // Update teacher's class
-  await supabaseAdmin.from('users').update({ school_id: school.id, class_id: cls.id }).eq('id', teacherId);
+  await supabaseAdmin.from('users').update({ school_id: school!.id, class_id: cls!.id }).eq('id', teacherId);
 
   // 4. Create Students and Heroes
   const studentIds: string[] = [];
@@ -63,8 +63,8 @@ export async function setupTestSandbox(testPrefix = 'TEST_SANDBOX') {
       email: `student_${i}_${ts}@test.com`,
       role: 'student',
       display_name: `Student ${i}`,
-      class_id: cls.id,
-      school_id: school.id
+      class_id: cls!.id,
+      school_id: school!.id
     });
 
     const { data: hero } = await supabaseAdmin.from('heroes').insert({
@@ -76,12 +76,12 @@ export async function setupTestSandbox(testPrefix = 'TEST_SANDBOX') {
       gold: 500
     }).select('id').single();
     
-    heroIds.push(hero.id);
+    heroIds.push(hero!.id);
   }
 
   return {
-    schoolId: school.id,
-    classId: cls.id,
+    schoolId: school!.id,
+    classId: cls!.id,
     teacherId,
     studentIds,
     heroIds
@@ -125,12 +125,12 @@ export async function equipTestArtifact(heroId: string, effect: string, value: n
   // 2. Give to hero and equip
   const { data: ha } = await supabaseAdmin.from('hero_artifacts').insert({
     hero_id: heroId,
-    artifact_id: art.id,
+    artifact_id: art!.id,
     quantity: 1,
     is_equipped: true,
     charges_left: max_charges,
     expires_at: duration_days ? new Date(Date.now() + duration_days * 86400000).toISOString() : null
   }).select('id').single();
 
-  return { artifactId: art.id, heroArtifactId: ha.id };
+  return { artifactId: art!.id, heroArtifactId: ha!.id };
 }

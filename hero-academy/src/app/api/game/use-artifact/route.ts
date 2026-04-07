@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       'xp_instant', 'consumable_xp', 'consumable_season_xp',
       'gold_bonus', 'extra_gold', 'gold_instant', 'consumable_random_gold',
       'consumable_class_xp', 'consumable_class_gold', 
-      'consumable_boss_dmg', 'boss_damage'
+      'consumable_boss_damage'
     ];
     
     if (scalableEffects.includes(effect)) {
@@ -401,6 +401,30 @@ export async function POST(req: Request) {
         success: true, effect: 'combo', value: comboXp,
         message: `🔥 Комбо! +${comboXp} XP, +${comboGold} 💰, +${comboHp} ❤️`,
       });
+    }
+
+    // ══════════════════════════════════════════
+    // SPECIAL CONSUMABLES
+    // ══════════════════════════════════════════
+
+    if (effect === 'skip_day') {
+      await consumeArtifact();
+      await logActivity('artifact_skip_homework', { effect: 'skip_day' });
+      return NextResponse.json({ success: true, effect: 'skip_day', value: 1, message: '📜 Домашка пропущена без потери HP!' });
+    }
+
+    if (effect === 'retry_quest') {
+      await consumeArtifact();
+      await logActivity('artifact_retry_quest', { effect: 'retry_quest' });
+      return NextResponse.json({ success: true, effect: 'retry_quest', value: 1, message: '⏳ Вы можете переделать последний квест!' });
+    }
+
+    if (effect === 'force_level_up') {
+      const { xp, level, xpNext } = applyXpGain(hero.xp, hero.level, hero.xp_to_next, hero.xp_to_next - hero.xp);
+      await admin.from('heroes').update({ xp, level, xp_to_next: xpNext }).eq('id', hero.id);
+      await consumeArtifact();
+      await logActivity('artifact_level_up', { effect: 'force_level_up', new_level: level });
+      return NextResponse.json({ success: true, effect: 'force_level_up', value: level, message: `🧪 Мгновенное повышение до уровня ${level}!` });
     }
 
     return NextResponse.json({ error: `Неизвестный эффект: ${effect}` }, { status: 400 });
