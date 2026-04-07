@@ -1,0 +1,78 @@
+.wrapper {
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.value {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Track */
+.track {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.sm { height: 6px; }
+.md { height: 10px; }
+.lg { height: 14px; }
+
+/* Fill */
+.fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  position: relative;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animated {
+  animation: progressFill 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.xp { background: var(--gradient-xp); }
+.hp { background: var(--gradient-hp); }
+.gold { background: var(--gradient-gold); }
+.streak { background: var(--gradient-streak); }
+.primary { background: var(--gradient-purple); }
+.success { background: linear-gradient(135deg, #10b981, #059669); }
+
+/* Pulse for low HP */
+.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Sparkle at the edge */
+.sparkle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4));
+  border-radius: var(--radius-full);
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

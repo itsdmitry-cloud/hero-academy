@@ -1,0 +1,181 @@
+.page {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.page h1 { font-size: var(--text-3xl); font-weight: 800; }
+
+/* TABS */
+.tabs { display: flex; gap: var(--space-2); }
+
+.tab {
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.tab:hover { background: var(--bg-glass-hover); }
+.tabActive { background: var(--accent-primary-bg); color: var(--accent-primary); border-color: rgba(168,85,247,0.3); }
+
+/* PODIUM */
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6) 0;
+}
+
+.podiumItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-2xl);
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.6s ease both;
+}
+
+.podium1 {
+  order: 2;
+  padding: var(--space-6) var(--space-8);
+  background: var(--accent-gold-bg);
+  border-color: rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
+  animation-delay: 0.1s;
+}
+
+.podium2 {
+  order: 1;
+  animation-delay: 0.2s;
+}
+
+.podium3 {
+  order: 3;
+  animation-delay: 0.3s;
+}
+
+.podiumAvatar { font-size: 48px; }
+.podium1 .podiumAvatar { font-size: 64px; }
+.podiumRank { font-size: var(--text-2xl); }
+.podiumName { font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm); }
+.podiumXp { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent-xp); font-weight: 600; }
+
+/* LIST */
+.list {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-glass);
+  backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background var(--transition-fast);
+}
+
+.row:hover { background: var(--bg-glass-hover); }
+.row:last-child { border-bottom: none; }
+
+.rowMe {
+  background: var(--accent-primary-bg);
+  border-left: 3px solid var(--accent-primary);
+}
+
+.rankNum {
+  width: 36px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.rowAvatar { font-size: 28px; flex-shrink: 0; }
+
+.rowInfo { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.rowName {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.youBadge {
+  padding: 1px 6px;
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.rowLevel { font-size: var(--text-xs); color: var(--text-muted); }
+
+.rowStats {
+  display: flex;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.rowXp { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent-xp); font-weight: 600; }
+.rowQuests { font-size: var(--text-xs); color: var(--text-muted); }
+.rowStreak { font-size: var(--text-xs); }
+
+@media (max-width: 640px) {
+  .rowStats { flex-direction: column; gap: 2px; align-items: flex-end; }
+  .rowQuests, .rowStreak { display: none; }
+}
+
+/* GUILDS */
+.guildList { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.guildCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.4s ease both;
+}
+
+.guildCard:hover { background: var(--bg-glass-hover); transform: translateX(4px); }
+
+.guildRank { width: 36px; text-align: center; font-family: var(--font-mono); font-weight: 700; }
+.guildBanner { font-size: 36px; }
+.guildInfo { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.guildName { font-family: var(--font-display); font-weight: 700; }
+.guildMeta { font-size: var(--text-xs); color: var(--text-muted); }
+.guildXp { font-family: var(--font-mono); font-weight: 700; color: var(--accent-xp); }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}

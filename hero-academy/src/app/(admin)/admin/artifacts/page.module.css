@@ -1,0 +1,80 @@
+.page { display: flex; flex-direction: column; gap: var(--space-6); }
+.page h1 { font-size: var(--text-3xl); font-weight: 800; }
+.subtitle { font-size: var(--text-sm); color: var(--text-muted); margin-top: 4px; }
+.headerRow { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3); }
+.counter { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text-muted); background: var(--bg-glass); padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); }
+
+/* Filters */
+.filters { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+.searchInput {
+  padding: var(--space-2) var(--space-3); background: var(--bg-glass); border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg); color: var(--text-primary); font-size: var(--text-sm); flex: 1; min-width: 200px;
+}
+.searchInput::placeholder { color: var(--text-muted); }
+.rarityFilters { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.filterBtn {
+  padding: var(--space-1) var(--space-3); border-radius: var(--radius-full);
+  border: 1px solid var(--bg-glass-border); background: var(--bg-glass);
+  color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; cursor: pointer;
+  transition: all 0.2s;
+}
+.filterBtn:hover { background: var(--bg-glass-hover); }
+.filterActive { background: var(--bg-secondary); color: var(--filter-color, var(--text-primary)); border-color: var(--filter-color, var(--text-primary)); }
+
+/* Table */
+.tableWrap {
+  background: var(--bg-glass); border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-xl); overflow: hidden;
+}
+.tableHeader, .tableRow {
+  display: grid; grid-template-columns: 2.5fr 1fr 1fr 1.5fr 0.5fr 0.5fr;
+  padding: var(--space-3) var(--space-4); align-items: center; gap: var(--space-2);
+}
+.tableHeader {
+  font-size: var(--text-xs); font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--bg-glass-border);
+}
+.tableRow {
+  font-size: var(--text-sm); border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s; cursor: pointer;
+}
+.tableRow:hover { background: var(--bg-glass-hover); }
+.tableRow:last-child { border-bottom: none; }
+.tableRowEditing { background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.15); }
+
+.artName { display: flex; align-items: center; gap: var(--space-2); font-weight: 600; }
+.artEmoji { font-size: var(--text-xl); }
+.rarityBadge { font-size: var(--text-xs); font-weight: 700; border: 1px solid; padding: 1px 8px; border-radius: var(--radius-full); }
+.typeBadge { font-size: var(--text-xs); color: var(--text-muted); }
+.effectCell { font-size: var(--text-xs); font-family: var(--font-mono); }
+.levelCell { font-family: var(--font-mono); font-weight: 600; text-align: center; }
+
+.editSelect, .editInput {
+  padding: var(--space-1) var(--space-2); background: var(--bg-secondary); border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md); color: var(--text-primary); font-size: var(--text-xs); width: 100%;
+}
+.editInput { width: 50px; text-align: center; }
+.editSelect option { background: var(--bg-secondary); }
+
+.actions { display: flex; gap: var(--space-1); }
+.editBtn, .saveRowBtn, .cancelBtn {
+  padding: var(--space-1); background: none; border: none; cursor: pointer;
+  font-size: var(--text-base); transition: transform 0.15s;
+}
+.editBtn:hover, .saveRowBtn:hover, .cancelBtn:hover { transform: scale(1.2); }
+
+/* Global save */
+.globalSave {
+  position: sticky; bottom: 0; padding: var(--space-4);
+  background: rgba(15,12,35,0.95); backdrop-filter: blur(8px);
+  border: 1px solid rgba(234,179,8,0.3); border-radius: var(--radius-xl);
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-3);
+  font-size: var(--text-sm); font-weight: 600; color: #eab308;
+}
+.globalSaveBtn {
+  padding: var(--space-2) var(--space-5); background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white; border: none; border-radius: var(--radius-lg); font-weight: 700;
+  font-size: var(--text-sm); cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.globalSaveBtn:hover { transform: scale(1.02); }

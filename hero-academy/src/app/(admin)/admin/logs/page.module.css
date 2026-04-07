@@ -1,0 +1,63 @@
+.page { display: flex; flex-direction: column; gap: var(--space-4); }
+.page h1 { font-size: var(--text-3xl); font-weight: 800; }
+.headerRow { display: flex; justify-content: space-between; align-items: center; }
+.counter {
+  font-size: var(--text-sm); color: var(--text-muted); font-weight: 600;
+  background: var(--bg-glass); border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg); padding: 0.3rem 0.8rem;
+}
+
+/* Filters */
+.filters {
+  display: flex; gap: var(--space-3); flex-wrap: wrap;
+}
+.filterSelect {
+  padding: 0.5rem 0.7rem; background: var(--bg-glass); border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg); color: var(--text-primary); font-size: var(--text-sm);
+  cursor: pointer; min-width: 140px; flex: 1;
+}
+.filterSelect option { background: var(--bg-secondary); }
+
+/* Logs table */
+.logsTable {
+  display: flex; flex-direction: column; gap: 1px;
+  background: var(--bg-glass-border); border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-xl); overflow: hidden;
+}
+.logHeader {
+  display: grid; grid-template-columns: 90px 130px 1fr 60px 60px 60px 1fr 40px;
+  gap: 0.5rem; padding: 0.6rem 1rem;
+  background: rgba(255,255,255,0.03); font-size: 0.7rem; font-weight: 700;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.logRow {
+  display: grid; grid-template-columns: 90px 130px 1fr 60px 60px 60px 1fr 40px;
+  gap: 0.5rem; padding: 0.5rem 1rem; align-items: center;
+  background: var(--bg-secondary); font-size: 0.8rem;
+  transition: background 0.15s;
+}
+.logRow:nth-child(odd) { background: var(--bg-glass); }
+.logRow:hover { background: rgba(255,255,255,0.06); }
+.logTime { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
+.logStudent { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.logAction { font-weight: 600; white-space: nowrap; }
+.logChange { font-weight: 700; font-family: var(--font-mono); text-align: center; }
+.logDetail { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.undoBtn {
+  padding: 0.2rem 0.4rem; background: rgba(100, 116, 139, 0.2);
+  border: 1px solid rgba(100, 116, 139, 0.3); border-radius: var(--radius-md);
+  color: var(--text-primary); cursor: pointer; font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.undoBtn:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+.undoBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .logHeader { display: none; }
+  .logRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem; padding: 0.75rem;
+  }
+  .logDetail { grid-column: span 2; }
+}

@@ -1,0 +1,161 @@
+.container {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 380px;
+  width: 100%;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .container {
+    right: var(--space-2);
+    left: var(--space-2);
+    max-width: 100%;
+  }
+}
+
+.toast {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  background: rgba(15, 10, 30, 0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform: translateX(120%);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast:hover {
+  background: rgba(20, 15, 40, 0.96);
+  transform: scale(1.02) !important;
+}
+
+/* Type-specific left border */
+.toast_xp { border-left: 3px solid var(--accent-xp); }
+.toast_gold { border-left: 3px solid var(--accent-gold); }
+.toast_damage { border-left: 3px solid var(--accent-hp); }
+.toast_heal { border-left: 3px solid #22c55e; }
+.toast_levelup { border-left: 3px solid #a855f7; box-shadow: 0 8px 32px rgba(168, 85, 247, 0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
+.toast_artifact { border-left: 3px solid #3b82f6; }
+.toast_streak { border-left: 3px solid #f97316; }
+.toast_death { border-left: 3px solid #ef4444; background: rgba(80, 0, 0, 0.9); }
+.toast_royal { border-left: 3px solid #f43f5e; box-shadow: 0 8px 32px rgba(244, 63, 94, 0.4), inset 0 1px 0 rgba(255,255,255,0.05); animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards, royalGlow 2s ease-in-out infinite alternate; }
+.toast_info { border-left: 3px solid rgba(255,255,255,0.3); }
+
+.iconBox {
+  font-size: 28px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-lg);
+}
+
+.toast_levelup .iconBox {
+  animation: levelPulse 0.6s ease-in-out 3;
+}
+
+.toast_death .iconBox {
+  animation: shake 0.5s ease-in-out;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.message {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.toast:hover .close {
+  opacity: 1;
+}
+
+.progressBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  animation: shrink linear forwards;
+}
+
+.progressBar_xp { background: var(--accent-xp); }
+.progressBar_gold { background: var(--accent-gold); }
+.progressBar_damage { background: var(--accent-hp); }
+.progressBar_heal { background: #22c55e; }
+.progressBar_levelup { background: #a855f7; }
+.progressBar_artifact { background: #3b82f6; }
+.progressBar_streak { background: #f97316; }
+.progressBar_death { background: #ef4444; }
+.progressBar_royal { background: #f43f5e; }
+.progressBar_info { background: rgba(255,255,255,0.3); }
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes levelPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes royalGlow {
+  from { box-shadow: 0 8px 32px rgba(244, 63, 94, 0.2); }
+  to { box-shadow: 0 8px 32px rgba(244, 63, 94, 0.6); }
+}

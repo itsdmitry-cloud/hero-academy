@@ -1,0 +1,208 @@
+.page {
+  min-height: 100vh;
+  padding: 1.5rem 1rem 6rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.bossHeader {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-2xl);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.bossAvatar {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-glass);
+  border-radius: 50%;
+  border: 2px solid var(--bg-glass-border);
+  animation: bossPulse 3s ease-in-out infinite;
+}
+
+@keyframes bossPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+  50% { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+}
+
+.bossInfo { flex: 1; }
+
+.bossName {
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+  color: var(--accent-hp);
+}
+
+.hpRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+}
+
+.timer {
+  background: rgba(239,68,68,0.2);
+  border: 1px solid var(--accent-hp);
+  border-radius: var(--radius-lg);
+  padding: 0.2rem 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.hpBarWrap {
+  height: 14px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hpBarFill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+/* ── Result banners ── */
+.resultBanner {
+  text-align: center;
+  padding: 1rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid;
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Arena ── */
+.arena { margin-bottom: 1.25rem; }
+
+.questionCard {
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-2xl);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.questionLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.questionText {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.questionDmg {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 1.25rem;
+}
+
+.answerRow {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.answerInput {
+  flex: 1;
+  padding: 0.9rem 1.1rem;
+  background: var(--bg-glass);
+  border: 2px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.answerInput:focus { border-color: var(--accent-primary); }
+
+.attackBtn {
+  padding: 0.9rem 1.5rem;
+  background: var(--accent-hp-bg);
+  border: 2px solid var(--accent-hp);
+  border-radius: var(--radius-lg);
+  color: var(--accent-hp);
+  font-weight: 900;
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.attackBtn:hover:not(:disabled) {
+  background: var(--accent-hp);
+  color: white;
+  transform: scale(1.03);
+}
+.attackBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.resultFlash {
+  font-weight: 800;
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  animation: flashIn 0.3s ease;
+}
+
+@keyframes flashIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.myStats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-glass);
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* ── Participants ── */
+.participantList {
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-2xl);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.participantRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--bg-glass-border);
+  font-weight: 700;
+}
+.participantRow:last-child { border-bottom: none; }
+
+.rank { font-size: 1.1rem; min-width: 2rem; }
+.participantName { flex: 1; }
+
+/* ── Rewards ── */
+.rewardsCard {
+  background: linear-gradient(135deg, rgba(234,179,8,0.1), rgba(168,85,247,0.1));
+  border: 1px solid rgba(234,179,8,0.3);
+  border-radius: var(--radius-2xl);
+  padding: 1.25rem;
+}
