@@ -78,7 +78,7 @@ function toView(item: ShopItem): ShopItemView {
 export default function ShopPage() {
   const { user } = useAuth();
   const { items: supaItems, loading: shopLoading, buyItem } = useShop();
-  const { hero, loading: heroLoading } = useHero();
+  const { hero, loading: heroLoading, refetch: refetchHero } = useHero();
   const { catalog: artifactCatalog } = useArtifacts();
 
   const [category, setCategory] = useState<ShopCategory>('all');
@@ -118,6 +118,9 @@ export default function ShopPage() {
       return;
     }
     setBuying(false);
+
+    // Refetch hero data (gold balance) after successful purchase
+    void refetchHero();
 
     setPurchased(true);
     setTimeout(() => {

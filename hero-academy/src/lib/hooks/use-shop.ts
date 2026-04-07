@@ -9,7 +9,7 @@ export interface ShopItem {
   id: string;
   name: string;
   description: string;
-  category: 'hp_potion' | 'xp_boost' | 'artifact' | 'cosmetic';
+  category: 'hp_potion' | 'xp_boost' | 'artifact' | 'cosmetic' | 'lootbox';
   artifact_id: string | null;
   price_gold: number;
   icon: string;
@@ -46,6 +46,11 @@ export function useShop() {
     const item = items.find(i => i.id === itemId);
     if (!item) return { error: 'Товар не найден' };
 
+    // Items that give inventory must have artifact_id linked
+    if (!item.artifact_id && item.category !== 'hp_potion') {
+      return { error: 'Товар повреждён (нет привязки к артефакту). Сообщите учителю.' };
+    }
+
     // Get hero
     const { data: hero } = await supabase
       .from('heroes')
@@ -64,16 +69,6 @@ export function useShop() {
 
     if (goldError) return { error: goldError.message };
 
-    // Create transaction
-    await supabase.from('transactions').insert({
-      hero_id: hero.id,
-      type: 'purchase',
-      item_type: item.category,
-      amount: -item.price_gold,
-      shop_item_id: item.id,
-      description: `Покупка: ${item.name}`,
-    });
-
     // Add artifact to hero's inventory (if linked)
     if (item.artifact_id) {
       // Get artifact catalog data for charges and duration
@@ -83,18 +78,30 @@ export function useShop() {
         .eq('id', item.artifact_id)
         .single();
 
-      const durationHours = Number(artCatalog?.duration_hours) || 0;
+      if (!artCatalog) {
+        // Artifact missing from catalog — refund gold
+        await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
+        return { error: 'Артефакт не найден в каталоге. Золото возвращено.' };
+      }
 
-      await supabase.from('hero_artifacts').insert({
+      const durationHours = Number(artCatalog.duration_hours) || 0;
+
+      const { error: insertError } = await supabase.from('hero_artifacts').insert({
         hero_id: hero.id,
         artifact_id: item.artifact_id,
         source: 'shop',
         quantity: 1,
-        charges_remaining: artCatalog?.max_charges ?? 1,
+        charges_remaining: artCatalog.max_charges ?? 1,
         expires_at: durationHours > 0
           ? new Date(Date.now() + durationHours * 3_600_000).toISOString()
           : null,
       });
+
+      if (insertError) {
+        // Insert failed — refund gold
+        await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
+        return { error: `Не удалось добавить предмет: ${insertError.message}` };
+      }
     } else if (item.category === 'hp_potion') {
       // Legacy shop items without artifact_id (direct HP restore)
       const { data: currentHero } = await supabase
@@ -107,6 +114,16 @@ export function useShop() {
         await supabase.from('heroes').update({ hp: newHp }).eq('id', hero.id);
       }
     }
+
+    // Create transaction
+    await supabase.from('transactions').insert({
+      hero_id: hero.id,
+      type: 'purchase',
+      item_type: item.category,
+      amount: -item.price_gold,
+      shop_item_id: item.id,
+      description: `Покупка: ${item.name}`,
+    });
 
     // Log activity
     await supabase.from('activity_log').insert({
