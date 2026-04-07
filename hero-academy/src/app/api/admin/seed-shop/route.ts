@@ -78,11 +78,12 @@ export async function POST() {
     }
 
     // ── Loot boxes (4 tiers) ──
+    // Names match artifact-registry.ts (no emoji prefix — icon is separate)
     const lootBoxes = [
-      { name: '📦 Обычный Сундук',    description: 'Шанс получить обычный или редкий артефакт.',    category: 'lootbox', price_gold: 50,  rarity: 'common',    icon: '📦' },
-      { name: '📦 Редкий Сундук',     description: 'Шанс получить редкий или эпический артефакт.',   category: 'lootbox', price_gold: 150, rarity: 'rare',      icon: '🎁' },
-      { name: '📦 Эпический Сундук',  description: 'Шанс получить эпический или легендарный артефакт.', category: 'lootbox', price_gold: 400, rarity: 'epic',  icon: '💎' },
-      { name: '📦 Легендарный Сундук', description: 'Лучший шанс на легендарный артефакт!',          category: 'lootbox', price_gold: 1000, rarity: 'legendary', icon: '👑' },
+      { name: 'Обычный Сундук',    description: 'Шанс получить обычный или редкий артефакт.',    category: 'lootbox', price_gold: 50,  rarity: 'common',    icon: '📦' },
+      { name: 'Редкий Сундук',     description: 'Шанс получить редкий или эпический артефакт.',   category: 'lootbox', price_gold: 150, rarity: 'rare',      icon: '🎁' },
+      { name: 'Эпический Сундук',  description: 'Шанс получить эпический или легендарный артефакт.', category: 'lootbox', price_gold: 400, rarity: 'epic',  icon: '💎' },
+      { name: 'Легендарный Сундук', description: 'Лучший шанс на легендарный артефакт!',          category: 'lootbox', price_gold: 1000, rarity: 'legendary', icon: '👑' },
     ];
 
     // Check if lootbox artifacts exist, create them if not

@@ -50,11 +50,18 @@ export function useShop() {
     let artifactId = item.artifact_id;
     if (!artifactId) {
       // FK broken (ON DELETE SET NULL) — try to find artifact by name
-      const { data: matchedArt } = await supabase
-        .from('artifacts')
-        .select('id')
-        .eq('name', item.name)
-        .single();
+      // Try exact name first, then strip leading emoji (shop uses "📦 Сундук", registry uses "Сундук")
+      const namesToTry = [item.name, item.name.replace(/^[^\p{L}\p{N}]+/u, '')];
+      let matchedArt: { id: string } | null = null;
+
+      for (const name of namesToTry) {
+        const { data } = await supabase
+          .from('artifacts')
+          .select('id')
+          .eq('name', name)
+          .single();
+        if (data) { matchedArt = data; break; }
+      }
 
       if (matchedArt) {
         artifactId = matchedArt.id;
