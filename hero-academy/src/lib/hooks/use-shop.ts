@@ -48,7 +48,7 @@ export function useShop() {
 
     // Resolve artifact_id: use FK if present, otherwise look up by item name
     let artifactId = item.artifact_id;
-    if (!artifactId && item.category !== 'hp_potion') {
+    if (!artifactId) {
       // FK broken (ON DELETE SET NULL) — try to find artifact by name
       const { data: matchedArt } = await supabase
         .from('artifacts')
@@ -84,46 +84,33 @@ export function useShop() {
     if (goldError) return { error: goldError.message };
 
     // Add artifact to hero's inventory
-    if (artifactId) {
-      const { data: artCatalog } = await supabase
-        .from('artifacts')
-        .select('max_charges, duration_hours')
-        .eq('id', artifactId)
-        .single();
+    const { data: artCatalog } = await supabase
+      .from('artifacts')
+      .select('max_charges, duration_hours')
+      .eq('id', artifactId)
+      .single();
 
-      if (!artCatalog) {
-        await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
-        return { error: 'Артефакт не найден в каталоге. Золото возвращено.' };
-      }
+    if (!artCatalog) {
+      await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
+      return { error: 'Артефакт не найден в каталоге. Золото возвращено.' };
+    }
 
-      const durationHours = Number(artCatalog.duration_hours) || 0;
+    const durationHours = Number(artCatalog.duration_hours) || 0;
 
-      const { error: insertError } = await supabase.from('hero_artifacts').insert({
-        hero_id: hero.id,
-        artifact_id: artifactId,
-        source: 'shop',
-        quantity: 1,
-        charges_remaining: artCatalog.max_charges ?? 1,
-        expires_at: durationHours > 0
-          ? new Date(Date.now() + durationHours * 3_600_000).toISOString()
-          : null,
-      });
+    const { error: insertError } = await supabase.from('hero_artifacts').insert({
+      hero_id: hero.id,
+      artifact_id: artifactId,
+      source: 'shop',
+      quantity: 1,
+      charges_remaining: artCatalog.max_charges ?? 1,
+      expires_at: durationHours > 0
+        ? new Date(Date.now() + durationHours * 3_600_000).toISOString()
+        : null,
+    });
 
-      if (insertError) {
-        await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
-        return { error: `Не удалось добавить предмет: ${insertError.message}` };
-      }
-    } else if (item.category === 'hp_potion') {
-      // Legacy shop items without artifact_id (direct HP restore)
-      const { data: currentHero } = await supabase
-        .from('heroes')
-        .select('hp, hp_max')
-        .eq('id', hero.id)
-        .single();
-      if (currentHero) {
-        const newHp = Math.min(currentHero.hp + item.effect_value, currentHero.hp_max);
-        await supabase.from('heroes').update({ hp: newHp }).eq('id', hero.id);
-      }
+    if (insertError) {
+      await supabase.from('heroes').update({ gold: hero.gold }).eq('id', hero.id);
+      return { error: `Не удалось добавить предмет: ${insertError.message}` };
     }
 
     // Create transaction
