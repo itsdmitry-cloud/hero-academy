@@ -241,7 +241,7 @@ export const ARTIFACT_REGISTRY: ArtifactEntry[] = [
   art('fire_hellfire_elixir',  'Эликсир Пекла',      '+100 XP, +50 Gold, +25 HP',           'common', '⚗️', 'consumable', 'FIRE_COMBO',           { season_tag: 'fire' }),
   art('fire_ring',             'Кольцо Огня',        'Gold +10% постоянно',                 'common', '💍', 'passive',    'FIRE_GOLD_MULT_10',    { season_tag: 'fire' }),
   art('fire_berserker',        'Зелье Берсерка',     'Наносит 100 урона боссу',             'common', '🧪', 'consumable', 'FIRE_BOSS_RANDOM',     { season_tag: 'fire' }),
-  art('fire_lava_amulet',      'Лавовый Амулет',     '+2 HP в день (пассивная регенерация)', 'common', '📿', 'passive',    'FIRE_REGEN_2',         { season_tag: 'fire' }),
+  art('fire_lava_amulet',      'Лавовый Амулет',     'Каждый день восстанавливает +2 HP автоматически', 'common', '📿', 'passive',    'FIRE_REGEN_2',         { season_tag: 'fire' }),
   art('fire_dragon_scale',     'Драконья Чешуйка',   'Защищает стрик от сброса (1 заряд)',  'common', '🐉', 'passive',    'FIRE_STREAK_SHIELD',   { max_charges: 1, season_tag: 'fire' }),
   art('fire_phoenix_feather',  'Огненное Перо',      'Авто-воскрешение с 50 HP (1 заряд)',  'common', '🪶', 'passive',    'FIRE_AUTO_RESURRECT',  { max_charges: 1, season_tag: 'fire' }),
   art('fire_banner',           'Багровое Знамя',     'Украшение профиля героя',             'common', '🏴', 'passive',    'COSMETIC',             { season_tag: 'fire' }),
