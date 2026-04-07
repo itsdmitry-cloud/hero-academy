@@ -7,11 +7,25 @@ import styles from './page.module.css';
 
 type LeaderboardScope = 'class' | 'school' | 'guilds';
 
-/* ── mock data for demo ── */
+/* Deterministic color per student name */
+function nameColor(name: string) {
+  const colors = [
+    'linear-gradient(135deg,#7c3aed,#a855f7)',
+    'linear-gradient(135deg,#2563eb,#3b82f6)',
+    'linear-gradient(135deg,#059669,#10b981)',
+    'linear-gradient(135deg,#d97706,#f59e0b)',
+    'linear-gradient(135deg,#dc2626,#ef4444)',
+    'linear-gradient(135deg,#7c3aed,#06b6d4)',
+    'linear-gradient(135deg,#be185d,#ec4899)',
+  ];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % colors.length;
+  return colors[h];
+}
+
 interface LeaderboardView {
   rank: number;
   name: string;
-  avatar: string;
   level: number;
   xp: number;
   quests: number;
@@ -40,7 +54,6 @@ function toView(e: LeaderboardEntry): LeaderboardView {
   return {
     rank: e.rank,
     name: e.display_name,
-    avatar: e.avatar_url || '🧙‍♂️',
     level: e.level,
     xp: e.xp,
     quests: 0, // not tracked in leaderboard query
@@ -90,7 +103,9 @@ export default function LeaderboardPage() {
                     key={entry.rank}
                     className={`${styles.podiumItem} ${styles[`podium${entry.rank}`]}`}
                   >
-                    <div className={styles.podiumAvatar}>{entry.avatar}</div>
+                    <div className={styles.podiumAvatar} style={{ background: nameColor(entry.name) }}>
+                      {(entry.name[0] ?? '?').toUpperCase()}
+                    </div>
                     <span className={styles.podiumRank}>{rankEmojis[entry.rank - 1]}</span>
                     <span className={styles.podiumName}>{entry.name.split(' ')[0]}</span>
                     <span className={styles.podiumXp}>{entry.xp.toLocaleString()} XP</span>
@@ -110,7 +125,9 @@ export default function LeaderboardPage() {
                 <span className={styles.rankNum}>
                   {entry.rank <= 3 ? rankEmojis[entry.rank - 1] : `#${entry.rank}`}
                 </span>
-                <span className={styles.rowAvatar}>{entry.avatar}</span>
+                <div className={styles.rowAvatar} style={{ background: nameColor(entry.name) }}>
+                  {(entry.name[0] ?? '?').toUpperCase()}
+                </div>
                 <div className={styles.rowInfo}>
                   <span className={styles.rowName}>
                     {entry.name}
