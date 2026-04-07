@@ -63,9 +63,16 @@ export function useArtifacts() {
         ]);
         if (catalogResult.data) setCatalog(catalogResult.data as ArtifactCatalog[]);
         if (invResult.data) {
+          const now = Date.now();
           const heroArtifacts = invResult.data as HeroArtifact[];
-          setInventory(heroArtifacts);
-          const equipped = heroArtifacts.filter(i => i.is_equipped).map(i => ({
+          // Clean up expired artifacts
+          const expired = heroArtifacts.filter(i => i.expires_at && new Date(i.expires_at).getTime() < now);
+          if (expired.length > 0) {
+            await supabase.from('hero_artifacts').delete().in('id', expired.map(i => i.id));
+          }
+          const alive = expired.length > 0 ? heroArtifacts.filter(i => !i.expires_at || new Date(i.expires_at).getTime() >= now) : heroArtifacts;
+          setInventory(alive);
+          const equipped = alive.filter(i => i.is_equipped).map(i => ({
             id: i.id, defId: i.artifact_id, is_equipped: true,
             charges_left: i.charges_remaining,
             expires_at: i.expires_at ? new Date(i.expires_at) : undefined,
@@ -91,9 +98,16 @@ export function useArtifacts() {
         const { data: inv } = await supabase
           .from('hero_artifacts').select('*, artifact:artifact_id(*)').eq('hero_id', heroId);
         if (inv) {
+          const now = Date.now();
           const heroArtifacts = inv as HeroArtifact[];
-          setInventory(heroArtifacts);
-          const equipped = heroArtifacts.filter(i => i.is_equipped).map(i => ({
+          // Clean up expired artifacts
+          const expired = heroArtifacts.filter(i => i.expires_at && new Date(i.expires_at).getTime() < now);
+          if (expired.length > 0) {
+            await supabase.from('hero_artifacts').delete().in('id', expired.map(i => i.id));
+          }
+          const alive = expired.length > 0 ? heroArtifacts.filter(i => !i.expires_at || new Date(i.expires_at).getTime() >= now) : heroArtifacts;
+          setInventory(alive);
+          const equipped = alive.filter(i => i.is_equipped).map(i => ({
             id: i.id, defId: i.artifact_id, is_equipped: true,
             charges_left: i.charges_remaining,
             expires_at: i.expires_at ? new Date(i.expires_at) : undefined,
@@ -125,17 +139,22 @@ export function useArtifacts() {
     if (!session?.user) return { error: 'Не авторизован' };
 
     if (!equip) {
-      // Block unequip if artifact is time-locked (expires_at in future)
       const entry = inventory.find(i => i.id === heroArtifactId);
       if (entry?.expires_at) {
         const remainMs = new Date(entry.expires_at).getTime() - Date.now();
         if (remainMs > 0) {
+          // Block unequip if artifact is time-locked (expires_at in future)
           const h = Math.floor(remainMs / 3_600_000);
           const label = h < 24 ? `${h}ч` : `${Math.floor(h / 24)}д ${h % 24}ч`;
           return { error: `Нельзя снять — артефакт активен ещё ${label}. Дождитесь окончания действия.` };
         }
+        // Expired — delete instead of unequip
+        setInventory(prev => prev.filter(i => i.id !== heroArtifactId));
+        await supabase.from('hero_artifacts').delete().eq('id', heroArtifactId);
+        await fetchArtifacts();
+        return { error: null };
       }
-      // Optimistic unequip
+      // No expiry — normal unequip
       setInventory(prev => prev.map(i => i.id === heroArtifactId ? { ...i, is_equipped: false } : i));
       const { error } = await supabase.from('hero_artifacts').update({ is_equipped: false }).eq('id', heroArtifactId);
       if (error) { await fetchArtifacts(); return { error: error.message }; }
@@ -150,6 +169,13 @@ export function useArtifacts() {
     const entry = inventory.find(i => i.id === heroArtifactId);
     const art = entry?.artifact;
     if (!art) return { error: 'Артефакт не найден. Обновите страницу.' };
+
+    // Block equipping expired artifacts
+    if (entry.expires_at && new Date(entry.expires_at).getTime() < Date.now()) {
+      setInventory(prev => prev.filter(i => i.id !== heroArtifactId));
+      await supabase.from('hero_artifacts').delete().eq('id', heroArtifactId);
+      return { error: 'Срок действия артефакта истёк — он исчез.' };
+    }
 
     const effect = art.effect || (art as any).effect_type || '';
     const isInstant = effect.startsWith('hp_restore') || effect.startsWith('xp_instant') || effect === 'level_up' || effect.startsWith('consumable_') || effect === 'gold_bonus' || effect === 'extra_gold';
