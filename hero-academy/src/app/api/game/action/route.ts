@@ -247,11 +247,8 @@ export async function POST(req: Request) {
                }
 
                if (bossRow && bossRow.current_hp > 0) {
-                 let bossDamage = finalAmount;
-                 if (arts.boss_dmg_boost > 0) {
-                   bossDamage = Math.round(finalAmount * (1 + arts.boss_dmg_boost / 100));
-                   pipeline.push(`🐉 Урон боссу: ${finalAmount} → ${bossDamage} (+${arts.boss_dmg_boost}%) [Артефакты]`);
-                 }
+                 const bossDamage = finalAmount;
+                 pipeline.push(`🐉 Урон боссу = XP: ${bossDamage}`);
                  const newBossHp = Math.max(0, bossRow.current_hp - bossDamage);
                  const bossUpd: Record<string, unknown> = { current_hp: newBossHp, is_defeated: newBossHp === 0 };
                  if (newBossHp === 0 && bossTableName === 'season_boss_class_hp') {
