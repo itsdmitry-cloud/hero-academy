@@ -60,91 +60,116 @@ async function ensureInfrastructure() {
     seasonId = s!.id;
   }
 
-  // NPC classmates — check if already created
-  const { count } = await admin.from('users').select('*', { count: 'exact', head: true })
-    .eq('class_id', classId).eq('role', 'student').neq('display_name', DEMO_NAME);
+  // Run NPC check, Boss check, and News check in parallel
+  const [npcCount, bossCountResult, newsCountResult] = await Promise.all([
+    admin.from('users').select('*', { count: 'exact', head: true })
+      .eq('class_id', classId).eq('role', 'student').neq('display_name', DEMO_NAME),
+    admin.from('subject_bosses')
+      .select('*', { count: 'exact', head: true }).eq('class_id', classId).eq('season_id', seasonId),
+    admin.from('news').select('*', { count: 'exact', head: true }).eq('target_class_id', classId),
+  ]);
 
-  let npcReady = (count ?? 0) >= CLASSMATES.length;
+  const needNpcs = (npcCount.count ?? 0) < CLASSMATES.length;
+  const needBosses = !bossCountResult.count || bossCountResult.count === 0;
+  const needNews = !newsCountResult.count || newsCountResult.count < 4;
 
-  if (!npcReady) {
-    // Create all NPC auth + profiles in parallel
-    await Promise.all(CLASSMATES.map(async (cm) => {
-      const cmEmail = `demo_${cm.name.replace(/\s/g, '').toLowerCase()}@hero.academy`;
-      let cmUserId: string;
-      const { data: a, error: e } = await admin.auth.admin.createUser({ email: cmEmail, password: 'DemoNPC2026!', email_confirm: true });
-      if (a?.user) { cmUserId = a.user.id; }
-      else if (e?.message?.includes('already been registered')) {
-        const { data: p } = await admin.from('users').select('id').eq('display_name', cm.name).eq('class_id', classId).maybeSingle();
-        if (!p) return;
-        cmUserId = p.id;
-      } else return;
+  // Run all independent provisioning tasks in parallel
+  const infraTasks: Promise<void>[] = [];
 
-      await admin.from('users').upsert({ id: cmUserId, display_name: cm.name, role: 'student', school_id: schoolId, class_id: classId });
-      const { data: h } = await admin.from('heroes').upsert({
+  if (needNpcs) {
+    infraTasks.push((async () => {
+      // Create all NPC auth users in parallel, then batch upsert profiles
+      const npcResults = await Promise.all(CLASSMATES.map(async (cm) => {
+        const cmEmail = `demo_${cm.name.replace(/\s/g, '').toLowerCase()}@hero.academy`;
+        const { data: a, error: e } = await admin.auth.admin.createUser({ email: cmEmail, password: 'DemoNPC2026!', email_confirm: true });
+        if (a?.user) return { cm, cmUserId: a.user.id };
+        if (e?.message?.includes('already been registered')) {
+          const { data: p } = await admin.from('users').select('id').eq('display_name', cm.name).eq('class_id', classId).maybeSingle();
+          if (p) return { cm, cmUserId: p.id };
+        }
+        return null;
+      }));
+
+      const validNpcs = npcResults.filter(Boolean) as { cm: typeof CLASSMATES[0]; cmUserId: string }[];
+      if (validNpcs.length === 0) return;
+
+      // Batch upsert all user profiles in one call
+      await admin.from('users').upsert(validNpcs.map(({ cm, cmUserId }) => ({
+        id: cmUserId, display_name: cm.name, role: 'student', school_id: schoolId, class_id: classId,
+      })));
+
+      // Batch upsert all heroes in one call
+      const today = new Date().toISOString().split('T')[0];
+      const { data: heroes } = await admin.from('heroes').upsert(validNpcs.map(({ cm, cmUserId }) => ({
         user_id: cmUserId, name: cm.name, gender: cm.gender,
         level: cm.level, xp: cm.xp, xp_to_next: 100 + cm.level * 100,
         hp: cm.hp, hp_max: 100, gold: cm.gold,
         streak_current: cm.streak, streak_best: cm.streak + 3,
-        streak_last_date: new Date().toISOString().split('T')[0],
-        status: 'active', season_id: seasonId,
-      }, { onConflict: 'user_id' }).select('id').single();
-      if (h) {
-        await admin.from('hero_stats').upsert({
-          hero_id: h.id, strength: 10 + Math.floor(cm.level * 0.8),
-          knowledge: 10 + Math.floor(cm.level * 1.2), endurance: 10 + Math.floor(cm.level * 0.6),
-          luck: 10 + Math.floor(cm.level * 0.5), wisdom: 10 + Math.floor(cm.level * 1.0),
-        }, { onConflict: 'hero_id' });
+        streak_last_date: today, status: 'active', season_id: seasonId,
+      })), { onConflict: 'user_id' }).select('id, user_id');
+
+      // Batch upsert all hero_stats in one call
+      if (heroes && heroes.length > 0) {
+        const statsMap = new Map(validNpcs.map(n => [n.cmUserId, n.cm]));
+        await admin.from('hero_stats').upsert(heroes.map(h => {
+          const cm = statsMap.get(h.user_id)!;
+          return {
+            hero_id: h.id, strength: 10 + Math.floor(cm.level * 0.8),
+            knowledge: 10 + Math.floor(cm.level * 1.2), endurance: 10 + Math.floor(cm.level * 0.6),
+            luck: 10 + Math.floor(cm.level * 0.5), wisdom: 10 + Math.floor(cm.level * 1.0),
+          };
+        }), { onConflict: 'hero_id' });
       }
-    }));
-    npcReady = true;
+    })());
   }
 
-  // Bosses — create once
-  const { count: bossCount } = await admin.from('subject_bosses')
-    .select('*', { count: 'exact', head: true }).eq('class_id', classId).eq('season_id', seasonId);
-  if (!bossCount || bossCount === 0) {
-    // Get some NPC hero IDs for damage logs
-    const { data: npcHeroes } = await admin.from('heroes')
-      .select('id').in('name', CLASSMATES.slice(0, 4).map(c => c.name)).limit(4);
-    const npcIds = npcHeroes?.map(h => h.id) ?? [];
-    const now = Date.now();
+  if (needBosses) {
+    infraTasks.push((async () => {
+      const { data: npcHeroes } = await admin.from('heroes')
+        .select('id').in('name', CLASSMATES.slice(0, 4).map(c => c.name)).limit(4);
+      const npcIds = npcHeroes?.map(h => h.id) ?? [];
+      const now = Date.now();
 
-    for (const bc of [
-      { subject_id: 'Математика', name: 'Дракон Алгебры', avatar: '🐉', max_hp: 5000, current_hp: 2800 },
-      { subject_id: 'Английский', name: 'Фантом Грамматики', avatar: '👻', max_hp: 3000, current_hp: 3000 },
-    ]) {
-      const { data: boss } = await admin.from('subject_bosses').insert({
-        season_id: seasonId, class_id: classId, subject_id: bc.subject_id,
-        name: bc.name, avatar: bc.avatar, max_hp: bc.max_hp, current_hp: bc.current_hp, is_defeated: false,
-      }).select('id').single();
-      if (boss && bc.current_hp < bc.max_hp && npcIds.length > 0) {
-        await admin.from('boss_damage_logs').insert(npcIds.map((id, i) => ({
-          boss_id: boss.id, hero_id: id, damage_dealt: 200 + i * 100,
-          action_type: i % 2 === 0 ? 'homework' : 'lesson_mark',
-          created_at: new Date(now - (10 + i * 20) * 3600000).toISOString(),
-        })));
+      // Insert both bosses in parallel
+      const bossConfigs = [
+        { subject_id: 'Математика', name: 'Дракон Алгебры', avatar: '🐉', max_hp: 5000, current_hp: 2800 },
+        { subject_id: 'Английский', name: 'Фантом Грамматики', avatar: '👻', max_hp: 3000, current_hp: 3000 },
+      ];
+      await Promise.all(bossConfigs.map(async (bc) => {
+        const { data: boss } = await admin.from('subject_bosses').insert({
+          season_id: seasonId, class_id: classId, subject_id: bc.subject_id,
+          name: bc.name, avatar: bc.avatar, max_hp: bc.max_hp, current_hp: bc.current_hp, is_defeated: false,
+        }).select('id').single();
+        if (boss && bc.current_hp < bc.max_hp && npcIds.length > 0) {
+          await admin.from('boss_damage_logs').insert(npcIds.map((id, i) => ({
+            boss_id: boss.id, hero_id: id, damage_dealt: 200 + i * 100,
+            action_type: i % 2 === 0 ? 'homework' : 'lesson_mark',
+            created_at: new Date(now - (10 + i * 20) * 3600000).toISOString(),
+          })));
+        }
+      }));
+    })());
+  }
+
+  if (needNews) {
+    infraTasks.push((async () => {
+      const now = Date.now();
+      const { data: anyUser } = await admin.from('users').select('id').eq('class_id', classId).limit(1).single();
+      if (anyUser) {
+        await admin.from('news').delete().eq('target_class_id', classId);
+        await admin.from('news').insert([
+          { title: 'Новый сезон начался!', body: 'Сезон "Весна 2026" стартовал. Новые боссы, артефакты и награды ждут вас!', type: 'event', target_type: 'class', target_class_id: classId, pinned: true, created_by: anyUser.id, created_at: new Date(now - 48 * 3600000).toISOString() },
+          { title: 'Стрик-челлендж', body: 'Кто продержит стрик 14 дней — получит эпический артефакт!', type: 'info', target_type: 'class', target_class_id: classId, pinned: false, created_by: anyUser.id, created_at: new Date(now - 24 * 3600000).toISOString() },
+          { title: 'Артём Волков победил босса!', body: 'Артём нанёс решающий удар Дракону Алгебры. Весь класс получил бонус XP!', type: 'reward', target_type: 'class', target_class_id: classId, pinned: false, created_by: anyUser.id, created_at: new Date(now - 8 * 3600000).toISOString() },
+          { title: 'Новые предметы в магазине', body: 'Добавлены сезонные сундуки и косметика. Загляните в магазин!', type: 'info', target_type: 'class', target_class_id: classId, pinned: false, created_by: anyUser.id, created_at: new Date(now - 72 * 3600000).toISOString() },
+        ]);
       }
-    }
+    })());
   }
 
-  // News — create once
-  const { count: newsCount } = await admin.from('news').select('*', { count: 'exact', head: true }).eq('target_class_id', classId);
-  if (!newsCount || newsCount < 4) {
-    const now = Date.now();
-    // Need a userId for created_by — use first NPC
-    const { data: anyUser } = await admin.from('users').select('id').eq('class_id', classId).limit(1).single();
-    if (anyUser) {
-      await admin.from('news').delete().eq('target_class_id', classId);
-      await admin.from('news').insert([
-        { title: 'Новый сезон начался!', body: 'Сезон "Весна 2026" стартовал. Новые боссы, артефакты и награды ждут вас!', type: 'event', target_type: 'class', target_class_id: classId, pinned: true, created_by: anyUser.id, created_at: new Date(now - 48 * 3600000).toISOString() },
-        { title: 'Стрик-челлендж', body: 'Кто продержит стрик 14 дней — получит эпический артефакт!', type: 'info', target_type: 'class', target_class_id: classId, pinned: false, created_by: anyUser.id, created_at: new Date(now - 24 * 3600000).toISOString() },
-        { title: 'Артём Волков победил босса!', body: 'Артём нанёс решающий удар Дракону Алгебры. Весь класс получил бонус XP!', type: 'reward', target_type: 'class', target_class_id: classId, pinned: false, created_by: anyUser.id, created_at: new Date(now - 8 * 3600000).toISOString() },
-        { title: 'Новые предметы в магазине', body: 'Добавлены сезонные сундуки и косметика. Загляните в магазин!', type: 'info', target_type: 'class', target_class_id: classId, pinned: false, created_by: anyUser.id, created_at: new Date(now - 72 * 3600000).toISOString() },
-      ]);
-    }
-  }
+  if (infraTasks.length > 0) await Promise.all(infraTasks);
 
-  _cached = { schoolId, classId, seasonId, npcReady };
+  _cached = { schoolId, classId, seasonId, npcReady: true };
   return _cached;
 }
 
@@ -182,8 +207,14 @@ export async function POST(req: Request) {
       admin.from('quests').delete().eq('class_id', classId).eq('created_by', userId),
     ]);
 
-    // Insert all fresh data in parallel (single batch per table)
-    const artifacts = (await admin.from('artifacts').select('id, name, effect_type, rarity')).data ?? [];
+    // Fetch artifacts and achievements in parallel (both needed for inserts)
+    const [artifactsResult, achsResult] = await Promise.all([
+      admin.from('artifacts').select('id, name, effect_type, rarity'),
+      admin.from('achievements').select('id, condition_type, condition_value')
+        .in('condition_type', ['quests_completed', 'streak_days', 'bosses_killed', 'artifacts_collected', 'gold_total']),
+    ]);
+
+    const artifacts = artifactsResult.data ?? [];
     const find = (n: string) => artifacts.find(a => a.name === n);
     const findFx = (e: string, r?: string) => artifacts.find(a => a.effect_type === e && (!r || a.rarity === r));
 
@@ -233,10 +264,7 @@ export async function POST(req: Request) {
       created_at: new Date(now - a.hoursAgo * 3600000).toISOString(),
     }));
 
-    // Achievements
-    const { data: achs } = await admin.from('achievements').select('id, condition_type, condition_value')
-      .in('condition_type', ['quests_completed', 'streak_days', 'bosses_killed', 'artifacts_collected', 'gold_total']);
-    const achRows = (achs ?? [])
+    const achRows = (achsResult.data ?? [])
       .filter(a =>
         (a.condition_type === 'quests_completed' && a.condition_value <= 85) ||
         (a.condition_type === 'streak_days' && a.condition_value <= 21) ||
@@ -245,7 +273,7 @@ export async function POST(req: Request) {
         (a.condition_type === 'gold_total' && a.condition_value <= 8000))
       .map(a => ({ hero_id: heroId, achievement_id: a.id }));
 
-    // Quests (need sequential for FK on attempts)
+    // Quests: batch insert all quests, then batch insert attempts for completed ones
     const questPromise = (async () => {
       const quests = [
         { title: 'Дроби и проценты', subject: 'Математика', difficulty: 'medium', xp: 150, gold: 20, hp: 10, days: 1 },
@@ -255,17 +283,27 @@ export async function POST(req: Request) {
         { title: 'Природные зоны', subject: 'География', difficulty: 'medium', xp: 150, gold: 20, hp: 10, days: -1 },
         { title: 'Басни Крылова', subject: 'Литература', difficulty: 'easy', xp: 100, gold: 15, hp: 5, days: 5 },
       ];
-      for (const q of quests) {
-        const { data: qd } = await admin.from('quests').insert({
+      // Batch insert all quests in one call
+      const { data: insertedQuests } = await admin.from('quests').insert(
+        quests.map(q => ({
           class_id: classId, created_by: userId, type: 'quest', title: q.title, subject: q.subject,
           difficulty: q.difficulty, xp_reward: q.xp, gold_reward: q.gold, hp_damage: q.hp,
           deadline: new Date(now + q.days * 86400000).toISOString(), status: 'active', max_attempts: 1,
-        }).select('id').single();
-        if (qd && q.days <= 0) {
-          await admin.from('quest_attempts').insert({
-            quest_id: qd.id, hero_id: heroId, status: 'completed', correct_count: 8, mistake_count: 1,
+        }))
+      ).select('id, title');
+      // Batch insert attempts for completed quests
+      if (insertedQuests) {
+        const completedQuests = quests.filter(q => q.days <= 0);
+        const attemptRows = completedQuests.map(q => {
+          const inserted = insertedQuests.find(iq => iq.title === q.title);
+          if (!inserted) return null;
+          return {
+            quest_id: inserted.id, hero_id: heroId, status: 'completed', correct_count: 8, mistake_count: 1,
             xp_earned: q.xp, gold_earned: q.gold, hp_lost: q.hp, grade: q.days === 0 ? 5 : 4,
-          });
+          };
+        }).filter(Boolean);
+        if (attemptRows.length > 0) {
+          await admin.from('quest_attempts').insert(attemptRows);
         }
       }
     })();
