@@ -40,9 +40,11 @@ export function BottomTabBar() {
       {isDemo && (
         <button
           className={styles.exitBtn}
-          onClick={async () => {
-            await signOut();
+          onClick={() => {
+            // Navigate FIRST to unmount student components,
+            // then sign out — prevents crash from null user/profile
             router.push('/auth/login');
+            signOut();
           }}
         >
           <span className={styles.icon}>🚪</span>
