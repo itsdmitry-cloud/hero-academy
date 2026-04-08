@@ -1,0 +1,196 @@
+.slide {
+  min-height: 100dvh;
+  width: 100%;
+  background: linear-gradient(180deg, #2d1b69 0%, #0f0620 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background particles */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.35;
+  pointer-events: none;
+  animation: floatParticle 5s ease-in-out infinite;
+}
+
+.particle1 {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-gold);
+  top: 12%;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 4.5s;
+}
+
+.particle2 {
+  width: 5px;
+  height: 5px;
+  background: var(--accent-primary);
+  top: 22%;
+  right: 14%;
+  animation-delay: 1.2s;
+  animation-duration: 5.5s;
+}
+
+.particle3 {
+  width: 4px;
+  height: 4px;
+  background: var(--accent-streak);
+  bottom: 38%;
+  left: 18%;
+  animation-delay: 2.5s;
+  animation-duration: 6s;
+}
+
+.particle4 {
+  width: 5px;
+  height: 5px;
+  background: var(--accent-xp);
+  top: 40%;
+  right: 8%;
+  animation-delay: 0.8s;
+  animation-duration: 4s;
+}
+
+.particle5 {
+  width: 4px;
+  height: 4px;
+  background: var(--accent-info);
+  bottom: 30%;
+  right: 22%;
+  animation-delay: 1.8s;
+  animation-duration: 5s;
+}
+
+.particle6 {
+  width: 5px;
+  height: 5px;
+  background: var(--accent-primary);
+  top: 55%;
+  left: 8%;
+  animation-delay: 3s;
+  animation-duration: 4.8s;
+}
+
+@keyframes floatParticle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-12px) translateX(4px);
+  }
+  50% {
+    transform: translateY(-6px) translateX(-3px);
+  }
+  75% {
+    transform: translateY(-14px) translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle {
+    animation: none;
+    display: none;
+  }
+}
+
+/* Sword icon with glow */
+.swordWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.swordGlow {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.swordIcon {
+  position: relative;
+  font-size: 64px;
+  line-height: 1;
+  z-index: 1;
+}
+
+/* Content */
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  max-width: 340px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+/* Summary pills */
+.pills {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 260px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pillOrange {
+  background: rgba(255, 159, 67, 0.08);
+  color: var(--accent-xp);
+}
+
+.pillRed {
+  background: rgba(238, 90, 111, 0.08);
+  color: var(--accent-hp);
+}
+
+.pillPurple {
+  background: rgba(168, 85, 247, 0.08);
+  color: var(--accent-primary);
+}
+
+.pillIcon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
