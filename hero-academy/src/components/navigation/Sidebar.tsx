@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTeacherStore } from '@/lib/store/teacherStore';
@@ -38,9 +39,11 @@ export function Sidebar({ items, role }: SidebarProps) {
   return (
     <aside className={styles.sidebar} id="sidebar-nav">
       <div className={styles.logo}>
-        <img
+        <Image
           src="/assets/ui/logo.png"
           alt="Академия Героев"
+          width={48}
+          height={48}
           className={styles.logoImg}
         />
       </div>

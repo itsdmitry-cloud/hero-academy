@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -46,10 +47,13 @@ export default function LoginPage() {
   return (
     <div className={styles.authPage}>
       <div className={styles.card}>
-        <img
+        <Image
           src="/assets/ui/logo.png"
           alt="Академия Героев"
+          width={200}
+          height={200}
           className={styles.logo}
+          priority
         />
         <p className={styles.subtitle}>Продолжи своё приключение</p>
 
