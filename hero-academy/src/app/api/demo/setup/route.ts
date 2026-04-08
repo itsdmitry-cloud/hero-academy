@@ -12,13 +12,20 @@ const admin = createClient(
 
 // Fake classmates for leaderboard
 const CLASSMATES = [
-  { name: 'Артём Волков',    gender: 'male',   level: 15, xp: 2100, gold: 1800, streak: 12, hp: 92 },
-  { name: 'Мария Соколова',  gender: 'female', level: 14, xp: 1900, gold: 2200, streak: 9,  hp: 100 },
-  { name: 'Даниил Петров',   gender: 'male',   level: 11, xp: 1200, gold: 900,  streak: 5,  hp: 65 },
-  { name: 'Алиса Иванова',   gender: 'female', level: 10, xp: 1050, gold: 1100, streak: 3,  hp: 88 },
-  { name: 'Кирилл Смирнов',  gender: 'male',   level: 8,  xp: 700,  gold: 400,  streak: 1,  hp: 45 },
-  { name: 'Софья Козлова',   gender: 'female', level: 7,  xp: 550,  gold: 600,  streak: 2,  hp: 100 },
-  { name: 'Максим Новиков',  gender: 'male',   level: 5,  xp: 320,  gold: 200,  streak: 0,  hp: 70 },
+  { name: 'Артём Волков',      gender: 'male',   level: 50, xp: 8500, gold: 5200, streak: 30, hp: 100 },
+  { name: 'Мария Соколова',    gender: 'female', level: 47, xp: 7800, gold: 4100, streak: 21, hp: 95 },
+  { name: 'Даниил Петров',     gender: 'male',   level: 44, xp: 7200, gold: 3500, streak: 14, hp: 82 },
+  { name: 'Алиса Иванова',     gender: 'female', level: 42, xp: 6500, gold: 3800, streak: 10, hp: 100 },
+  { name: 'Кирилл Смирнов',    gender: 'male',   level: 38, xp: 5400, gold: 2200, streak: 7,  hp: 55 },
+  { name: 'Софья Козлова',     gender: 'female', level: 35, xp: 4800, gold: 2900, streak: 5,  hp: 100 },
+  { name: 'Максим Новиков',    gender: 'male',   level: 30, xp: 3900, gold: 1500, streak: 3,  hp: 70 },
+  { name: 'Ева Морозова',      gender: 'female', level: 28, xp: 3400, gold: 1800, streak: 8,  hp: 90 },
+  { name: 'Тимур Лебедев',     gender: 'male',   level: 25, xp: 2800, gold: 1100, streak: 2,  hp: 40 },
+  { name: 'Полина Федорова',   gender: 'female', level: 22, xp: 2200, gold: 900,  streak: 4,  hp: 78 },
+  { name: 'Егор Васильев',     gender: 'male',   level: 18, xp: 1600, gold: 600,  streak: 1,  hp: 60 },
+  { name: 'Виктория Попова',   gender: 'female', level: 15, xp: 1200, gold: 450,  streak: 0,  hp: 85 },
+  { name: 'Роман Кузнецов',    gender: 'male',   level: 12, xp: 850,  gold: 300,  streak: 0,  hp: 35 },
+  { name: 'Анна Николаева',    gender: 'female', level: 8,  xp: 500,  gold: 200,  streak: 1,  hp: 100 },
 ];
 
 // Demo quests
@@ -125,9 +132,9 @@ export async function POST() {
     // ── 5. Upsert demo hero (ALWAYS reset to starting state) ──
     const { data: heroData, error: heroErr } = await admin.from('heroes').upsert({
       user_id: userId, name: DEMO_NAME, gender: 'male',
-      level: 12, xp: 850, xp_to_next: 1200,
-      hp: 78, hp_max: 100, gold: 2500,
-      streak_current: 7, streak_best: 14,
+      level: 48, xp: 7200, xp_to_next: 8000,
+      hp: 78, hp_max: 100, gold: 4500,
+      streak_current: 12, streak_best: 21,
       streak_last_date: new Date().toISOString().split('T')[0],
       status: 'active', artifact_slots: 6,
       gold_multiplier: 1, xp_multiplier: 1, season_id: seasonId,
@@ -138,7 +145,7 @@ export async function POST() {
     // ── 6. Hero stats (radar chart) ──
     await admin.from('hero_stats').upsert({
       hero_id: heroId,
-      strength: 18, knowledge: 22, endurance: 15, luck: 12, wisdom: 20,
+      strength: 42, knowledge: 55, endurance: 38, luck: 28, wisdom: 48,
     }, { onConflict: 'hero_id' });
 
     // ── 7. Ensure classmates exist (for leaderboard) ──
@@ -305,11 +312,11 @@ export async function POST() {
       .in('condition_type', ['quests_completed', 'streak_days', 'bosses_killed', 'artifacts_collected', 'gold_total']);
     if (achievements) {
       const toUnlock = achievements.filter(a =>
-        (a.condition_type === 'quests_completed' && a.condition_value <= 47) ||
-        (a.condition_type === 'streak_days' && a.condition_value <= 14) ||
-        (a.condition_type === 'bosses_killed' && a.condition_value <= 3) ||
-        (a.condition_type === 'artifacts_collected' && a.condition_value <= 10) ||
-        (a.condition_type === 'gold_total' && a.condition_value <= 3800)
+        (a.condition_type === 'quests_completed' && a.condition_value <= 85) ||
+        (a.condition_type === 'streak_days' && a.condition_value <= 21) ||
+        (a.condition_type === 'bosses_killed' && a.condition_value <= 5) ||
+        (a.condition_type === 'artifacts_collected' && a.condition_value <= 20) ||
+        (a.condition_type === 'gold_total' && a.condition_value <= 8000)
       );
       if (toUnlock.length > 0) {
         await admin.from('achievements_unlocked').insert(
@@ -354,24 +361,30 @@ async function provisionInventory(heroId: string) {
     });
   };
 
-  // Equipped (on shelf)
-  add(find('Зелье опыта'),        true, 2, 3, 'drop');
-  add(find('Щит стража'),         true, 1, 1, 'shop');
+  // Equipped (on shelf) — level 48 unlocks 5 slots
+  add(find('Зелье опыта'),        true, 3, 3, 'drop');
+  add(find('Щит стража'),         true, 2, 1, 'shop');
   add(find('Свеча Полуночника'),  true, 1, 1, 'streak_reward');
+  add(find('Перо мудрости'),      true, 1, 1, 'drop');
+  add(find('Корона героя'),       true, 1, 1, 'lootbox');
 
-  // Backpack
-  add(find('Перо мудрости'),      false, 1, 1, 'drop');
-  add(find('Мешок золота'),       false, 3, 1, 'reward');
-  add(find('Сфера знаний'),       false, 1, 1, 'lootbox');
-  add(find('Малое зелье HP'),     false, 5, 1, 'shop');
-  add(find('Большое зелье HP'),   false, 2, 1, 'shop');
-  add(find('Корона героя'),       false, 1, 1, 'lootbox');
+  // Backpack — potions
+  add(find('Малое зелье HP'),     false, 8, 1, 'shop');
+  add(find('Большое зелье HP'),   false, 5, 1, 'shop');
+  add(find('Зелье опыта'),        false, 4, 3, 'reward');
+
+  // Backpack — rare/epic/legendary items
+  add(find('Мешок золота'),       false, 6, 1, 'reward');
+  add(find('Сфера знаний'),       false, 2, 1, 'lootbox');
   add(find('Крест воскрешения'),  false, 1, 1, 'teacher_gift');
+  add(find('Щит стража'),         false, 3, 1, 'drop');
+  add(find('Свеча Полуночника'),  false, 2, 1, 'drop');
+  add(find('Перо мудрости'),      false, 2, 1, 'reward');
 
-  // Chests — all 4 rarities
-  add(findEffect('lootbox', 'common'),    false, 3, 1, 'reward');
-  add(findEffect('lootbox', 'rare'),      false, 2, 1, 'reward');
-  add(findEffect('lootbox', 'epic'),      false, 1, 1, 'drop');
+  // Chests — lots to open
+  add(findEffect('lootbox', 'common'),    false, 5, 1, 'reward');
+  add(findEffect('lootbox', 'rare'),      false, 4, 1, 'reward');
+  add(findEffect('lootbox', 'epic'),      false, 2, 1, 'drop');
   add(findEffect('lootbox', 'legendary'), false, 1, 1, 'teacher_gift');
 
   if (inv.length > 0) {

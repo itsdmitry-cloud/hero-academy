@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/supabase/auth-context';
 import styles from './BottomTabBar.module.css';
 
 const tabs = [
@@ -14,6 +15,10 @@ const tabs = [
 
 export function BottomTabBar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, signOut } = useAuth();
+
+  const isDemo = user?.email === 'demo@hero.academy';
 
   return (
     <nav className={styles.bar} id="bottom-tab-bar">
@@ -32,6 +37,18 @@ export function BottomTabBar() {
           </Link>
         );
       })}
+      {isDemo && (
+        <button
+          className={styles.exitBtn}
+          onClick={async () => {
+            await signOut();
+            router.push('/auth/login');
+          }}
+        >
+          <span className={styles.icon}>🚪</span>
+          <span className={styles.label}>Выход</span>
+        </button>
+      )}
     </nav>
   );
 }
