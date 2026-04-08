@@ -81,7 +81,7 @@ export async function POST() {
     } else {
       const { data: newSchool, error: schoolErr } = await admin
         .from('schools')
-        .insert({ name: 'Демо Школа', slug: 'demo-school' })
+        .insert({ name: 'Демо Школа' })
         .select('id')
         .single();
       if (schoolErr || !newSchool) {
