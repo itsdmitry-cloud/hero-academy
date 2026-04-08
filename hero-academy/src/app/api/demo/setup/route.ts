@@ -110,19 +110,36 @@ export async function POST() {
 
     // ── 3. Create or find demo auth user ──
     let userId: string;
-    const { data: listData } = await admin.auth.admin.listUsers();
-    const existingAuth = listData?.users?.find(u => u.email === DEMO_EMAIL);
-    if (existingAuth) {
-      userId = existingAuth.id;
+    // Try to create first
+    const { data: createData, error: createErr } = await admin.auth.admin.createUser({
+      email: DEMO_EMAIL, password: DEMO_PASSWORD, email_confirm: true,
+    });
+    if (createData?.user) {
+      userId = createData.user.id;
+    } else if (createErr?.message?.includes('already been registered')) {
+      // User exists — find by email via users table or list
+      const { data: existingProfile } = await admin
+        .from('users').select('id').eq('email', DEMO_EMAIL).maybeSingle();
+      if (existingProfile) {
+        userId = existingProfile.id;
+      } else {
+        // Fallback: paginate through auth users
+        let found = false;
+        let page = 1;
+        userId = '';
+        while (!found) {
+          const { data: listData } = await admin.auth.admin.listUsers({ page, perPage: 100 });
+          const match = listData?.users?.find(u => u.email === DEMO_EMAIL);
+          if (match) { userId = match.id; found = true; break; }
+          if (!listData?.users?.length || listData.users.length < 100) break;
+          page++;
+        }
+        if (!userId) return NextResponse.json({ error: 'Demo user exists in auth but cannot be found' }, { status: 500 });
+      }
       await admin.auth.admin.updateUserById(userId, { password: DEMO_PASSWORD });
     } else {
-      const { data: a, error: e } = await admin.auth.admin.createUser({
-        email: DEMO_EMAIL, password: DEMO_PASSWORD, email_confirm: true,
-      });
-      if (e || !a?.user) return NextResponse.json({ error: `Auth: ${e?.message}` }, { status: 500 });
-      userId = a.user.id;
+      return NextResponse.json({ error: `Auth: ${createErr?.message}` }, { status: 500 });
     }
-
     // ── 4. Upsert demo user profile ──
     await admin.from('users').upsert({
       id: userId, display_name: DEMO_NAME, role: 'student',
@@ -154,17 +171,20 @@ export async function POST() {
     for (const cm of CLASSMATES) {
       const cmEmail = `demo_${cm.name.replace(/\s/g, '').toLowerCase()}@hero.academy`;
 
-      // Find or create auth user
+      // Try create, if exists — find via users table
       let cmUserId: string;
-      const existing = listData?.users?.find(u => u.email === cmEmail);
-      if (existing) {
-        cmUserId = existing.id;
+      const { data: cmAuth, error: cmAuthErr } = await admin.auth.admin.createUser({
+        email: cmEmail, password: 'DemoNPC2026!', email_confirm: true,
+      });
+      if (cmAuth?.user) {
+        cmUserId = cmAuth.user.id;
+      } else if (cmAuthErr?.message?.includes('already been registered')) {
+        const { data: cmProfile } = await admin
+          .from('users').select('id').eq('display_name', cm.name).eq('class_id', classId).maybeSingle();
+        if (!cmProfile) continue;
+        cmUserId = cmProfile.id;
       } else {
-        const { data: a, error: e } = await admin.auth.admin.createUser({
-          email: cmEmail, password: 'DemoNPC2026!', email_confirm: true,
-        });
-        if (e || !a?.user) continue;
-        cmUserId = a.user.id;
+        continue;
       }
 
       await admin.from('users').upsert({
