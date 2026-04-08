@@ -138,6 +138,7 @@ export async function POST() {
       streak_last_date: new Date().toISOString().split('T')[0],
       status: 'active', artifact_slots: 6,
       gold_multiplier: 1, xp_multiplier: 1, season_id: seasonId,
+      season_xp: 10000,
     }, { onConflict: 'user_id' }).select('id').single();
     if (heroErr || !heroData) return NextResponse.json({ error: `Hero: ${heroErr?.message}` }, { status: 500 });
     const heroId = heroData.id;
@@ -306,7 +307,17 @@ export async function POST() {
       }
     }
 
-    // ── 15. Achievements ──
+    // ── 15. Battle Pass — claim tiers 1-16, leave 17-20 unclaimed for demo ──
+    await admin.from('hero_season_rewards').delete().eq('hero_id', heroId);
+    const claimedTiers = Array.from({ length: 16 }, (_, i) => ({
+      hero_id: heroId,
+      season_id: seasonId,
+      tier: i + 1,
+      claimed_at: new Date(now - (16 - i) * 24 * 3600000).toISOString(),
+    }));
+    await admin.from('hero_season_rewards').insert(claimedTiers);
+
+    // ── 16. Achievements ──
     const { data: achievements } = await admin.from('achievements')
       .select('id, condition_type, condition_value')
       .in('condition_type', ['quests_completed', 'streak_days', 'bosses_killed', 'artifacts_collected', 'gold_total']);
