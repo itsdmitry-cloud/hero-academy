@@ -8,7 +8,8 @@
   height: 100dvh;
   overflow: hidden;
   background: var(--bg-primary);
-  touch-action: pan-y;
+  touch-action: pan-x;
+  overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -22,16 +23,18 @@
   transition: transform 300ms ease-out;
 }
 
-.slideTrack.dragging {
-  transition: none;
-}
+/* Note: .dragging class is defined separately for CSS Modules compatibility */
 
 .slide {
   flex: 0 0 100vw;
   width: 100vw;
-  min-height: 100dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Applied via JS during drag to disable CSS transition */
+.dragging {
+  transition: none !important;
 }
 
 /* === CONTROLS (bottom panel) === */

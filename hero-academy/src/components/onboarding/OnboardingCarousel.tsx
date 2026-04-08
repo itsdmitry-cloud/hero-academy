@@ -42,13 +42,16 @@ export default function OnboardingCarousel({
     isDragging.current = true;
 
     if (trackRef.current) {
-      trackRef.current.classList.add('dragging');
+      trackRef.current.classList.add(styles.dragging);
     }
   }, []);
 
   const handleTouchMove = useCallback(
     (e: ReactTouchEvent) => {
       if (!isDragging.current) return;
+
+      // Prevent vertical scrolling during horizontal swipe
+      e.preventDefault();
 
       const delta = e.touches[0].clientX - touchStartX.current;
       touchDeltaX.current = delta;
@@ -66,7 +69,7 @@ export default function OnboardingCarousel({
     isDragging.current = false;
 
     if (trackRef.current) {
-      trackRef.current.classList.remove('dragging');
+      trackRef.current.classList.remove(styles.dragging);
     }
 
     const threshold = window.innerWidth * SWIPE_THRESHOLD;
