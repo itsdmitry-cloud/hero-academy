@@ -1,0 +1,152 @@
+.slide {
+  min-height: 100dvh;
+  width: 100%;
+  background: linear-gradient(180deg, #1a0e35 0%, #0f0620 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px 180px;
+  overflow-y: auto;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Artifact cards row */
+.artifactRow {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.artifactCard {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  max-width: 120px;
+}
+
+.artifactCard[data-rarity="rare"] {
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.artifactCard[data-rarity="epic"] {
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.artifactCard[data-rarity="legendary"] {
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.artifactImgWrap {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.artifactName {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.rarityLabel {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.rarityLabel[data-color="blue"] {
+  color: #3b82f6;
+}
+
+.rarityLabel[data-color="purple"] {
+  color: #a855f7;
+}
+
+.rarityLabel[data-color="gold"] {
+  color: #ffd700;
+}
+
+.effectLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+  text-align: center;
+}
+
+/* Chests section */
+.chestsCard {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  padding: 16px 12px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.chestsRow {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.chestItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.chestImgWrap {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chestLabel {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Footer text */
+.footerText {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.4;
+}
