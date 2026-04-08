@@ -40,11 +40,12 @@ export function BottomTabBar() {
       {isDemo && (
         <button
           className={styles.exitBtn}
-          onClick={() => {
-            // Navigate FIRST to unmount student components,
-            // then sign out — prevents crash from null user/profile
+          onClick={async () => {
+            // Sign out first — AuthGuard in (student) layout will
+            // immediately render null (preventing child crashes),
+            // then redirect to login.
+            await signOut();
             router.push('/auth/login');
-            signOut();
           }}
         >
           <span className={styles.icon}>🚪</span>
