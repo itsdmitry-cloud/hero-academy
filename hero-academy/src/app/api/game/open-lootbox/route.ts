@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   // Verify this lootbox belongs to someone and check if it's a seasonal chest
   const { data: boxRow } = await admin
     .from('hero_artifacts')
-    .select('id, hero_id, artifacts(season_pool)')
+    .select('id, hero_id, quantity, artifacts(season_pool)')
     .eq('id', heroArtifactId)
     .single();
     
@@ -49,8 +49,12 @@ export async function POST(req: NextRequest) {
       .eq('season_pool', seasonPool)
       .neq('effect_type', 'lootbox');
 
-    // Consume the seasonal lootbox
-    await admin.from('hero_artifacts').delete().eq('id', heroArtifactId);
+    // Consume one copy of the seasonal lootbox
+    if ((boxRow.quantity ?? 1) > 1) {
+      await admin.from('hero_artifacts').update({ quantity: (boxRow.quantity ?? 1) - 1 }).eq('id', heroArtifactId);
+    } else {
+      await admin.from('hero_artifacts').delete().eq('id', heroArtifactId);
+    }
 
     if (!seasonArts || seasonArts.length === 0) {
       return NextResponse.json({ success: false, error: `Сезонный пул пуст (pool=${seasonPool})` });
@@ -121,8 +125,12 @@ export async function POST(req: NextRequest) {
     .neq('effect', 'lootbox')
     .is('season_pool', null);
 
-  // Consume the lootbox
-  await admin.from('hero_artifacts').delete().eq('id', heroArtifactId);
+  // Consume one copy of the lootbox
+  if ((boxRow.quantity ?? 1) > 1) {
+    await admin.from('hero_artifacts').update({ quantity: (boxRow.quantity ?? 1) - 1 }).eq('id', heroArtifactId);
+  } else {
+    await admin.from('hero_artifacts').delete().eq('id', heroArtifactId);
+  }
 
   if (!pool || pool.length === 0) {
     return NextResponse.json({ success: false, error: `Пул пуст (tier=${chosenTier}, maxLvl=${heroLevel + 5})` });

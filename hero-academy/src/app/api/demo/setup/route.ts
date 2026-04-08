@@ -186,7 +186,7 @@ export async function POST(req: Request) {
 
     const { data: heroData, error: heroErr } = await admin.from('heroes').upsert({
       user_id: userId, name: DEMO_NAME, gender: 'male',
-      level: 48, xp: 7200, xp_to_next: 8000, hp: 78, hp_max: 100, gold: 4500,
+      level: 37, xp: 5400, xp_to_next: 6000, hp: 78, hp_max: 100, gold: 4500,
       streak_current: 12, streak_best: 21, streak_last_date: new Date().toISOString().split('T')[0],
       status: 'active', artifact_slots: 6, gold_multiplier: 1, xp_multiplier: 1,
       season_id: seasonId, season_xp: 10000,
@@ -198,7 +198,7 @@ export async function POST(req: Request) {
     // Clean old data + provision new — ALL in parallel
     await Promise.all([
       // Clean
-      admin.from('hero_stats').upsert({ hero_id: heroId, strength: 42, knowledge: 55, endurance: 38, luck: 28, wisdom: 48 }, { onConflict: 'hero_id' }),
+      admin.from('hero_stats').upsert({ hero_id: heroId, strength: 35, knowledge: 45, endurance: 30, luck: 22, wisdom: 40 }, { onConflict: 'hero_id' }),
       admin.from('activity_log').delete().eq('hero_id', heroId),
       admin.from('hero_artifacts').delete().eq('hero_id', heroId),
       admin.from('achievements_unlocked').delete().eq('hero_id', heroId),
@@ -225,22 +225,31 @@ export async function POST(req: Request) {
     };
 
     const inventoryRows = [
-      mkArt(find('Зелье опыта'), true, 3, 3, 'drop'),
-      mkArt(find('Щит стража'), true, 2, 1, 'shop'),
-      mkArt(find('Свеча Полуночника'), true, 1, 1, 'streak_reward'),
-      mkArt(find('Перо мудрости'), true, 1, 1, 'drop'),
-      mkArt(find('Корона героя'), true, 1, 1, 'lootbox'),
-      mkArt(find('Малое зелье HP'), false, 8, 1, 'shop'),
-      mkArt(find('Большое зелье HP'), false, 5, 1, 'shop'),
-      mkArt(find('Зелье опыта'), false, 4, 3, 'reward'),
-      mkArt(find('Мешок золота'), false, 6, 1, 'reward'),
-      mkArt(find('Сфера знаний'), false, 2, 1, 'lootbox'),
-      mkArt(find('Крест воскрешения'), false, 1, 1, 'teacher_gift'),
-      mkArt(find('Щит стража'), false, 3, 1, 'drop'),
-      mkArt(find('Свеча Полуночника'), false, 2, 1, 'drop'),
-      mkArt(find('Перо мудрости'), false, 2, 1, 'reward'),
+      // === Экипированные (6 слотов) — разные редкости ===
+      mkArt(find('Перо Калиграфа'), true, 1, 0, 'drop'),              // rare — XP +20%
+      mkArt(find('Броня Усидчивости'), true, 1, 5, 'shop'),           // rare — DMG -30%
+      mkArt(find('Свеча Полуночника'), true, 1, 1, 'streak_reward'),  // rare — стрик-защита
+      mkArt(find('Руна Знаний'), true, 1, 0, 'lootbox'),              // epic — XP +50%
+      mkArt(find('Корона Академии'), true, 1, 0, 'boss'),             // legendary — XP+Gold
+      mkArt(find('Крест Возрождения'), true, 1, 1, 'teacher_gift'),   // legendary — death save
+      // === В рюкзаке — 10 разных артефактов ===
+      // Common (4)
+      mkArt(find('Малое Снадобье Памяти'), false, 4, 1, 'shop'),      // common — HP +30
+      mkArt(find('Ученическое Перо'), false, 2, 0, 'drop'),           // common — XP +10%
+      mkArt(find('Деревянный Щит'), false, 3, 3, 'reward'),           // common — DMG -10%
+      mkArt(find('Рваный Пергамент'), false, 1, 0, 'drop'),           // common — Gold +10%
+      // Rare (2)
+      mkArt(find('Среднее Зелье Бодрости'), false, 3, 1, 'shop'),     // rare — HP +60
+      mkArt(find('Серебряный Амулет'), false, 1, 0, 'reward'),        // rare — XP+Gold +15%
+      // Epic (2)
+      mkArt(find('Сфера Архимага'), false, 1, 3, 'lootbox'),          // epic — classwork XP
+      mkArt(find('Большое Зелье'), false, 2, 1, 'boss'),              // epic — full HP
+      // Legendary (2)
+      mkArt(find('Посох Властителя'), false, 1, 5, 'teacher_gift'),   // legendary — classwork XP
+      mkArt(find('Золотой Дракон'), false, 1, 0, 'drop'),             // legendary — Gold x3
+      // === Сундуки (4 типа) ===
       mkArt(findFx('lootbox', 'common'), false, 5, 1, 'reward'),
-      mkArt(findFx('lootbox', 'rare'), false, 4, 1, 'reward'),
+      mkArt(findFx('lootbox', 'rare'), false, 3, 1, 'reward'),
       mkArt(findFx('lootbox', 'epic'), false, 2, 1, 'drop'),
       mkArt(findFx('lootbox', 'legendary'), false, 1, 1, 'teacher_gift'),
     ].filter(Boolean);
