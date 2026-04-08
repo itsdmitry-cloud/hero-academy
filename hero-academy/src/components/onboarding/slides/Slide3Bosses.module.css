@@ -1,0 +1,185 @@
+.slide {
+  min-height: 100dvh;
+  width: 100%;
+  background: linear-gradient(180deg, #1a0e35 0%, #0f0620 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.icon {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* Boss card */
+.bossCard {
+  width: 100%;
+  max-width: 340px;
+  background: var(--bg-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid rgba(238, 90, 111, 0.3);
+  border-radius: var(--radius-xl);
+  padding: 16px;
+  box-shadow: 0 0 24px rgba(238, 90, 111, 0.1);
+  margin-bottom: 20px;
+}
+
+.bossHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.bossIcon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ee5a6f 0%, #f5365c 100%);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 16px rgba(238, 90, 111, 0.3);
+  flex-shrink: 0;
+}
+
+.bossInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.bossName {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.bossDetail {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* HP bar */
+.hpSection {
+  margin-bottom: 16px;
+}
+
+.hpLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.hpText {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.hpValue {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-hp);
+}
+
+.hpBarTrack {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.hpBarFill {
+  height: 100%;
+  width: 67%;
+  background: linear-gradient(90deg, #ee5a6f 0%, #f5365c 100%);
+  border-radius: var(--radius-full);
+  transition: width 0.6s ease;
+}
+
+/* Stats row */
+.statsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.statBox {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.statValueOrange {
+  color: var(--accent-xp);
+}
+
+.statValueGreen {
+  color: var(--success);
+}
+
+.statValuePurple {
+  color: var(--accent-primary);
+}
+
+.statLabel {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* Explanation */
+.explanation {
+  width: 100%;
+  max-width: 340px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
