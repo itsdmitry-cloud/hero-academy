@@ -98,16 +98,24 @@ export default function LoginPage() {
             setDemoLoading(true);
             setError(null);
             try {
-              const res = await fetch('/api/demo/setup', { method: 'POST' });
-              const data = await res.json();
-              if (!res.ok || !data.success) {
-                setError(data.error || 'Не удалось создать демо');
+              // 1. Anonymous sign-in — no email, no password
+              const { createClient } = await import('@/lib/supabase/client');
+              const supabase = createClient();
+              const { data: anonData, error: anonErr } = await supabase.auth.signInAnonymously();
+              if (anonErr || !anonData?.user) {
+                setError(anonErr?.message || 'Не удалось войти анонимно');
                 setDemoLoading(false);
                 return;
               }
-              const { error: signInErr } = await signIn(data.email, data.password);
-              if (signInErr) {
-                setError(signInErr);
+              // 2. Provision demo data for this anonymous user
+              const res = await fetch('/api/demo/setup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: anonData.user.id }),
+              });
+              const data = await res.json();
+              if (!res.ok || !data.success) {
+                setError(data.error || 'Не удалось подготовить демо');
                 setDemoLoading(false);
                 return;
               }

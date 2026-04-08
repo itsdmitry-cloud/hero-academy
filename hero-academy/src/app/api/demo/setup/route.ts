@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const DEMO_EMAIL = 'demo@hero.academy';
-const DEMO_PASSWORD = 'DemoHero2026!';
 const DEMO_NAME = 'Демо Герой';
 
 const admin = createClient(
@@ -28,7 +26,6 @@ const CLASSMATES = [
   { name: 'Анна Николаева',    gender: 'female', level: 8,  xp: 500,  gold: 200,  streak: 1,  hp: 100 },
 ];
 
-// Demo quests
 const DEMO_QUESTS = [
   { title: 'Дроби и проценты',         subject: 'Математика',  type: 'quest' as const, difficulty: 'medium' as const, xp_reward: 150, gold_reward: 20, hp_damage: 10, daysUntil: 1,  status: 'active' as const },
   { title: 'Past Simple — упражнения', subject: 'Английский',  type: 'quest' as const, difficulty: 'easy' as const,   xp_reward: 100, gold_reward: 10, hp_damage: 5,  daysUntil: 2,  status: 'active' as const },
@@ -38,7 +35,6 @@ const DEMO_QUESTS = [
   { title: 'Басни Крылова',            subject: 'Литература',  type: 'quest' as const, difficulty: 'easy' as const,   xp_reward: 100, gold_reward: 15, hp_damage: 5,  daysUntil: 5,  status: 'active' as const },
 ];
 
-// Activity log entries (offsets in hours from now)
 const DEMO_ACTIVITY = [
   { action: 'quest_complete',     xp: 150,  hp: 0,    gold: 20,  hoursAgo: 2,   meta: { quest: 'Уравнения', subject: 'Математика', grade: 5 } },
   { action: 'teacher_xp_grant',   xp: 100,  hp: 0,    gold: 15,  hoursAgo: 5,   meta: { reason: 'Активность на уроке', subject: 'Физика' } },
@@ -56,7 +52,6 @@ const DEMO_ACTIVITY = [
   { action: 'boss_kill_reward',   xp: 300,  hp: 0,    gold: 50,  hoursAgo: 120, meta: { boss: 'Фантом Грамматики' } },
 ];
 
-// News items
 const DEMO_NEWS = [
   { title: 'Новый сезон начался!',                body: 'Сезон "Весна 2026" стартовал. Новые боссы, артефакты и награды ждут вас!', type: 'event' as const, pinned: true,  hoursAgo: 48 },
   { title: 'Стрик-челлендж',                      body: 'Кто продержит стрик 14 дней — получит эпический артефакт! Не пропускайте ДЗ.',    type: 'info' as const,  pinned: false, hoursAgo: 24 },
@@ -64,8 +59,19 @@ const DEMO_NEWS = [
   { title: 'Новые предметы в магазине',            body: 'Добавлены сезонные сундуки и косметика. Загляните в магазин!',                     type: 'info' as const,  pinned: false, hoursAgo: 72 },
 ];
 
-export async function POST() {
+/**
+ * POST /api/demo/setup
+ * Body: { userId: string } — ID анонимного пользователя из signInAnonymously()
+ * Провижнит все демо-данные для этого пользователя.
+ */
+export async function POST(req: Request) {
   try {
+    const body = await req.json();
+    const userId: string | undefined = body?.userId;
+    if (!userId) {
+      return NextResponse.json({ error: 'userId required' }, { status: 400 });
+    }
+
     // ── 1. Ensure school + class exist ──
     let schoolId: string;
     const { data: school } = await admin
@@ -108,45 +114,13 @@ export async function POST() {
       seasonId = s.id;
     }
 
-    // ── 3. Create or find demo auth user ──
-    let userId: string;
-    // Try to create first
-    const { data: createData, error: createErr } = await admin.auth.admin.createUser({
-      email: DEMO_EMAIL, password: DEMO_PASSWORD, email_confirm: true,
-    });
-    if (createData?.user) {
-      userId = createData.user.id;
-    } else if (createErr?.message?.includes('already been registered')) {
-      // User exists — find by email via users table or list
-      const { data: existingProfile } = await admin
-        .from('users').select('id').eq('email', DEMO_EMAIL).maybeSingle();
-      if (existingProfile) {
-        userId = existingProfile.id;
-      } else {
-        // Fallback: paginate through auth users
-        let found = false;
-        let page = 1;
-        userId = '';
-        while (!found) {
-          const { data: listData } = await admin.auth.admin.listUsers({ page, perPage: 100 });
-          const match = listData?.users?.find(u => u.email === DEMO_EMAIL);
-          if (match) { userId = match.id; found = true; break; }
-          if (!listData?.users?.length || listData.users.length < 100) break;
-          page++;
-        }
-        if (!userId) return NextResponse.json({ error: 'Demo user exists in auth but cannot be found' }, { status: 500 });
-      }
-      await admin.auth.admin.updateUserById(userId, { password: DEMO_PASSWORD });
-    } else {
-      return NextResponse.json({ error: `Auth: ${createErr?.message}` }, { status: 500 });
-    }
-    // ── 4. Upsert demo user profile ──
+    // ── 3. Upsert user profile for this anonymous user ──
     await admin.from('users').upsert({
       id: userId, display_name: DEMO_NAME, role: 'student',
       school_id: schoolId, class_id: classId,
     });
 
-    // ── 5. Upsert demo hero (ALWAYS reset to starting state) ──
+    // ── 4. Upsert demo hero ──
     const { data: heroData, error: heroErr } = await admin.from('heroes').upsert({
       user_id: userId, name: DEMO_NAME, gender: 'male',
       level: 48, xp: 7200, xp_to_next: 8000,
@@ -160,18 +134,17 @@ export async function POST() {
     if (heroErr || !heroData) return NextResponse.json({ error: `Hero: ${heroErr?.message}` }, { status: 500 });
     const heroId = heroData.id;
 
-    // ── 6. Hero stats (radar chart) ──
+    // ── 5. Hero stats (radar chart) ──
     await admin.from('hero_stats').upsert({
       hero_id: heroId,
       strength: 42, knowledge: 55, endurance: 38, luck: 28, wisdom: 48,
     }, { onConflict: 'hero_id' });
 
-    // ── 7. Ensure classmates exist (for leaderboard) ──
+    // ── 6. Ensure NPC classmates exist (for leaderboard) ──
     const classmateHeroIds: string[] = [];
     for (const cm of CLASSMATES) {
       const cmEmail = `demo_${cm.name.replace(/\s/g, '').toLowerCase()}@hero.academy`;
 
-      // Try create, if exists — find via users table
       let cmUserId: string;
       const { data: cmAuth, error: cmAuthErr } = await admin.auth.admin.createUser({
         email: cmEmail, password: 'DemoNPC2026!', email_confirm: true,
@@ -214,16 +187,15 @@ export async function POST() {
       }
     }
 
-    // ── 8. Clean demo-related data and reprovision ──
-    // Delete old demo quests, activity, news for this class
-    await admin.from('quests').delete().eq('class_id', classId);
+    // ── 7. Clean old data for this hero and reprovision ──
+    await admin.from('quests').delete().eq('class_id', classId).eq('created_by', userId);
     await admin.from('activity_log').delete().eq('hero_id', heroId);
-    await admin.from('news').delete().eq('target_class_id', classId);
     await admin.from('hero_artifacts').delete().eq('hero_id', heroId);
     await admin.from('achievements_unlocked').delete().eq('hero_id', heroId);
     await admin.from('transactions').delete().eq('hero_id', heroId);
+    await admin.from('hero_season_rewards').delete().eq('hero_id', heroId);
 
-    // ── 9. Create quests with attempts ──
+    // ── 8. Create quests ──
     const now = Date.now();
     for (const q of DEMO_QUESTS) {
       const deadline = new Date(now + q.daysUntil * 86400000).toISOString();
@@ -237,7 +209,6 @@ export async function POST() {
 
       if (!quest) continue;
 
-      // First 2 quests: completed by demo hero, rest: pending
       if (q.daysUntil <= 0) {
         await admin.from('quest_attempts').insert({
           quest_id: quest.id, hero_id: heroId,
@@ -248,96 +219,82 @@ export async function POST() {
       }
     }
 
-    // ── 10. Provision inventory (artifacts + chests) ──
+    // ── 9. Inventory ──
     await provisionInventory(heroId);
 
-    // ── 11. Activity log ──
-    const activityRows = DEMO_ACTIVITY.map(a => ({
-      user_id: userId,
-      hero_id: heroId,
-      action: a.action,
-      metadata: a.meta,
-      xp_change: a.xp,
-      hp_change: a.hp,
-      gold_change: a.gold,
+    // ── 10. Activity log ──
+    await admin.from('activity_log').insert(DEMO_ACTIVITY.map(a => ({
+      user_id: userId, hero_id: heroId, action: a.action,
+      metadata: a.meta, xp_change: a.xp, hp_change: a.hp, gold_change: a.gold,
       created_at: new Date(now - a.hoursAgo * 3600000).toISOString(),
-    }));
-    await admin.from('activity_log').insert(activityRows);
+    })));
 
-    // ── 12. Transactions history ──
-    const txRows = [
+    // ── 11. Transactions ──
+    await admin.from('transactions').insert([
       { hero_id: heroId, type: 'reward' as const, item_type: 'xp', amount: 150, description: 'Квест: Уравнения', created_at: new Date(now - 2 * 3600000).toISOString() },
       { hero_id: heroId, type: 'reward' as const, item_type: 'gold', amount: 20, description: 'Квест: Уравнения', created_at: new Date(now - 2 * 3600000).toISOString() },
       { hero_id: heroId, type: 'purchase' as const, item_type: 'gold', amount: -50, description: 'Покупка: Малое зелье HP', created_at: new Date(now - 12 * 3600000).toISOString() },
       { hero_id: heroId, type: 'reward' as const, item_type: 'xp', amount: 250, description: 'Стрик 7 дней', created_at: new Date(now - 24 * 3600000).toISOString() },
       { hero_id: heroId, type: 'reward' as const, item_type: 'gold', amount: 50, description: 'Стрик 7 дней', created_at: new Date(now - 24 * 3600000).toISOString() },
       { hero_id: heroId, type: 'reward' as const, item_type: 'xp', amount: 300, description: 'Босс повержен: Фантом Грамматики', created_at: new Date(now - 120 * 3600000).toISOString() },
-    ];
-    await admin.from('transactions').insert(txRows);
+    ]);
 
-    // ── 13. News ──
-    const newsRows = DEMO_NEWS.map(n => ({
-      title: n.title, body: n.body, type: n.type,
-      target_type: 'class' as const, target_class_id: classId,
-      pinned: n.pinned, created_by: userId,
-      created_at: new Date(now - n.hoursAgo * 3600000).toISOString(),
-    }));
-    await admin.from('news').insert(newsRows);
-
-    // ── 14. Subject bosses (for quests tab boss section) ──
-    // Clean old boss data for this class/season
-    const { data: oldBosses } = await admin.from('subject_bosses')
-      .select('id').eq('class_id', classId).eq('season_id', seasonId);
-    if (oldBosses && oldBosses.length > 0) {
-      const bossIds = oldBosses.map(b => b.id);
-      await admin.from('boss_damage_logs').delete().in('boss_id', bossIds);
-      await admin.from('subject_bosses').delete().eq('class_id', classId).eq('season_id', seasonId);
+    // ── 12. News ──
+    // Only insert if not already present for this class (NPC news, not per-user)
+    const { count: existingNews } = await admin.from('news')
+      .select('*', { count: 'exact', head: true }).eq('target_class_id', classId);
+    if (!existingNews || existingNews < 4) {
+      await admin.from('news').delete().eq('target_class_id', classId);
+      await admin.from('news').insert(DEMO_NEWS.map(n => ({
+        title: n.title, body: n.body, type: n.type,
+        target_type: 'class' as const, target_class_id: classId,
+        pinned: n.pinned, created_by: userId,
+        created_at: new Date(now - n.hoursAgo * 3600000).toISOString(),
+      })));
     }
 
-    // Create 2 subject bosses
-    const bossConfigs = [
-      { subject_id: 'Математика', name: 'Дракон Алгебры', avatar: '🐉', max_hp: 5000, current_hp: 2800 },
-      { subject_id: 'Английский', name: 'Фантом Грамматики', avatar: '👻', max_hp: 3000, current_hp: 3000 },
-    ];
+    // ── 13. Subject bosses ──
+    const { data: existingBosses } = await admin.from('subject_bosses')
+      .select('id').eq('class_id', classId).eq('season_id', seasonId);
+    if (!existingBosses || existingBosses.length === 0) {
+      const bossConfigs = [
+        { subject_id: 'Математика', name: 'Дракон Алгебры', avatar: '🐉', max_hp: 5000, current_hp: 2800 },
+        { subject_id: 'Английский', name: 'Фантом Грамматики', avatar: '👻', max_hp: 3000, current_hp: 3000 },
+      ];
+      for (const bc of bossConfigs) {
+        const { data: boss } = await admin.from('subject_bosses').insert({
+          season_id: seasonId, class_id: classId,
+          subject_id: bc.subject_id, name: bc.name, avatar: bc.avatar,
+          max_hp: bc.max_hp, current_hp: bc.current_hp, is_defeated: false,
+        }).select('id').single();
 
-    for (const bc of bossConfigs) {
-      const { data: boss } = await admin.from('subject_bosses').insert({
-        season_id: seasonId, class_id: classId,
-        subject_id: bc.subject_id, name: bc.name, avatar: bc.avatar,
-        max_hp: bc.max_hp, current_hp: bc.current_hp, is_defeated: false,
-      }).select('id').single();
-
-      if (boss && bc.current_hp < bc.max_hp) {
-        // Add damage logs from demo hero and classmates
-        const dmgLogs = [
-          { boss_id: boss.id, hero_id: heroId, damage_dealt: 800, action_type: 'homework', created_at: new Date(now - 8 * 3600000).toISOString() },
-          { boss_id: boss.id, hero_id: heroId, damage_dealt: 400, action_type: 'lesson_mark', created_at: new Date(now - 50 * 3600000).toISOString() },
-        ];
-        // Classmate damage
-        for (let i = 0; i < Math.min(classmateHeroIds.length, 4); i++) {
-          dmgLogs.push({
-            boss_id: boss.id,
-            hero_id: classmateHeroIds[i],
-            damage_dealt: 200 + i * 100,
-            action_type: i % 2 === 0 ? 'homework' : 'lesson_mark',
-            created_at: new Date(now - (10 + i * 20) * 3600000).toISOString(),
-          });
+        if (boss && bc.current_hp < bc.max_hp) {
+          const dmgLogs = [
+            { boss_id: boss.id, hero_id: heroId, damage_dealt: 800, action_type: 'homework', created_at: new Date(now - 8 * 3600000).toISOString() },
+            { boss_id: boss.id, hero_id: heroId, damage_dealt: 400, action_type: 'lesson_mark', created_at: new Date(now - 50 * 3600000).toISOString() },
+          ];
+          for (let i = 0; i < Math.min(classmateHeroIds.length, 4); i++) {
+            dmgLogs.push({
+              boss_id: boss.id, hero_id: classmateHeroIds[i],
+              damage_dealt: 200 + i * 100,
+              action_type: i % 2 === 0 ? 'homework' : 'lesson_mark',
+              created_at: new Date(now - (10 + i * 20) * 3600000).toISOString(),
+            });
+          }
+          await admin.from('boss_damage_logs').insert(dmgLogs);
         }
-        await admin.from('boss_damage_logs').insert(dmgLogs);
       }
     }
 
-    // ── 15. Battle Pass — claim tiers 1-16, leave 17-20 unclaimed for demo ──
-    await admin.from('hero_season_rewards').delete().eq('hero_id', heroId);
-    const claimedTiers = Array.from({ length: 16 }, (_, i) => ({
-      hero_id: heroId,
-      season_id: seasonId,
-      tier: i + 1,
-      claimed_at: new Date(now - (16 - i) * 24 * 3600000).toISOString(),
-    }));
-    await admin.from('hero_season_rewards').insert(claimedTiers);
+    // ── 14. Battle Pass ──
+    await admin.from('hero_season_rewards').insert(
+      Array.from({ length: 16 }, (_, i) => ({
+        hero_id: heroId, season_id: seasonId, tier: i + 1,
+        claimed_at: new Date(now - (16 - i) * 24 * 3600000).toISOString(),
+      }))
+    );
 
-    // ── 16. Achievements ──
+    // ── 15. Achievements ──
     const { data: achievements } = await admin.from('achievements')
       .select('id, condition_type, condition_value')
       .in('condition_type', ['quests_completed', 'streak_days', 'bosses_killed', 'artifacts_collected', 'gold_total']);
@@ -356,12 +313,7 @@ export async function POST() {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      email: DEMO_EMAIL,
-      password: DEMO_PASSWORD,
-      message: 'Demo fully provisioned',
-    });
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

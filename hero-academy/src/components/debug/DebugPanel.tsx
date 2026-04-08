@@ -12,8 +12,8 @@ export default function DebugPanel() {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  // Hide debug panel for demo user
-  if (user?.email === 'demo@hero.academy') return null;
+  // Hide debug panel for anonymous/demo users
+  if (user?.is_anonymous === true) return null;
 
   // Input values
   const [xpVal, setXpVal] = useState('500');

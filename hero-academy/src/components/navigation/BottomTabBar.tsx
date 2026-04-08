@@ -18,7 +18,7 @@ export function BottomTabBar() {
   const router = useRouter();
   const { user, signOut } = useAuth();
 
-  const isDemo = user?.email === 'demo@hero.academy';
+  const isDemo = user?.is_anonymous === true;
 
   return (
     <nav className={styles.bar} id="bottom-tab-bar">
