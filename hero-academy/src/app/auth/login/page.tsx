@@ -119,7 +119,7 @@ export default function LoginPage() {
                 setDemoLoading(false);
                 return;
               }
-              router.push('/hero');
+              router.push('/onboarding');
             } catch {
               setError('Ошибка сети');
               setDemoLoading(false);

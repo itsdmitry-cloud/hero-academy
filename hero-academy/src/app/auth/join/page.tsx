@@ -36,7 +36,7 @@ export default function JoinPage() {
       setError(err);
       setLoading(false);
     } else {
-      router.push('/hero');
+      router.push('/onboarding');
     }
   }
 

@@ -24,7 +24,7 @@ function dotActiveClass(slideIndex: number): string {
   return styles.dotActive;
 }
 
-export function OnboardingCarousel({
+export default function OnboardingCarousel({
   children,
   onComplete,
 }: OnboardingCarouselProps) {
