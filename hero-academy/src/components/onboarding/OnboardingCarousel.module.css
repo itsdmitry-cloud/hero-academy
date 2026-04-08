@@ -1,0 +1,204 @@
+/* ========================================
+   ONBOARDING CAROUSEL
+   ======================================== */
+
+.container {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-primary);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* === SLIDE TRACK === */
+
+.slideTrack {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  transition: transform 300ms ease-out;
+}
+
+.slideTrack.dragging {
+  transition: none;
+}
+
+.slide {
+  flex: 0 0 100vw;
+  width: 100vw;
+  min-height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* === CONTROLS (bottom panel) === */
+
+.controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6)
+    calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(
+    0deg,
+    rgba(15, 6, 32, 0.95) 0%,
+    rgba(15, 6, 32, 0.8) 60%,
+    transparent 100%
+  );
+  z-index: 10;
+  pointer-events: none;
+}
+
+.controls > * {
+  pointer-events: auto;
+}
+
+/* === DOTS === */
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: width 200ms ease, background-color 200ms ease;
+}
+
+.dotActive {
+  width: 24px;
+  background: #a855f7;
+}
+
+.dotActiveGold {
+  width: 24px;
+  background: #ffd700;
+}
+
+.dotActiveGreen {
+  width: 24px;
+  background: #2ed573;
+}
+
+/* === BUTTON ROW === */
+
+.buttonRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--space-3);
+}
+
+/* === BUTTONS === */
+
+.button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px var(--space-6);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--gradient-purple);
+  border: none;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+/* === CTA BUTTON (slide 6) === */
+
+.buttonCta {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 18px var(--space-6);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, #2ed573, #05c46b);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 30px rgba(46, 213, 115, 0.3);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  animation: ctaPulse 2s ease-in-out infinite;
+}
+
+.buttonCta:active {
+  transform: scale(0.97);
+}
+
+/* === SKIP BUTTON === */
+
+.skipButton {
+  flex-shrink: 0;
+  padding: 10px var(--space-4);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #6b6b8d;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.skipButton:active {
+  color: var(--text-secondary);
+}
+
+/* === PULSE ANIMATION === */
+
+@keyframes ctaPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* === REDUCED MOTION === */
+
+@media (prefers-reduced-motion: reduce) {
+  .slideTrack {
+    transition: transform 100ms linear;
+  }
+
+  .dot {
+    transition: none;
+  }
+
+  .buttonCta {
+    animation: none;
+  }
+}
