@@ -104,23 +104,19 @@ export async function POST(req: Request) {
     // 3. Create hero for students
     let heroId: string | null = null;
     if (role === 'student') {
-      const level = Math.floor(Math.random() * 10) + 1;
-      const xp = level * 400 + Math.floor(Math.random() * 400);
-      const hp = Math.floor(Math.random() * 40) + 60;
-
       const { data: heroData, error: heroErr } = await admin.from('heroes').upsert({
         user_id: userId,
         name: display_name,
         gender: body.gender || 'male',
-        level,
-        xp,
-        xp_to_next: level * (1000 + 250 * (level + 1)),  // cumulativeXpForLevel(level+1)
-        hp,
-        hp_max: 150,
-        gold: Math.floor(Math.random() * 200),
-        streak_current: Math.floor(Math.random() * 10),
-        streak_best: Math.floor(Math.random() * 15),
-        status: hp > 0 ? 'active' : 'inactive',
+        level: 1,
+        xp: 0,
+        xp_to_next: 100,
+        hp: 100,
+        hp_max: 100,
+        gold: 0,
+        streak_current: 0,
+        streak_best: 0,
+        status: 'active',
       }, { onConflict: 'user_id' }).select('id').single();
 
       if (heroErr) {
@@ -135,7 +131,7 @@ export async function POST(req: Request) {
           quests_completed: 0,
           bosses_defeated: 0,
           total_damage_dealt: 0,
-          total_xp_earned: xp,
+          total_xp_earned: 0,
           total_gold_earned: 0,
         }, { onConflict: 'hero_id' });
       }
