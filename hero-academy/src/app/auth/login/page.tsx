@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -89,9 +90,36 @@ export default function LoginPage() {
         <Link href="/auth/join" className={styles.altLink}>
           📋 У меня есть код класса
         </Link>
-        <Link href="/hero" className={styles.demoLink}>
-          🎮 Демо без входа →
-        </Link>
+        <button
+          type="button"
+          className={styles.demoBtn}
+          disabled={demoLoading}
+          onClick={async () => {
+            setDemoLoading(true);
+            setError(null);
+            try {
+              const res = await fetch('/api/demo/setup', { method: 'POST' });
+              const data = await res.json();
+              if (!res.ok || !data.success) {
+                setError(data.error || 'Не удалось создать демо');
+                setDemoLoading(false);
+                return;
+              }
+              const { error: signInErr } = await signIn(data.email, data.password);
+              if (signInErr) {
+                setError(signInErr);
+                setDemoLoading(false);
+                return;
+              }
+              router.push('/hero');
+            } catch {
+              setError('Ошибка сети');
+              setDemoLoading(false);
+            }
+          }}
+        >
+          {demoLoading ? '⏳ Подготовка...' : '🎮 Демо вход →'}
+        </button>
       </div>
     </div>
   );

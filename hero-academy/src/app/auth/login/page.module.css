@@ -88,6 +88,19 @@
 .demoLink { color: var(--accent-primary); }
 .demoLink:hover { opacity: 0.8; }
 
+.demoBtn {
+  display: block; width: 100%; text-align: center;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm); font-weight: 600;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: var(--accent-primary);
+  cursor: pointer; transition: all var(--transition-fast);
+}
+.demoBtn:hover { background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(59, 130, 246, 0.25)); transform: translateY(-1px); }
+.demoBtn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
 .error {
   width: 100%; padding: var(--space-3);
   background: rgba(239, 68, 68, 0.15);
