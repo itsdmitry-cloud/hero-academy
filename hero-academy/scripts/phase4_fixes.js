@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const c = createClient('https://gjezmurskhjngbostltn.supabase.co', 'REMOVED_SECRET');
+const c = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 (async () => {
   console.log('=== Fix #1: Create season_leaderboards table ===');

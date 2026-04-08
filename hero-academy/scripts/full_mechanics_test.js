@@ -3,7 +3,7 @@
  * Tests every mechanic against real DB data.
  */
 const { createClient } = require('@supabase/supabase-js');
-const c = createClient('https://gjezmurskhjngbostltn.supabase.co', 'REMOVED_SECRET');
+const c = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 let pass = 0, fail = 0, warn = 0;
 function ok(label) { pass++; console.log(`  ✅ ${label}`); }
