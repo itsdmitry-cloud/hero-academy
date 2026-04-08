@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Outfit, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/supabase/auth-context";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
@@ -56,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${inter.variable} ${outfit.variable} ${spaceGrotesk.variable}`}>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
         <SpeedInsights />
       </body>
     </html>

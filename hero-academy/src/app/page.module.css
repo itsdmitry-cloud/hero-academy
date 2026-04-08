@@ -99,19 +99,18 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-4) var(--space-8);
-  background: var(--bg-glass);
-  backdrop-filter: var(--blur-glass);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--bg-glass-border);
   color: var(--text-primary);
   border-radius: var(--radius-lg);
   font-weight: 600;
   font-size: var(--text-lg);
-  transition: all var(--transition-base);
+  transition: background var(--transition-base), border-color var(--transition-base);
   text-decoration: none;
 }
 
 .btnSecondary:hover {
-  background: var(--bg-glass-hover);
+  background: rgba(255, 255, 255, 0.14);
   border-color: var(--accent-primary);
 }
 
@@ -126,8 +125,9 @@
 
 .heroEmoji {
   font-size: 200px;
-  filter: drop-shadow(0 0 60px rgba(168, 85, 247, 0.3));
+  text-shadow: 0 0 60px rgba(168, 85, 247, 0.3);
   animation: float 4s ease-in-out infinite;
+  will-change: transform;
 }
 
 @media (min-width: 1024px) {
@@ -146,6 +146,8 @@
   font-size: 24px;
   animation: float 3s ease-in-out infinite;
   opacity: 0.6;
+  will-change: transform;
+  content-visibility: auto;
 }
 
 .particle:nth-child(1) { top: 10%; left: 0; animation-delay: 0s; }
@@ -179,11 +181,10 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-6);
-  background: var(--bg-glass);
-  backdrop-filter: var(--blur-glass);
+  background: var(--bg-card);
   border: 1px solid var(--bg-glass-border);
   border-radius: var(--radius-2xl);
-  transition: all var(--transition-base);
+  transition: background var(--transition-base);
 }
 
 .featureCard:hover {

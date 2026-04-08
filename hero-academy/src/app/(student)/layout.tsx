@@ -1,3 +1,4 @@
+import { AuthProvider } from '@/lib/supabase/auth-context';
 import { BottomTabBar } from '@/components/navigation/BottomTabBar';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import DebugPanel from '@/components/debug/DebugPanel';
@@ -11,17 +12,19 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard>
-      <OnboardingGuard>
-        <div className={styles.layout}>
-          <ToastContainer />
-          <DebugPanel />
-          <main className={styles.content}>
-            {children}
-          </main>
-          <BottomTabBar />
-        </div>
-      </OnboardingGuard>
-    </AuthGuard>
+    <AuthProvider>
+      <AuthGuard>
+        <OnboardingGuard>
+          <div className={styles.layout}>
+            <ToastContainer />
+            <DebugPanel />
+            <main className={styles.content}>
+              {children}
+            </main>
+            <BottomTabBar />
+          </div>
+        </OnboardingGuard>
+      </AuthGuard>
+    </AuthProvider>
   );
 }
