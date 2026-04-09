@@ -8,7 +8,7 @@ export default function SchoolsPage() {
   const {
     schools, classes, loading,
     createSchool, createClass, createUser,
-    updateSchool, updateClass, updateUser,
+    updateSchool, updateClass, updateUser, deleteSchool,
     fetchClasses, users, fetchUsers, fetchUserDetails, subjects,
   } = useAdminData();
 
@@ -86,6 +86,22 @@ export default function SchoolsPage() {
     if (error) { showFeedback(`Ошибка: ${error}`); return; }
     showFeedback('✅ Школа обновлена!');
     setEditSchoolId(null);
+  };
+
+  const handleDeleteSchool = async (id: string, name: string) => {
+    const ok = window.confirm(
+      `Удалить школу "${name}"?\n\nБудут безвозвратно удалены все ученики, учителя, их герои, классы и сезоны этой школы.`
+    );
+    if (!ok) return;
+    setSaving(true);
+    const { error, deleted_users } = await deleteSchool(id);
+    setSaving(false);
+    if (error) { showFeedback(`Ошибка: ${error}`); return; }
+    showFeedback(`✅ Школа "${name}" и ${deleted_users} пользователей удалены`, 6000);
+    if (selectedSchool === id) {
+      setSelectedSchool(null);
+      setExpandedClass(null);
+    }
   };
 
   // --- Class CRUD ---
@@ -234,6 +250,12 @@ export default function SchoolsPage() {
     fontSize: '0.75rem',
   };
 
+  const btnDelete = {
+    ...btnEdit,
+    background: 'rgba(239,68,68,0.18)',
+    color: '#ef4444',
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.headerRow}>
@@ -301,6 +323,12 @@ export default function SchoolsPage() {
                         style={btnEdit}
                         title="Редактировать"
                       >✏️</button>
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDeleteSchool(s.id, s.name); }}
+                        disabled={saving}
+                        style={btnDelete}
+                        title="Удалить школу со всеми учениками"
+                      >🗑️</button>
                       <span className={styles.statusBadge} style={{ color: 'var(--accent-xp)' }}>🟢</span>
                     </span>
                   </div>

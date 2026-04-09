@@ -348,6 +348,21 @@ export function useAdminData() {
     return { error: error?.message ?? null };
   }, [fetchSchools]);
 
+  /* ── Delete School (cascade) ── */
+  const deleteSchool = useCallback(async (id: string) => {
+    const res = await fetch('/api/admin/delete-school', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ school_id: id }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error ?? 'Unknown error', deleted_users: 0 };
+    fetchSchools();
+    fetchClasses();
+    fetchUsers();
+    return { error: null, deleted_users: data.deleted_users ?? 0 };
+  }, [fetchSchools, fetchClasses, fetchUsers]);
+
   /* ── Update Class ── */
   const updateClass = useCallback(async (id: string, name: string, schoolId: string) => {
     const { error } = await supabase.from('classes').update({ name }).eq('id', id);
@@ -476,7 +491,7 @@ export function useAdminData() {
     loading,
     fetchClasses, fetchUsers, fetchUserDetails,
     saveEconomy, toggleShopItem, updateShopPrice,
-    createSchool, createClass, createSeason, createUser, deleteUser,
+    createSchool, createClass, createSeason, createUser, deleteUser, deleteSchool,
     updateSchool, updateClass, updateUser,
     resetHeroHp, grantXpToUser,
     refetch: () => {
