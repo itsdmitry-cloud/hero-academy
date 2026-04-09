@@ -61,7 +61,7 @@ Approach 1 — **серверный API + dumb-компоненты через p
 
 `GET /api/admin/impersonate/[userId]/route.ts`
 
-- Проверяет: текущий пользователь есть и его `role = 'admin'` (читает из `user_profiles` через обычного клиента)
+- Проверяет: текущий пользователь есть и его `role = 'admin'` (читает из таблицы `users` через обычного клиента; существующая функция `is_admin()` в БД тоже опирается на `users.role`)
 - Если проверка прошла — создаёт Supabase-клиент с `SUPABASE_SERVICE_ROLE_KEY`
 - Загружает параллельно: `heroes`, `hero_stats`, `hero_artifacts` (+ join с `artifacts`), активные и завершённые `quest_attempts` (+ join с `quests`), `achievements_unlocked`
 - Возвращает JSON: `{ hero, stats, artifacts, quests: { active, completed }, achievements }`
@@ -153,8 +153,17 @@ page state → ReadOnlyGuard context → Presentational components → UI
 - `src/components/admin/god-mode/QuestsViewPresentational.tsx`
 
 ### Изменяемые
-- `src/app/(admin)/admin/users/page.tsx` — добавить кнопку «👁 Посмотреть»
-- (возможно) существующие student-компоненты — лёгкий рефакторинг: выделить dumb-часть, smart-обёртка вызывает dumb с данными из хуков. **Только если они сильно завязаны на хуки.** Если уже чистые — просто переиспользуем.
+- `src/app/(admin)/admin/users/page.tsx` — добавить кнопку «👁 Посмотреть» в строку таблицы
+- `src/app/(student)/hero/page.tsx` — рефакторинг: выделить dumb-часть `HeroViewPresentational`, smart-обёртка остаётся и вызывает dumb с данными из `useHero`/`useHeroStore`/`useSupabaseSync`
+- `src/app/(student)/inventory/page.tsx` — аналогичный рефакторинг: выделить `InventoryViewPresentational`, smart-обёртка кормит его из `useArtifacts` + `useHero`
+- `src/app/(student)/quests/page.tsx` — аналогичный рефакторинг: выделить `QuestsViewPresentational`, smart-обёртка — fetch + `useSeasonBosses`
+
+**Замечание:** по данным исследования кодовой базы, текущие экраны ученика — монолитные client-компоненты (~400 строк), поэтому рефакторинг обязателен, не «возможно». Рефакторинг строго поведение-сохраняющий: после него student route должен работать абсолютно так же, как сейчас.
+
+### Существующие паттерны, которые переиспользуем
+- `src/app/api/admin/get-user-details/route.ts` — шаблон admin API с SERVICE_ROLE_KEY (из него берём структуру, но добавляем обязательную проверку `users.role = 'admin'` у вызывающего)
+- `src/lib/store/toastStore.ts` — `useToastStore().addToast({ type: 'info', ... })` для toast в `ReadOnlyGuard`
+- `src/middleware.ts` уже защищает `/admin/**`; `/api/**` middleware пропускает — значит, проверка роли в API handler обязательна
 
 ## Открытые вопросы
 
