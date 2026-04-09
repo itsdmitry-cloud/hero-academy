@@ -207,10 +207,11 @@ async function processHero(
   };
 
   // Build hero update (includes season_xp for Battle Pass)
+  const heroWithSeason = hero as typeof hero & { season_xp?: number | null };
   const heroUpdate: Record<string, unknown> = {
     xp: newXp, gold: newGold, hp: newHp,
     status: newHp === 0 ? 'inactive' : 'active',
-    season_xp: ((hero as any).season_xp ?? 0) + finalXp,
+    season_xp: (heroWithSeason.season_xp ?? 0) + finalXp,
   };
   if (newLevel > hero.level) { heroUpdate.level = newLevel; heroUpdate.xp_to_next = newXpNext; }
 

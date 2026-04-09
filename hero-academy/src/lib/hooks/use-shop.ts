@@ -37,7 +37,20 @@ export function useShop() {
     setLoading(false);
   }, [supabase]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('shop_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('price_gold');
+      if (cancelled) return;
+      if (data) setItems(data as ShopItem[]);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [supabase]);
 
   /* ── buy item ── */
   const buyItem = useCallback(async (itemId: string) => {

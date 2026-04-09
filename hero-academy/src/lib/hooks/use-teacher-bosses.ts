@@ -67,15 +67,24 @@ export function useTeacherBosses(classId: string | null) {
   }, [classId, supabase]);
 
   useEffect(() => {
-    fetchBosses();
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      await fetchBosses();
+    })();
 
+    // Real-time subscription — setState inside the channel callback is an
+    // external-store update, permitted by react-hooks/set-state-in-effect.
     const channel = supabase.channel('teacher_boss_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subject_bosses' }, fetchBosses)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'boss_damage_logs' }, fetchBosses)
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [classId, fetchBosses]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [classId, fetchBosses, supabase]);
 
   return { bosses, loading, refetch: fetchBosses };
 }

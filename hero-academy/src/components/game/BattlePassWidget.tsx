@@ -51,7 +51,7 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire', onClaim }
       .from('hero_season_rewards')
       .select('tier')
       .eq('hero_id', heroId);
-    if (data) setClaimedTiers(new Set(data.map((r: any) => r.tier)));
+    if (data) setClaimedTiers(new Set((data as { tier: number }[]).map((r) => r.tier)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heroId]);
 

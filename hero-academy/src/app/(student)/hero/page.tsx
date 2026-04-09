@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { StatCard } from '@/components/ui/StatCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StreakProgressBar } from '@/components/ui/StreakProgressBar';
@@ -8,11 +8,52 @@ import { useHeroStore } from '@/lib/store/heroStore';
 import { useSupabaseSync } from '@/lib/hooks/use-supabase-sync';
 import { useRealtimeHero } from '@/lib/hooks/use-realtime-hero';
 import { useStreak } from '@/lib/hooks/use-streak';
-import { useArtifacts, type HeroArtifact } from '@/lib/hooks/use-artifacts';
+import { useArtifacts, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
 import { BattlePassWidget } from '@/components/game/BattlePassWidget';
 import { AchievementsPanel } from '@/components/game/AchievementsPanel';
 import { useAuth } from '@/lib/supabase/auth-context';
 import styles from './page.module.css';
+
+// ───────── Local types ─────────
+// Only the fields we actually read in this file.
+
+interface NewsItem {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  image_url: string | null;
+  pinned: boolean;
+  created_at: string;
+  is_read: boolean;
+}
+
+// The artifact catalog shape in this file can also carry a seasonal pool
+// tag (column exists in DB but not on ArtifactCatalog interface).
+type ShelfArtifact = ArtifactCatalog & { season_pool?: string | null };
+
+// Activity entries may carry a `category` discriminator attached by the
+// sync layer (not part of the base ActivityEntry interface).
+type ActivityItemView = {
+  id: string;
+  date: string;
+  quest: string;
+  result: string;
+  xp: string;
+  gold: string;
+  messages?: string[];
+  category?: 'quest' | 'boss' | string;
+};
+
+// Discriminated union describing one slot on the artifact shelf.
+type ShelfSlot =
+  | { kind: 'locked'; id: string; name: 'locked'; rarity: null; icon: string;
+      equipped: false; defId: null; unlockLevel: number }
+  | { kind: 'empty'; id: string; name: null; rarity: null; icon: null;
+      equipped: false; defId: null }
+  | { kind: 'equipped'; id: string; name: string; rarity: string; icon: string;
+      equipped: true; defId: string; charges: number;
+      artifact: ShelfArtifact; expiresAt: string | null };
 
 
 function getArtifactIcon(defId: string) {
@@ -84,25 +125,36 @@ export default function HeroPage() {
   useRealtimeHero();
   const { result: streakResult, showMilestone } = useStreak();
 
-  const [mounted, setMounted] = useState(false);
+  // Hydration guard via useSyncExternalStore (avoids setState-in-effect).
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  // Pin "now" at mount — React Compiler flags raw Date.now() during render as impure.
+  const [nowMs] = useState(() => Date.now());
   const [selectedShelfItem, setSelectedShelfItem] = useState<string | null>(null);
   const [expandedActivity, setExpandedActivity] = useState<Set<string>>(new Set());
   const [activityFilter, setActivityFilter] = useState<'all' | 'quest' | 'boss'>('all');
 
   // Live News State
-  const [studentNews, setStudentNews] = useState<any[]>([]);
+  const [studentNews, setStudentNews] = useState<NewsItem[]>([]);
   const [showNews, setShowNews] = useState(false);
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    // Fetch live news on mount
-    fetch('/api/news')
-      .then(r => r.json())
-      .then(d => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch('/api/news');
+        const d = await r.json();
+        if (cancelled) return;
         if (d.success) setStudentNews(d.news || []);
-      })
-      .catch(console.error);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const markNewsAsRead = async (newsId: string) => {
@@ -125,8 +177,9 @@ export default function HeroPage() {
     setExpandedActivity(new Set());
   };
 
-  const filteredActivity = activityFilter === 'all' ? activity
-    : activity.filter(item => (item as any).category === activityFilter);
+  const activityView = activity as ActivityItemView[];
+  const filteredActivity = activityFilter === 'all' ? activityView
+    : activityView.filter(item => item.category === activityFilter);
 
   if (!mounted) return null;
 
@@ -146,17 +199,18 @@ export default function HeroPage() {
   const equippedItems = dbInventory.filter(i => i.is_equipped);
   
   const slotUnlockLevels = [1, 10, 20, 30, 40, 50];
-  const shelfSlots = Array.from({ length: totalSlots }).map((_, i) => {
+  const shelfSlots: ShelfSlot[] = Array.from({ length: totalSlots }).map((_, i): ShelfSlot => {
     if (i >= activeSlotsCount) {
-      return { id: `locked_${i}`, name: 'locked', rarity: null, icon: '🔒', equipped: false, defId: null, unlockLevel: slotUnlockLevels[i] };
+      return { kind: 'locked', id: `locked_${i}`, name: 'locked', rarity: null, icon: '🔒', equipped: false, defId: null, unlockLevel: slotUnlockLevels[i] };
     }
     const item = equippedItems[i];
     if (!item) {
-      return { id: `empty_${i}`, name: null, rarity: null, icon: null, equipped: false, defId: null };
+      return { kind: 'empty', id: `empty_${i}`, name: null, rarity: null, icon: null, equipped: false, defId: null };
     }
-    const artDef = item.artifact;
+    const artDef = item.artifact as ShelfArtifact | undefined;
     const icon = artDef?.icon || '💎';
     return {
+      kind: 'equipped',
       id: item.id,
       name: artDef?.name || 'Unknown',
       rarity: artDef?.rarity || 'common',
@@ -164,7 +218,9 @@ export default function HeroPage() {
       equipped: true,
       charges: item.charges_remaining ?? 0,
       defId: item.artifact_id,
-      artifact: artDef,
+      // `artDef` may be undefined at runtime but the slot is still rendered;
+      // downstream code guards via `selectedShelfObj.kind === 'equipped'`.
+      artifact: (artDef ?? ({} as ShelfArtifact)),
       expiresAt: item.expires_at ?? null,
     };
   });
@@ -210,7 +266,7 @@ export default function HeroPage() {
           <div className={styles.heroHeader}>
             <h1 className={`${styles.heroName} text-display`}>{hero.name}</h1>
             <div className={styles.heroClass}>
-              <span>🏰</span> Класс 5-А · Гильдия "Драконы"
+              <span>🏰</span> Класс 5-А · Гильдия «Драконы»
             </div>
           </div>
           <div className={styles.statCards}>
@@ -270,13 +326,13 @@ export default function HeroPage() {
                   {artifact.icon.includes('/') ? <img src={artifact.icon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : artifact.icon}
                 </span>
               ) : null}
-              {artifact.name === 'locked' && (artifact as any).unlockLevel && (
-                <span className={styles.artifactName} style={{ fontSize: '0.6rem', opacity: 0.5 }}>Лвл {(artifact as any).unlockLevel}</span>
+              {artifact.kind === 'locked' && artifact.unlockLevel && (
+                <span className={styles.artifactName} style={{ fontSize: '0.6rem', opacity: 0.5 }}>Лвл {artifact.unlockLevel}</span>
               )}
-              {artifact.name && artifact.name !== 'locked' && (
+              {artifact.kind === 'equipped' && artifact.name && (
                 <span className={styles.artifactName}>{artifact.name}</span>
               )}
-              {artifact.charges !== undefined && artifact.charges > 0 && !String((artifact.artifact as any)?.effect ?? (artifact.artifact as any)?.effect_type ?? '').includes('passive') && (
+              {artifact.kind === 'equipped' && artifact.charges > 0 && !String(artifact.artifact.effect ?? artifact.artifact.effect_type ?? '').includes('passive') && (
                 <div className={styles.chargesBadge}>{artifact.charges}</div>
               )}
             </div>
@@ -284,7 +340,7 @@ export default function HeroPage() {
         </div>
       </section>
 
-      {selectedShelfObj && selectedShelfObj.artifact && (
+      {selectedShelfObj && selectedShelfObj.kind === 'equipped' && (
         <div className={styles.shelfOverlay} onClick={(e) => e.target === e.currentTarget && setSelectedShelfItem(null)}>
           <div className={styles.shelfDetail}>
             <div className={styles.shelfDetailIcon} style={{ fontSize: 56, width: 80, height: 80, margin: '0 auto' }}>
@@ -295,29 +351,29 @@ export default function HeroPage() {
               )}
             </div>
             <div className={styles.shelfDetailName}>{selectedShelfObj.artifact.name}</div>
-            <div className={styles.shelfDetailRarity} style={{ color: (selectedShelfObj.artifact as any).season_pool ? '#f97316' : selectedShelfObj.rarity === 'epic' ? '#a855f7' : selectedShelfObj.rarity === 'legendary' ? '#eab308' : selectedShelfObj.rarity === 'rare' ? '#3b82f6' : '#6b7280' }}>
-              {(selectedShelfObj.artifact as any).season_pool ? '🔥 Сезонный' : selectedShelfObj.rarity === 'common' ? '🟢 Обычный' : selectedShelfObj.rarity === 'rare' ? '🔵 Редкий' : selectedShelfObj.rarity === 'epic' ? '🟣 Эпический' : '🟡 Легендарный'}
+            <div className={styles.shelfDetailRarity} style={{ color: selectedShelfObj.artifact.season_pool ? '#f97316' : selectedShelfObj.rarity === 'epic' ? '#a855f7' : selectedShelfObj.rarity === 'legendary' ? '#eab308' : selectedShelfObj.rarity === 'rare' ? '#3b82f6' : '#6b7280' }}>
+              {selectedShelfObj.artifact.season_pool ? '🔥 Сезонный' : selectedShelfObj.rarity === 'common' ? '🟢 Обычный' : selectedShelfObj.rarity === 'rare' ? '🔵 Редкий' : selectedShelfObj.rarity === 'epic' ? '🟣 Эпический' : '🟡 Легендарный'}
             </div>
             <div className={styles.shelfDetailMeta}>
-              {((selectedShelfObj.artifact as any).effect || (selectedShelfObj.artifact as any).effect_type) && (
+              {(selectedShelfObj.artifact.effect || selectedShelfObj.artifact.effect_type) && (
                 <span style={{ color: 'var(--accent-xp)', fontWeight: 700 }}>
-                  {shelfEffectLabel((selectedShelfObj.artifact as any).effect || '', (selectedShelfObj.artifact as any).effect_type || '', (selectedShelfObj.artifact as any).effect_value ?? 0)}
+                  {shelfEffectLabel(selectedShelfObj.artifact.effect || '', selectedShelfObj.artifact.effect_type || '', selectedShelfObj.artifact.effect_value ?? 0)}
                 </span>
               )}
               {/* Заряды ИЛИ время — не оба */}
-              {(selectedShelfObj as any).expiresAt ? (
-                <span style={{ color: new Date((selectedShelfObj as any).expiresAt) < new Date() ? 'var(--accent-hp)' : 'var(--accent-gold)' }}>
-                  ⏳ {shelfTimeLeft((selectedShelfObj as any).expiresAt)}
+              {selectedShelfObj.expiresAt ? (
+                <span style={{ color: new Date(selectedShelfObj.expiresAt) < new Date() ? 'var(--accent-hp)' : 'var(--accent-gold)' }}>
+                  ⏳ {shelfTimeLeft(selectedShelfObj.expiresAt)}
                 </span>
-              ) : ((selectedShelfObj.charges ?? 0) > 0) && !String((selectedShelfObj.artifact as any).effect ?? (selectedShelfObj.artifact as any).effect_type ?? '').includes('passive') ? (
+              ) : ((selectedShelfObj.charges ?? 0) > 0) && !String(selectedShelfObj.artifact.effect ?? selectedShelfObj.artifact.effect_type ?? '').includes('passive') ? (
                 <span>⚡ {selectedShelfObj.charges} зар{'.'}</span>
               ) : null}
-              {!(selectedShelfObj.artifact as any).effect && !selectedShelfObj.charges && !(selectedShelfObj as any).expiresAt && <span>Ур. {(selectedShelfObj.artifact as any).min_level || 1}</span>}
+              {!selectedShelfObj.artifact.effect && !selectedShelfObj.charges && !selectedShelfObj.expiresAt && <span>Ур. {selectedShelfObj.artifact.min_level || 1}</span>}
             </div>
             <div className={styles.shelfDetailActions}>
               {(() => {
-                const expiresAt = (selectedShelfObj as any).expiresAt as string | null;
-                const isTimeLocked = expiresAt && new Date(expiresAt).getTime() > Date.now();
+                const expiresAt = selectedShelfObj.expiresAt;
+                const isTimeLocked = expiresAt && new Date(expiresAt).getTime() > nowMs;
                 if (isTimeLocked) {
                   return (
                     <div style={{

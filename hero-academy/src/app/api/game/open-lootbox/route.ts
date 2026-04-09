@@ -21,6 +21,34 @@ const SEASONAL_POOLS: Record<string, string> = {
   seasonal_water: 'water',
 };
 
+// Local shapes used by this route — only the fields we read.
+interface LootboxArtifactJoin {
+  season_pool: string | null;
+}
+
+interface BoxRow {
+  id: string;
+  hero_id: string;
+  quantity: number | null;
+  artifacts: LootboxArtifactJoin | LootboxArtifactJoin[] | null;
+}
+
+interface SeasonArtifactRow {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  rarity: string;
+  drop_rate: number | null;
+  max_charges: number | null;
+  duration_hours: number | null;
+}
+
+interface ArtifactDetailsRow {
+  max_charges: number | null;
+  duration_hours: number | null;
+}
+
 export async function POST(req: NextRequest) {
   const { heroArtifactId, boxRarity, userId } = await req.json();
   if (!heroArtifactId || !boxRarity || !userId) {
@@ -28,26 +56,28 @@ export async function POST(req: NextRequest) {
   }
 
   // Verify this lootbox belongs to someone and check if it's a seasonal chest
-  const { data: boxRow } = await admin
+  const { data: boxRowRaw } = await admin
     .from('hero_artifacts')
     .select('id, hero_id, quantity, artifacts(season_pool)')
     .eq('id', heroArtifactId)
     .single();
-    
+
+  const boxRow = boxRowRaw as unknown as BoxRow | null;
   if (!boxRow) return NextResponse.json({ error: 'Lootbox not found in inventory' }, { status: 404 });
 
-  let seasonPool = SEASONAL_POOLS[boxRarity];
+  let seasonPool: string | undefined = SEASONAL_POOLS[boxRarity];
   if (!seasonPool && boxRow.artifacts) {
     const artData = Array.isArray(boxRow.artifacts) ? boxRow.artifacts[0] : boxRow.artifacts;
-    seasonPool = (artData as any)?.season_pool;
+    seasonPool = artData?.season_pool ?? undefined;
   }
   if (seasonPool) {
     // Build seasonal pool: all artifacts tagged with this season_pool
-    const { data: seasonArts } = await admin
+    const { data: seasonArtsRaw } = await admin
       .from('artifacts')
       .select('id, name, description, icon, rarity, drop_rate, max_charges, duration_hours')
       .eq('season_pool', seasonPool)
       .neq('effect_type', 'lootbox');
+    const seasonArts = seasonArtsRaw as SeasonArtifactRow[] | null;
 
     // Consume one copy of the seasonal lootbox
     if ((boxRow.quantity ?? 1) > 1) {
@@ -63,7 +93,7 @@ export async function POST(req: NextRequest) {
     // Weighted pick by drop_rate
     const totalDrop = seasonArts.reduce((s, a) => s + (a.drop_rate || 1), 0);
     let dropRoll = Math.random() * totalDrop;
-    let won = seasonArts[0];
+    let won: SeasonArtifactRow = seasonArts[0];
     for (const a of seasonArts) {
       if (dropRoll < (a.drop_rate || 1)) { won = a; break; }
       dropRoll -= (a.drop_rate || 1);
@@ -93,7 +123,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       seasonal: true,
-      artifact: { id: won.id, name: won.name, icon: won.icon, rarity: won.rarity, description: (won as any).description ?? '' },
+      artifact: { id: won.id, name: won.name, icon: won.icon, rarity: won.rarity, description: won.description ?? '' },
     });
   }
 
@@ -147,9 +177,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Grant winning artifact
-  const { data: fullArtRow } = await admin.from('artifacts').select('max_charges, duration_hours').eq('id', won.id).single();
-  const maxCharges = (fullArtRow as any)?.max_charges ?? 0;
-  const durationHours = Number((fullArtRow as any)?.duration_hours) || 0;
+  const { data: fullArtRowRaw } = await admin.from('artifacts').select('max_charges, duration_hours').eq('id', won.id).single();
+  const fullArtRow = fullArtRowRaw as ArtifactDetailsRow | null;
+  const maxCharges = fullArtRow?.max_charges ?? 0;
+  const durationHours = Number(fullArtRow?.duration_hours) || 0;
 
   await admin.from('hero_artifacts').insert({
     hero_id: boxRow.hero_id,

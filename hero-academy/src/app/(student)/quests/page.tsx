@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSeasonBosses, type SeasonBossData } from '@/lib/hooks/use-season-bosses';
 import { Modal } from '@/components/ui/Modal';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -68,53 +68,57 @@ export default function QuestsPage() {
 
   const supabase = createClient();
 
-  const fetchQuests = useCallback(async () => {
-    setQuestsLoading(true);
-    // Step 1: get session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) { setQuestsLoading(false); return; }
-    const userId = session.user.id;
+  // Загрузка квестов. Вся мутация состояния — внутри async IIFE в эффекте,
+  // чтобы setState не был синхронным в теле useEffect (react-hooks/set-state-in-effect).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setQuestsLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!session?.user) { setQuestsLoading(false); return; }
+      const userId = session.user.id;
 
-    // Step 2: hero + profile in parallel (was sequential before)
-    const [heroRes, profileRes] = await Promise.all([
-      supabase.from('heroes').select('id').eq('user_id', userId).single(),
-      supabase.from('users').select('class_id').eq('id', userId).single(),
-    ]);
+      const [heroRes, profileRes] = await Promise.all([
+        supabase.from('heroes').select('id').eq('user_id', userId).single(),
+        supabase.from('users').select('class_id').eq('id', userId).single(),
+      ]);
+      if (cancelled) return;
+      const profile = profileRes.data as { class_id: string | null } | null;
+      const heroRow = heroRes.data as { id: string } | null;
+      const classId = profile?.class_id;
+      if (!classId) { setQuestsLoading(false); return; }
+      const heroId = heroRow?.id;
 
-    const classId = (profileRes.data as any)?.class_id;
-    if (!classId) { setQuestsLoading(false); return; }
-    const heroId = (heroRes.data as any)?.id;
+      const { data: rawQuests } = await supabase
+        .from('quests')
+        .select('id, title, subject, type, difficulty, xp_reward, gold_reward, hp_damage, deadline, status, created_at')
+        .eq('class_id', classId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      if (cancelled) return;
+      if (!rawQuests) { setQuestsLoading(false); return; }
 
-    // Step 2: fetch quests
-    const { data: rawQuests } = await supabase
-      .from('quests')
-      .select('id, title, subject, type, difficulty, xp_reward, gold_reward, hp_damage, deadline, status, created_at')
-      .eq('class_id', classId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
-
-    if (!rawQuests) { setQuestsLoading(false); return; }
-
-    // Step 3: fetch attempts (needs quest IDs)
-    let attemptsMap: Record<string, { status: string; score: number | null }> = {};
-    if (heroId && rawQuests.length > 0) {
-      const { data: attempts } = await supabase
-        .from('quest_attempts')
-        .select('quest_id, status, score')
-        .eq('hero_id', heroId)
-        .in('quest_id', rawQuests.map((q: Quest) => q.id));
-      if (attempts) {
-        attempts.forEach((a: { quest_id: string; status: string; score: number | null }) => {
-          attemptsMap[a.quest_id] = { status: a.status, score: a.score };
-        });
+      const attemptsMap: Record<string, { status: string; score: number | null }> = {};
+      if (heroId && rawQuests.length > 0) {
+        const { data: attempts } = await supabase
+          .from('quest_attempts')
+          .select('quest_id, status, score')
+          .eq('hero_id', heroId)
+          .in('quest_id', rawQuests.map((q: Quest) => q.id));
+        if (cancelled) return;
+        if (attempts) {
+          attempts.forEach((a: { quest_id: string; status: string; score: number | null }) => {
+            attemptsMap[a.quest_id] = { status: a.status, score: a.score };
+          });
+        }
       }
-    }
-
-    setQuests(rawQuests.map((q: Quest) => ({ ...q, attempt: attemptsMap[q.id] ?? null })));
-    setQuestsLoading(false);
+      if (cancelled) return;
+      setQuests(rawQuests.map((q: Quest) => ({ ...q, attempt: attemptsMap[q.id] ?? null })));
+      setQuestsLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [supabase]);
-
-  useEffect(() => { fetchQuests(); }, [fetchQuests]);
 
   /* ── Quest type label ── */
   const getTypeInfo = (quest: Quest) => {

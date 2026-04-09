@@ -27,10 +27,13 @@ const TYPE_LABELS: Record<string, string> = {
   info: 'Информация', event: 'Событие', alert: 'Важное', reward: 'Награда',
 };
 
+interface SchoolRef { id: string; name: string; }
+interface ClassRef { id: string; name: string; school_id?: string }
+
 export default function NewsAdminPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [schools, setSchools] = useState<any[]>([]);
-  const [classes, setClasses] = useState<any[]>([]);
+  const [schools, setSchools] = useState<SchoolRef[]>([]);
+  const [classes, setClasses] = useState<ClassRef[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showComposer, setShowComposer] = useState(false);
@@ -49,30 +52,41 @@ export default function NewsAdminPage() {
   const [newPinned, setNewPinned] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    // setState вынесен в async IIFE (паттерн set-state-in-effect), и чтобы
+    // избежать TDZ-ошибки, fetchData больше не объявляется после useEffect.
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data: nData } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+      if (cancelled) return;
+      if (nData) setNews(nData);
+
+      const { data: sData } = await supabase.from('schools').select('id, name');
+      if (cancelled) return;
+      if (sData) setSchools(sData);
+
+      const { data: cData } = await supabase.from('classes').select('id, name, school_id');
+      if (cancelled) return;
+      if (cData) setClasses(cData);
+
+      // Initial selection: first school + its first class
+      if (sData && sData.length > 0) {
+        const firstSchoolId = sData[0].id;
+        setTargetSchool(firstSchoolId);
+        const firstClass = (cData ?? []).find(c => c.school_id === firstSchoolId);
+        if (firstClass) setTargetClass(firstClass.id);
+      }
+
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    const { data: nData } = await supabase.from('news').select('*').order('created_at', { ascending: false });
-    if (nData) setNews(nData);
-
-    const { data: sData } = await supabase.from('schools').select('id, name');
-    if (sData) {
-      setSchools(sData);
-      if (sData.length > 0) setTargetSchool(sData[0].id);
-    }
-
-    const { data: cData } = await supabase.from('classes').select('id, name, school_id');
-    if (cData) setClasses(cData);
-
-    setLoading(false);
+  const handleSchoolChange = (schoolId: string) => {
+    setTargetSchool(schoolId);
+    const classForSchool = classes.find(c => c.school_id === schoolId);
+    setTargetClass(classForSchool?.id ?? '');
   };
-
-  useEffect(() => {
-    const classForSchool = classes.find(c => c.school_id === targetSchool);
-    if (classForSchool) setTargetClass(classForSchool.id);
-  }, [targetSchool, classes]);
 
   const getTargetLabel = (n: NewsItem) => {
     if (n.target_type === 'all') return '🌐 Все школы';
@@ -127,7 +141,9 @@ export default function NewsAdminPage() {
       setNewImageFile(null);
       setNewPinned(false);
       setShowComposer(false);
-      fetchData();
+      // Refetch news list
+      const { data: nData } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+      if (nData) setNews(nData);
     } else {
       alert('Ошибка публикации ' + (await res.json()).error);
     }
@@ -218,7 +234,7 @@ export default function NewsAdminPage() {
             {targetScope !== 'all' && (
               <div className={styles.fieldGroup}>
                 <label>Школа</label>
-                <select className={styles.select} value={targetSchool} onChange={e => setTargetSchool(e.target.value)}>
+                <select className={styles.select} value={targetSchool} onChange={e => handleSchoolChange(e.target.value)}>
                   {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>

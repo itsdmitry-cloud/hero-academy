@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useHeroStore } from '@/lib/store/heroStore';
+import type { PlayerArtifact } from '@/lib/utils/artifacts';
 
 /* ──────────── types ──────────── */
 export interface ArtifactCatalog {
@@ -77,7 +78,7 @@ export function useArtifacts() {
             charges_left: i.charges_remaining,
             expires_at: i.expires_at ? new Date(i.expires_at) : undefined,
           }));
-          useHeroStore.setState({ inventory: equipped as any });
+          useHeroStore.setState({ inventory: equipped as unknown as PlayerArtifact[] });
         }
       } else {
         // Cold path: need session to find heroId — still parallel where possible
@@ -112,7 +113,7 @@ export function useArtifacts() {
             charges_left: i.charges_remaining,
             expires_at: i.expires_at ? new Date(i.expires_at) : undefined,
           }));
-          useHeroStore.setState({ inventory: equipped as any });
+          useHeroStore.setState({ inventory: equipped as unknown as PlayerArtifact[] });
         }
       }
     } finally {
@@ -180,7 +181,7 @@ export function useArtifacts() {
       return { error: 'Срок действия артефакта истёк — он исчез.' };
     }
 
-    const effect = art.effect || (art as any).effect_type || '';
+    const effect = art.effect || art.effect_type || '';
     const isInstant = effect.startsWith('hp_restore') || effect.startsWith('xp_instant') || effect === 'level_up' || effect.startsWith('consumable_') || effect === 'gold_bonus' || effect === 'extra_gold';
 
     if (art.artifact_type === 'consumable' && isInstant) {
@@ -215,8 +216,11 @@ export function useArtifacts() {
     return { error: null };
   }, [supabase, inventory, fetchArtifacts]);
 
-  /* ── Use consumable artifact ── */
-  const useConsumable = useCallback(async (heroArtifactId: string): Promise<{ error: string | null; effect?: string; value?: number; message?: string }> => {
+  /* ── Use consumable artifact ──
+   * Named `consumeArtifact`, not `useConsumable`, because the `use*` prefix
+   * is reserved for React Hooks and triggers react-hooks/rules-of-hooks
+   * at call sites (this is just a memoized async helper). */
+  const consumeArtifact = useCallback(async (heroArtifactId: string): Promise<{ error: string | null; effect?: string; value?: number; message?: string }> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return { error: 'Не авторизован' };
 
@@ -229,7 +233,7 @@ export function useArtifacts() {
 
     // Use the `effect` TEXT field as primary source (covers all effect codes);
     // Use effect column (primary), fall back to effect_type for legacy rows
-    const effect = art.effect || (art as any).effect_type || '';
+    const effect = art.effect || art.effect_type || '';
     const val = art.effect_value;
 
     if (effect === 'hp_restore' || effect === 'hp_shield' || effect?.startsWith('hp_restore_')) {
@@ -318,5 +322,5 @@ export function useArtifacts() {
     return { error: null, refund };
   }, [supabase, inventory, fetchArtifacts]);
 
-  return { catalog, inventory, loading, refetch: fetchArtifacts, equipArtifact, useConsumable, sellArtifact, getMaxSlots };
+  return { catalog, inventory, loading, refetch: fetchArtifacts, equipArtifact, consumeArtifact, sellArtifact, getMaxSlots };
 }

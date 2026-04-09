@@ -15,6 +15,9 @@ const seasonResets = [
 
 export default function SeasonsPage() {
   const { schools, seasons, loading, createSeason, refetch } = useAdminData();
+  // Pin "now" at mount — React Compiler flags raw Date.now() in render as impure.
+  // We don't need ticking precision for "days until season start".
+  const [nowMs] = useState(() => Date.now());
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -153,7 +156,7 @@ export default function SeasonsPage() {
               {s.status === 'upcoming' && (
                 <>
                   <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Начинается через {Math.max(0, Math.ceil((new Date(s.starts_at).getTime() - Date.now()) / 86400000))} дн.
+                    Начинается через {Math.max(0, Math.ceil((new Date(s.starts_at).getTime() - nowMs) / 86400000))} дн.
                   </div>
                   <button
                     onClick={() => activateSeason(s.id)}

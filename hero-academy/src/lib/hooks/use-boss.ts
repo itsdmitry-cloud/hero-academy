@@ -61,7 +61,11 @@ export function useBoss(classId: string | null) {
   // Real-time subscription on boss_events for this class
   useEffect(() => {
     if (!classId) return;
-    fetchBosses();
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      await fetchBosses();
+    })();
 
     const channel = supabase
       .channel(`boss_class_${classId}`)
@@ -85,7 +89,7 @@ export function useBoss(classId: string | null) {
       .subscribe();
 
     realtimeSub.current = channel;
-    return () => { supabase.removeChannel(channel); };
+    return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [classId, fetchBosses]);
 
   /* ── Teacher: create boss event ── */
@@ -119,6 +123,35 @@ export function useBoss(classId: string | null) {
       started_at: new Date().toISOString(),
     }).eq('id', bossId);
     return { error: error?.message ?? null };
+  }, []);
+
+  /* ── Distribute rewards when boss is defeated ── */
+  const distributeBossRewards = useCallback(async (bossId: string) => {
+    const { data: boss } = await supabase.from('boss_events')
+      .select('rewards, class_id').eq('id', bossId).single();
+    if (!boss) return;
+
+    const { data: participants } = await supabase.from('boss_participants')
+      .select('hero_id, damage_dealt').eq('boss_event_id', bossId);
+    if (!participants) return;
+
+    const rewards = boss.rewards as { xp?: number; gold?: number };
+    const totalDamage = participants.reduce((s, p) => s + p.damage_dealt, 0);
+
+    for (const p of participants) {
+      const share = totalDamage > 0 ? p.damage_dealt / totalDamage : 1 / participants.length;
+      const xpEarned = Math.round((rewards.xp ?? 300) * share);
+      const goldEarned = Math.round((rewards.gold ?? 100) * share);
+
+      // Get current hero stats and add rewards
+      const { data: hero } = await supabase.from('heroes').select('xp, gold').eq('id', p.hero_id).single();
+      if (hero) {
+        await supabase.from('heroes').update({
+          xp: hero.xp + xpEarned,
+          gold: hero.gold + goldEarned,
+        }).eq('id', p.hero_id);
+      }
+    }
   }, []);
 
   /* ── Student: deal damage to boss ── */
@@ -191,35 +224,7 @@ export function useBoss(classId: string | null) {
     }
 
     return { error: null, bossDefeated: newBossHp === 0 };
-  }, [user, profile]);
-
-  const distributeBossRewards = async (bossId: string) => {
-    const { data: boss } = await supabase.from('boss_events')
-      .select('rewards, class_id').eq('id', bossId).single();
-    if (!boss) return;
-
-    const { data: participants } = await supabase.from('boss_participants')
-      .select('hero_id, damage_dealt').eq('boss_event_id', bossId);
-    if (!participants) return;
-
-    const rewards = boss.rewards as { xp?: number; gold?: number };
-    const totalDamage = participants.reduce((s, p) => s + p.damage_dealt, 0);
-
-    for (const p of participants) {
-      const share = totalDamage > 0 ? p.damage_dealt / totalDamage : 1 / participants.length;
-      const xpEarned = Math.round((rewards.xp ?? 300) * share);
-      const goldEarned = Math.round((rewards.gold ?? 100) * share);
-
-      // Get current hero stats and add rewards
-      const { data: hero } = await supabase.from('heroes').select('xp, gold').eq('id', p.hero_id).single();
-      if (hero) {
-        await supabase.from('heroes').update({
-          xp: hero.xp + xpEarned,
-          gold: hero.gold + goldEarned,
-        }).eq('id', p.hero_id);
-      }
-    }
-  };
+  }, [user, profile, distributeBossRewards]);
 
   /* ── Get participants for a boss ── */
   const fetchParticipants = useCallback(async (bossId: string): Promise<BossParticipant[]> => {

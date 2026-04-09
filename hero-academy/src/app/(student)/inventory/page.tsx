@@ -44,8 +44,13 @@ function ArtifactIcon({ icon, name, size = '100%' }: { icon: string; name: strin
   return <span style={{ fontSize: '2rem' }}>{icon || '💎'}</span>;
 }
 
+type ArtifactCatalogExt = ArtifactCatalog & {
+  effect_type?: string;
+  season_pool?: string | null;
+};
+
 function isLootbox(art: ArtifactCatalog) {
-  return art.name?.startsWith('📦') || art.effect === 'lootbox' || (art as any).effect_type === 'lootbox';
+  return art.name?.startsWith('📦') || art.effect === 'lootbox' || (art as ArtifactCatalogExt).effect_type === 'lootbox';
 }
 
 /** Maps seasonal chest names to boxRarity param for the API */
@@ -72,7 +77,7 @@ function isSeasonalLootbox(art: ArtifactCatalog): boolean {
 }
 
 function isConsumable(art: ArtifactCatalog) {
-  const eff = art.effect || (art as any).effect_type || '';
+  const eff = art.effect || (art as ArtifactCatalogExt).effect_type || '';
   return !isLootbox(art) && (
     eff.startsWith('hp_restore') || eff.startsWith('xp_instant') || eff === 'level_up' ||
     eff.startsWith('consumable_') || eff === 'gold_bonus' || eff === 'extra_gold'
@@ -80,7 +85,7 @@ function isConsumable(art: ArtifactCatalog) {
 }
 
 export default function InventoryPage() {
-  const { catalog, inventory, loading, equipArtifact, useConsumable, sellArtifact, refetch } = useArtifacts();
+  const { catalog, inventory, loading, equipArtifact, consumeArtifact, sellArtifact, refetch } = useArtifacts();
   const { hero, openLootbox } = useHero();
   const [activeTab, setActiveTab] = useState<TabId>('all');
   const [selectedItem, setSelectedItem] = useState<HeroArtifact | null>(null);
@@ -94,7 +99,7 @@ export default function InventoryPage() {
   const normalItems = inventory.filter(i => i.artifact && !isLootbox(i.artifact));
 
   const filterItem = (item: HeroArtifact) => {
-    const art = item.artifact as (ArtifactCatalog & { artifact_type?: string }) | undefined;
+    const art = item.artifact;
     if (!art || isLootbox(art)) return false;
     switch (activeTab) {
       case 'artifacts': return !isConsumable(art);
@@ -255,7 +260,7 @@ export default function InventoryPage() {
                 <div className={styles.detailName}>{selectedItem.artifact.name}</div>
                 {(() => {
                   const art = selectedItem.artifact!;
-                  const seasonPool = (art as any).season_pool;
+                  const seasonPool = (art as ArtifactCatalogExt).season_pool;
                   const seasonalChest = getSeasonalTag(art);
                   if (seasonPool || seasonalChest) {
                     const sColor = seasonalChest
@@ -309,13 +314,15 @@ export default function InventoryPage() {
                         let possible: string[] = [];
                         if (seasonalTag) {
                           const element = seasonalTag.replace('seasonal_', '');
-                          possible = catalog.filter((a: any) => a.season_pool === element).map(a => a.icon);
+                          possible = (catalog as ArtifactCatalogExt[]).filter((a) => a.season_pool === element).map(a => a.icon);
                         } else {
                           const validRarities = boxRarity === 'common' ? ['common', 'rare']
                             : boxRarity === 'rare' ? ['common', 'rare', 'epic']
                             : boxRarity === 'epic' ? ['rare', 'epic', 'legendary']
                             : ['epic', 'legendary'];
-                          possible = catalog.filter(a => validRarities.includes(a.rarity) && !(a as any).season_pool).map(a => a.icon);
+                          possible = (catalog as ArtifactCatalogExt[])
+                            .filter(a => validRarities.includes(a.rarity) && !a.season_pool)
+                            .map(a => a.icon);
                         }
                         if (possible.length === 0) possible = ROULETTE_ICONS;
                         
@@ -350,7 +357,7 @@ export default function InventoryPage() {
                       disabled={actionLoading}
                       onClick={async () => {
                         setActionLoading(true); setActionError(null); setActionMsg(null);
-                        const result = await useConsumable(selectedItem.id);
+                        const result = await consumeArtifact(selectedItem.id);
                         setActionLoading(false);
                         if (result.error) { setActionError(result.error); }
                         else {

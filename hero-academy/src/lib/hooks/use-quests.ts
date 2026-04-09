@@ -87,7 +87,14 @@ export function useQuests() {
     setLoading(false);
   }, [profile, supabase]);
 
-  useEffect(() => { fetchQuests(); }, [fetchQuests]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      await fetchQuests();
+    })();
+    return () => { cancelled = true; };
+  }, [fetchQuests]);
 
   return { quests, loading, refetch: fetchQuests };
 }

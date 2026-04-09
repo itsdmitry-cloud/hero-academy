@@ -99,7 +99,7 @@ export const useHeroStore = create<HeroStore>()(
           if (item.is_equipped) return state; // Already equipped
 
           const maxSlots = state.hero.level >= 50 ? 6 : state.hero.level >= 40 ? 5 : state.hero.level >= 30 ? 4 : state.hero.level >= 20 ? 3 : state.hero.level >= 10 ? 2 : 1;
-          let newActive = [...state.hero.activeArtifacts];
+          const newActive = [...state.hero.activeArtifacts];
 
           if (newActive.length >= maxSlots) {
             // Remove the oldest one to make room
@@ -132,7 +132,7 @@ export const useHeroStore = create<HeroStore>()(
         if (!def) return;
 
         const addToast = useToastStore.getState().addToast;
-        let heroUpdate: Partial<ExtendedHeroState> = {};
+        const heroUpdate: Partial<ExtendedHeroState> = {};
 
         const code = def.effect_code;
         if (code === 'HEAL_30') {
@@ -195,7 +195,7 @@ export const useHeroStore = create<HeroStore>()(
           let newHp = state.hero.hp - result.finalDamage;
           if (newHp < 0) newHp = 0; // Prevent negative HP
 
-          let newXp = state.hero.xp + result.finalXp;
+          const newXp = state.hero.xp + result.finalXp;
           let newLevel = state.hero.level;
           let newXpNext = state.hero.xp_to_next;
 

@@ -60,15 +60,13 @@ const PRESETS = [
 export default function EconomyPage() {
   const { schools, classes, economyConfig, loading, saveEconomy, fetchClasses } = useAdminData();
 
+  type ConfigSource = 'class' | 'school' | 'global' | 'default';
+
   const [scope, setScope] = useState<'global' | 'school' | 'class'>('global');
   const [selectedSchool, setSelectedSchool] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [balance, setBalance] = useState<BalanceConfig>({ ...DEFAULT_BALANCE });
-  const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-
-  const [configSource, setConfigSource] = useState<'class' | 'school' | 'global' | 'default'>('default');
 
   interface AuditEntry {
     id: string;
@@ -89,18 +87,25 @@ export default function EconomyPage() {
   };
 
   // Load audit log on mount
-  useEffect(() => { loadAudit(); }, []);
-
-  // Load economy config for current scope/id — uses cascade: class → school → global
   useEffect(() => {
+    let cancelled = false;
+    fetch('/api/admin/economy-audit?limit=50')
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setAuditLog(d.logs ?? []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Derive current cascade config (class → school → global → default).
+  // React Compiler auto-memoizes this — no manual useMemo needed.
+  const resolvedConfig: { config: BalanceConfig; source: ConfigSource } = (() => {
     const classId   = scope === 'class'  ? selectedClass  || null : null;
     const schoolId  = scope === 'school' ? selectedSchool || null : null;
     const classSchoolId = scope === 'class' && selectedClass
       ? classes.find(c => c.id === selectedClass)?.school_id ?? null
       : null;
 
-    // Build candidate keys in priority order
-    const candidates: { scope: EconomyConfig['scope']; scope_id: string | null; label: typeof configSource }[] = [];
+    const candidates: { scope: EconomyConfig['scope']; scope_id: string | null; label: ConfigSource }[] = [];
     if (scope === 'class' && classId) {
       candidates.push({ scope: 'class',  scope_id: classId,       label: 'class'  });
       if (classSchoolId) candidates.push({ scope: 'school', scope_id: classSchoolId, label: 'school' });
@@ -109,30 +114,39 @@ export default function EconomyPage() {
     }
     candidates.push({ scope: 'global', scope_id: null, label: 'global' });
 
-    // Walk cascade: find first matching row
-    let found: EconomyConfig | null = null;
-    let foundLabel: typeof configSource = 'default';
     for (const c of candidates) {
       const row = economyConfig.find((e: EconomyConfig) => e.scope === c.scope && e.scope_id === c.scope_id);
-      if (row) { found = row; foundLabel = c.label; break; }
+      if (row) {
+        return {
+          config: {
+            dmg_multiplier:       row.dmg_multiplier,
+            xp_multiplier:        row.xp_multiplier,
+            gold_multiplier:      row.gold_multiplier,
+            drop_rate_multiplier: row.drop_rate_multiplier,
+            boss_hp_multiplier:   row.boss_hp_multiplier,
+            hp_regen_rate:        row.hp_regen_rate,
+          },
+          source: c.label,
+        };
+      }
     }
+    return { config: { ...DEFAULT_BALANCE }, source: 'default' };
+  })();
 
-    if (found) {
-      setBalance({
-        dmg_multiplier:       found.dmg_multiplier,
-        xp_multiplier:        found.xp_multiplier,
-        gold_multiplier:      found.gold_multiplier,
-        drop_rate_multiplier: found.drop_rate_multiplier,
-        boss_hp_multiplier:   found.boss_hp_multiplier,
-        hp_regen_rate:        found.hp_regen_rate,
-      });
-      setConfigSource(foundLabel);
-    } else {
-      setBalance({ ...DEFAULT_BALANCE });
-      setConfigSource('default');
-    }
-    setSaved(true);
-  }, [scope, selectedSchool, selectedClass, economyConfig, classes]);
+  const configSource = resolvedConfig.source;
+
+  // Local editable copy of balance — reset when the resolved source changes.
+  // Uses the "store previous value, compare during render" pattern instead of
+  // an effect, to avoid react-hooks/set-state-in-effect.
+  const [balance, setBalance] = useState<BalanceConfig>(resolvedConfig.config);
+  const [savedBalance, setSavedBalance] = useState<BalanceConfig>(resolvedConfig.config);
+  const [lastResolvedConfig, setLastResolvedConfig] = useState<BalanceConfig>(resolvedConfig.config);
+  if (lastResolvedConfig !== resolvedConfig.config) {
+    setLastResolvedConfig(resolvedConfig.config);
+    setBalance(resolvedConfig.config);
+    setSavedBalance(resolvedConfig.config);
+  }
+  const saved = balance === savedBalance;
 
   useEffect(() => {
     if (selectedSchool) fetchClasses(selectedSchool);
@@ -140,7 +154,6 @@ export default function EconomyPage() {
 
   const handleSlider = (key: SliderKey, value: number) => {
     setBalance(prev => ({ ...prev, [key]: value }));
-    setSaved(false);
   };
 
   const getScopeLabel = () => {
@@ -159,7 +172,7 @@ export default function EconomyPage() {
     const { error } = await saveEconomy(balance, scope, scopeId, getScopeLabel());
     setSaving(false);
     if (error) { setFeedback(`Ошибка: ${error}`); return; }
-    setSaved(true);
+    setSavedBalance(balance);
     setFeedback('✅ Настройки сохранены в БД!');
     loadAudit(); // refresh history
     setTimeout(() => setFeedback(null), 3000);
@@ -167,7 +180,6 @@ export default function EconomyPage() {
 
   const applyPreset = (config: BalanceConfig) => {
     setBalance({ ...config });
-    setSaved(false);
   };
 
   const getSliderPct = (key: SliderKey) => {
@@ -300,7 +312,7 @@ export default function EconomyPage() {
 
       {/* Save Bar */}
       <div className={styles.actionBar}>
-        <button className={styles.resetBtn} onClick={() => { setBalance({ ...DEFAULT_BALANCE }); setSaved(false); }}>
+        <button className={styles.resetBtn} onClick={() => setBalance({ ...DEFAULT_BALANCE })}>
           🔄 Сбросить к базовым
         </button>
         <button

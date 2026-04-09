@@ -334,15 +334,28 @@ export async function distributeBossKillRewards(opts: {
   const LEVEL_CAPS: [number, string][] = [[15,'common'],[30,'rare'],[45,'epic'],[100,'legendary']];
   const TIERS = ['common','rare','epic','legendary'];
 
+  // Local shape for the joined heroes row we select above.
+  // Only lists the fields that we actually read in this loop.
+  interface HeroRow {
+    id: string;
+    hp: number;
+    xp: number;
+    gold: number;
+    level: number;
+    xp_to_next: number;
+    season_xp: number | null;
+  }
+
   const heroUpdates: { id: string; data: Record<string, unknown> }[] = [];
   const activityLogs: Record<string, unknown>[] = [];
   const lootboxInserts: Record<string, unknown>[] = [];
 
   for (const st of classStudents) {
-    const hr = Array.isArray(st.heroes) ? st.heroes[0] : st.heroes as Record<string, unknown> | null;
-    if (!hr || (hr as any).hp <= 0) continue;
+    const hrRaw = Array.isArray(st.heroes) ? st.heroes[0] : st.heroes;
+    const hr = (hrRaw as unknown as HeroRow | null);
+    if (!hr || hr.hp <= 0) continue;
 
-    const heroId = String((hr as any).id);
+    const heroId = String(hr.id);
     const myDmg = damageMap[heroId] || 0;
 
     let myXp = 100;
@@ -367,12 +380,12 @@ export async function distributeBossKillRewards(opts: {
     }
 
     const { xp: bkXp, level: bkLevel, xpNext: bkXpNext, levelUps: bkLevelUps } = applyXpGain(
-      (hr as any).xp ?? 0, (hr as any).level ?? 1, (hr as any).xp_to_next, myXp
+      hr.xp ?? 0, hr.level ?? 1, hr.xp_to_next, myXp
     );
     const heroUpd: Record<string, unknown> = {
       xp: bkXp,
-      gold: ((hr as any).gold ?? 0) + myGold,
-      season_xp: ((hr as any).season_xp ?? 0) + myXp,
+      gold: (hr.gold ?? 0) + myGold,
+      season_xp: (hr.season_xp ?? 0) + myXp,
     };
     if (bkLevelUps.length > 0) { heroUpd.level = bkLevel; heroUpd.xp_to_next = bkXpNext; }
     heroUpdates.push({ id: heroId, data: heroUpd });

@@ -421,7 +421,8 @@ export function useAdminData() {
     }
     const newXpNext = (newLevel) * (1000 + 250 * (newLevel + 1));
 
-    const update: Record<string, unknown> = { xp: newXp, season_xp: ((hero as any).season_xp ?? 0) + amount };
+    const heroWithSeason = hero as typeof hero & { season_xp?: number | null };
+    const update: Record<string, unknown> = { xp: newXp, season_xp: (heroWithSeason.season_xp ?? 0) + amount };
     if (newLevel !== hero.level) { update.level = newLevel; update.xp_to_next = newXpNext; }
 
     const { error } = await supabase.from('heroes').update(update).eq('id', hero.id);

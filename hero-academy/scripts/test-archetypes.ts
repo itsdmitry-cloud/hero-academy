@@ -153,7 +153,7 @@ async function main() {
         }
 
         const success = Math.random() < successRate;
-        let quest = { ...baseQuest };
+        const quest = { ...baseQuest };
 
         if (!success) {
           quest.baseXp = 0;

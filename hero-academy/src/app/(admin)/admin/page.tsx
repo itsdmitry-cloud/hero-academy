@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminData } from '@/lib/hooks/use-admin-data';
 import { StatCard } from '@/components/ui/StatCard';
 import { createClient } from '@/lib/supabase/client';
@@ -48,16 +48,22 @@ export default function AdminDashboard() {
   const [heroStats, setHeroStats] = useState<{ xp: number; status: string }[]>([]);
   const [questStats, setQuestStats] = useState<{ status: string }[]>([]);
 
-  const fetchChartData = useCallback(async () => {
-    const [{ data: heroes }, { data: quests }] = await Promise.all([
+  useEffect(() => {
+    // Подписка на "внешний источник" (Supabase) для one-shot fetch. setState
+    // внутри then() — это callback от внешней системы, а не sync effect body,
+    // поэтому правило `set-state-in-effect` удовлетворено. Cancelled-флаг
+    // защищает от setState после размонтирования.
+    let cancelled = false;
+    Promise.all([
       supabase.from('heroes').select('xp, status'),
       supabase.from('quests').select('status'),
-    ]);
-    if (heroes) setHeroStats(heroes as { xp: number; status: string }[]);
-    if (quests) setQuestStats(quests as { status: string }[]);
+    ]).then(([heroesRes, questsRes]) => {
+      if (cancelled) return;
+      if (heroesRes.data) setHeroStats(heroesRes.data as { xp: number; status: string }[]);
+      if (questsRes.data) setQuestStats(questsRes.data as { status: string }[]);
+    });
+    return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => { fetchChartData(); }, [fetchChartData]);
 
   const a = analytics ?? {
     total_students: 0, total_teachers: 0, total_schools: 0,

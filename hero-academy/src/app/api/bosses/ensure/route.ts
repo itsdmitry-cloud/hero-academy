@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { normalizeSubjects, escapeLikePattern } from '@/lib/utils/subjects';
+import { calculateBossHp, weeksBetween } from '@/lib/game/boss-hp';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,10 +38,21 @@ export async function POST(req: NextRequest) {
   if (!classRow?.school_id) return NextResponse.json({ error: 'Class not found' }, { status: 404 });
 
   // Active season
-  const { data: season } = await admin.from('seasons').select('id, name')
+  const { data: season } = await admin.from('seasons').select('id, name, starts_at, ends_at')
     .eq('school_id', classRow.school_id).eq('status', 'active').limit(1).maybeSingle();
 
   if (!season) return NextResponse.json({ bosses: [], note: 'No active season' });
+
+  // Для расчёта HP нового босса нам нужен размер класса и длительность сезона —
+  // грузим один раз здесь, чтобы не дёргать БД в цикле по предметам.
+  const { count: studentCount } = await admin.from('users')
+    .select('*', { count: 'exact', head: true })
+    .eq('class_id', classId)
+    .eq('role', 'student');
+  const seasonWeeks = season.starts_at && season.ends_at
+    ? weeksBetween(season.starts_at as string, season.ends_at as string)
+    : null;
+  const bossHp = calculateBossHp({ studentCount: studentCount ?? null, seasonWeeks });
 
   // Загружаем ВСЕХ боссов класса в этом сезоне (их немного — по одному на предмет),
   // чтобы сделать case-insensitive матчинг локально и не городить ilike-OR.
@@ -75,8 +87,8 @@ export async function POST(req: NextRequest) {
       subject_id: subj,
       name: `Босс: ${subj}`,
       avatar: '🐉',
-      max_hp: 50000,
-      current_hp: 50000,
+      max_hp: bossHp,
+      current_hp: bossHp,
       is_defeated: false,
     }).select('*').single();
 

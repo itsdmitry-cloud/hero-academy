@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { normalizeSubjects, escapeLikePattern } from '@/lib/utils/subjects';
+import { calculateBossHp, weeksBetween } from '@/lib/game/boss-hp';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -172,13 +173,11 @@ export async function POST(req: Request) {
                 .eq('class_id', cls.id)
                 .eq('role', 'student');
 
-              const students = studentCount || 10; // default 10 if empty
-              const starts = new Date(activeSeason.starts_at);
-              const ends = new Date(activeSeason.ends_at);
-              const weeks = Math.max(1, Math.round((ends.getTime() - starts.getTime()) / (1000 * 60 * 60 * 24 * 7)));
-              
-              // Formula: students * lessons_per_week (3) * weeks * avg_dmg_per_lesson (20)
-              const calculatedHp = Math.round(students * 3 * weeks * 20);
+              // Single source of truth — та же формула, что и в /api/bosses/ensure.
+              const calculatedHp = calculateBossHp({
+                studentCount: studentCount ?? null,
+                seasonWeeks: weeksBetween(activeSeason.starts_at, activeSeason.ends_at),
+              });
 
               await admin.from('subject_bosses').insert({
                 season_id: activeSeason.id,

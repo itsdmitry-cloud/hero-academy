@@ -26,9 +26,11 @@ export function useRealtimeClass(classId: string | null) {
   const [students, setStudents] = useState<LiveStudentState[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Initial fetch of all students in class
-  const fetchAll = useCallback(async () => {
-    if (!classId) return;
+  // Shared fetcher — returns the next students state, does NOT mutate it.
+  // Keeping state mutations out of this function means react-hooks/set-state-in-effect
+  // only ever sees setState inside the effect's async IIFE.
+  const loadStudents = useCallback(async (): Promise<LiveStudentState[] | null> => {
+    if (!classId) return null;
 
     // Step 1: Get all students in this class
     const { data: usersData, error: usersErr } = await supabase
@@ -39,9 +41,7 @@ export function useRealtimeClass(classId: string | null) {
 
     if (usersErr || !usersData || usersData.length === 0) {
       console.warn('[useRealtimeClass] No students found:', usersErr?.message);
-      setStudents([]);
-      setLoading(false);
-      return;
+      return [];
     }
 
     // Step 2: Get heroes for these students
@@ -58,7 +58,7 @@ export function useRealtimeClass(classId: string | null) {
       }
     }
 
-    setStudents(usersData.map(u => {
+    return usersData.map(u => {
       const hero = heroMap.get(u.id);
       return {
         hero_id: (hero?.id as string) ?? '',
@@ -72,13 +72,33 @@ export function useRealtimeClass(classId: string | null) {
         status: (hero?.status as string) ?? 'active',
         lastUpdated: Date.now(),
       };
-    }));
-    setLoading(false);
+    });
   }, [classId, supabase]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Initial fetch
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const next = await loadStudents();
+      if (cancelled || next === null) return;
+      setStudents(next);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [loadStudents]);
 
-  // Subscribe to hero changes for students in this class
+  // Imperative refetch for callers (e.g. manual refresh)
+  const fetchAll = useCallback(async () => {
+    const next = await loadStudents();
+    if (next !== null) {
+      setStudents(next);
+      setLoading(false);
+    }
+  }, [loadStudents]);
+
+  // Subscribe to hero changes for students in this class.
+  // setState inside the channel callback is an external-store update,
+  // which react-hooks/set-state-in-effect permits.
   useEffect(() => {
     if (!classId) return;
 

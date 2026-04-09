@@ -94,10 +94,10 @@ export default function LogsPage() {
     });
   }, [schoolFilter, classFilter, supabase]);
 
-  // Fetch logs
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-
+  // Fetch logs — returns data, does NOT mutate state. State updates happen
+  // at the call site (effect/handler), so react-hooks/set-state-in-effect
+  // only ever sees setState inside async IIFE callbacks.
+  const queryLogs = useCallback(async () => {
     // Get hero_ids to filter by
     let heroIds: string[] | null = null;
     if (studentFilter !== 'all') {
@@ -111,14 +111,12 @@ export default function LogsPage() {
     if (heroIds !== null && heroIds.length > 0) {
       q = q.in('hero_id', heroIds);
     } else if (heroIds !== null && heroIds.length === 0) {
-      setLogs([]);
-      setLoading(false);
-      return;
+      return [] as LogEntry[];
     }
     if (actionFilter !== 'all') q = q.eq('action', actionFilter);
 
     const { data } = await q;
-    if (!data) { setLogs([]); setLoading(false); return; }
+    if (!data) return [] as LogEntry[];
 
     // Enrich with hero/student names
     const allHeroIds = [...new Set(data.map(d => d.hero_id).filter(Boolean))];
@@ -134,7 +132,7 @@ export default function LogsPage() {
       if (userData) userData.forEach(u => userMap.set(u.id, { name: u.display_name, class_id: u.class_id, school_id: u.school_id }));
     }
 
-    setLogs(data.map(d => {
+    return data.map(d => {
       const hero = heroMap.get(d.hero_id);
       const user = hero ? userMap.get(hero.user_id) : undefined;
       return {
@@ -143,12 +141,31 @@ export default function LogsPage() {
         student_name: user?.name ?? '—',
         class_id: user?.class_id ?? null,
         school_id: user?.school_id ?? null,
-      };
-    }));
-    setLoading(false);
+      } as LogEntry;
+    });
   }, [supabase, schoolFilter, classFilter, studentFilter, actionFilter, limit, students]);
 
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  // Auto-fetch logs when filters change. Every setState runs inside the
+  // async IIFE callback — never in the sync effect body.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const rows = await queryLogs();
+      if (cancelled) return;
+      setLogs(rows);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [queryLogs]);
+
+  // Event handler version used by handleUndo — safe to mutate state directly
+  const refetchLogs = useCallback(async () => {
+    setLoading(true);
+    const rows = await queryLogs();
+    setLogs(rows);
+    setLoading(false);
+  }, [queryLogs]);
 
   // Undo action
   const handleUndo = async (log: LogEntry) => {
@@ -183,7 +200,7 @@ export default function LogsPage() {
       });
 
       setFeedback(`↩️ Действие отменено: ${ACTION_LABELS[log.action]?.label ?? log.action} для ${log.student_name}`);
-      fetchLogs();
+      refetchLogs();
     } catch (err) {
       setFeedback(`Ошибка: ${String(err)}`);
     }

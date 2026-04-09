@@ -95,36 +95,44 @@ export default function LiveRadarPage() {
   // Per-student average score for EVERY subject (fetched once, keyed by [heroId][subject])
   const [allAverages, setAllAverages] = useState<Record<string, Record<string, number>>>({});
 
-  // Fetch all quest_graded logs for this class once on mount / when students change
+  // Fetch all quest_graded logs for this class once on mount / when students change.
+  // State updates run inside the async IIFE (never in the sync effect body),
+  // satisfying react-hooks/set-state-in-effect.
   useEffect(() => {
-    if (!students.length) { setAllAverages({}); return; }
-    const heroIds = students.map(s => s.hero_id).filter(Boolean) as string[];
-    if (!heroIds.length) return;
-    supabase
-      .from('activity_log')
-      .select('hero_id, metadata')
-      .in('hero_id', heroIds)
-      .eq('action', 'quest_graded')
-      .then(({ data }) => {
-        if (!data) return;
-        const buckets: Record<string, Record<string, number[]>> = {};
-        for (const row of data as { hero_id: string; metadata: Record<string, unknown> }[]) {
-          const subj = ((row.metadata?.subject as string) ?? '').toLowerCase();
-          const score = Number(row.metadata?.score ?? 0);
-          if (!subj || score <= 0) continue;
-          if (!buckets[row.hero_id]) buckets[row.hero_id] = {};
-          if (!buckets[row.hero_id][subj]) buckets[row.hero_id][subj] = [];
-          buckets[row.hero_id][subj].push(score);
+    let cancelled = false;
+    (async () => {
+      if (!students.length) {
+        if (cancelled) return;
+        setAllAverages({});
+        return;
+      }
+      const heroIds = students.map(s => s.hero_id).filter(Boolean) as string[];
+      if (!heroIds.length) return;
+      const { data } = await supabase
+        .from('activity_log')
+        .select('hero_id, metadata')
+        .in('hero_id', heroIds)
+        .eq('action', 'quest_graded');
+      if (cancelled || !data) return;
+      const buckets: Record<string, Record<string, number[]>> = {};
+      for (const row of data as { hero_id: string; metadata: Record<string, unknown> }[]) {
+        const subj = ((row.metadata?.subject as string) ?? '').toLowerCase();
+        const score = Number(row.metadata?.score ?? 0);
+        if (!subj || score <= 0) continue;
+        if (!buckets[row.hero_id]) buckets[row.hero_id] = {};
+        if (!buckets[row.hero_id][subj]) buckets[row.hero_id][subj] = [];
+        buckets[row.hero_id][subj].push(score);
+      }
+      const avgs: Record<string, Record<string, number>> = {};
+      for (const heroId of heroIds) {
+        avgs[heroId] = {};
+        for (const [subj, scores] of Object.entries(buckets[heroId] ?? {})) {
+          avgs[heroId][subj] = +(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
         }
-        const avgs: Record<string, Record<string, number>> = {};
-        for (const heroId of heroIds) {
-          avgs[heroId] = {};
-          for (const [subj, scores] of Object.entries(buckets[heroId] ?? {})) {
-            avgs[heroId][subj] = +(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
-          }
-        }
-        setAllAverages(avgs);
-      });
+      }
+      setAllAverages(avgs);
+    })();
+    return () => { cancelled = true; };
   }, [students]); // only re-fetches when class students change (season reset = page reload)
 
   const [lessonToast, setLessonToast] = useState<string | null>(null);

@@ -76,7 +76,7 @@ export function useSeasonBosses() {
             damage_dealt: log.damage_dealt,
             action_type: log.action_type,
             created_at: log.created_at,
-            hero: log.heroes ? { name: (log.heroes as any).name } : undefined
+            hero: log.heroes ? { name: (log.heroes as { name?: string }).name } : undefined
           }));
           return { ...boss, damageLogs: bossLogs };
         }));

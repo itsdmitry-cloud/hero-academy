@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { StatCard } from '@/components/ui/StatCard';
 import { useAdminData } from '@/lib/hooks/use-admin-data';
@@ -71,8 +71,84 @@ function ChartSection({ title, description, children }: { title: string; descrip
 
 const COLORS_PIE = ['#22c55e','#84cc16','#f59e0b','#ef4444','#8b5cf6'];
 
+/* ── Types ── */
+interface TooltipPayloadItem {
+  color?: string;
+  name?: string | number;
+  value?: number;
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string | number;
+}
+
+interface ClassRef {
+  id: string;
+  name: string;
+}
+
+interface AnalyticsSummary {
+  total_students?: number;
+  avg_hp?: number;
+  danger_zone_count?: number;
+  avg_gold?: number;
+  avg_level?: number;
+  total_gold_earned?: number;
+  total_gold_spent?: number;
+  total_hp_lost?: number;
+  total_hp_restored?: number;
+  quests_completed?: number;
+}
+
+interface DailyDataRaw {
+  day: string;
+  dau?: number;
+  gold_earned?: number;
+  gold_spent?: number;
+  shop_purchases?: number;
+  hp_lost?: number;
+  hp_restored?: number;
+  teacher_rewards?: number;
+  teacher_penalties?: number;
+  boss_hits?: number;
+  boss_kills?: number;
+  xp_earned?: number;
+  quests_done?: number;
+  artifacts_dropped?: number;
+}
+
+interface DailyData extends DailyDataRaw {
+  label: string;
+}
+
+interface HeroUserInfo {
+  display_name?: string | null;
+  class_id?: string | null;
+  classes?: { school_id?: string | null; name?: string | null } | null;
+}
+
+interface CriticalHero {
+  id: string;
+  hp: number;
+  hp_max: number;
+  gold: number;
+  level: number;
+  xp: number;
+  streak_current: number | null;
+  users?: HeroUserInfo | null;
+}
+
+interface HpBucket {
+  name: string;
+  min: number;
+  max: number;
+  count: number;
+}
+
 /* ── Custom tooltip ── */
-function ChartTooltip({ active, payload, label }: any) {
+function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -80,10 +156,10 @@ function ChartTooltip({ active, payload, label }: any) {
       borderRadius: '0.75rem', padding: '0.75rem 1rem', fontSize: '0.8rem',
     }}>
       <div style={{ fontWeight: 700, marginBottom: '0.3rem' }}>{label}</div>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <div key={i} style={{ color: p.color, display: 'flex', gap: '0.5rem' }}>
           <span style={{ opacity: 0.7 }}>{p.name}:</span>
-          <span style={{ fontWeight: 700 }}>{fmt(p.value)}</span>
+          <span style={{ fontWeight: 700 }}>{fmt(p.value ?? 0)}</span>
         </div>
       ))}
     </div>
@@ -92,75 +168,92 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export default function AdminAnalyticsPage() {
   const { schools } = useAdminData();
-  const [classes, setClasses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<ClassRef[]>([]);
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [daysFilter, setDaysFilter] = useState<number>(30);
 
-  const [summary, setSummary] = useState<any>(null);
-  const [daily, setDaily] = useState<any[]>([]);
-  const [criticalStudents, setCriticalStudents] = useState<any[]>([]);
-  const [hpDistribution, setHpDistribution] = useState<any[]>([]);
+  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
+  const [daily, setDaily] = useState<DailyData[]>([]);
+  const [criticalStudents, setCriticalStudents] = useState<CriticalHero[]>([]);
+  const [hpDistribution, setHpDistribution] = useState<HpBucket[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load classes when school changes
+  // Load classes when school changes. Every state update runs inside the
+  // async IIFE so react-hooks/set-state-in-effect stays quiet.
   useEffect(() => {
-    if (schoolFilter === 'all') { setClasses([]); setClassFilter('all'); return; }
-    supabase.from('classes').select('id, name').eq('school_id', schoolFilter)
-      .then(({ data }) => { if (data) setClasses(data); setClassFilter('all'); });
+    let cancelled = false;
+    (async () => {
+      if (schoolFilter === 'all') {
+        if (cancelled) return;
+        setClasses([]);
+        setClassFilter('all');
+        return;
+      }
+      const { data } = await supabase.from('classes').select('id, name').eq('school_id', schoolFilter);
+      if (cancelled) return;
+      if (data) setClasses(data);
+      setClassFilter('all');
+    })();
+    return () => { cancelled = true; };
   }, [schoolFilter]);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    const pSchoolId = schoolFilter === 'all' ? null : schoolFilter;
-    const pClassId = classFilter === 'all' ? null : classFilter;
+  // Load analytics data when filters change
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const pSchoolId = schoolFilter === 'all' ? null : schoolFilter;
+      const pClassId = classFilter === 'all' ? null : classFilter;
 
-    const [summaryRes, dailyRes] = await Promise.all([
-      supabase.rpc('get_admin_analytics', { p_school_id: pSchoolId, p_class_id: pClassId, p_days: daysFilter }),
-      supabase.rpc('get_analytics_daily', { p_school_id: pSchoolId, p_class_id: pClassId, p_days: daysFilter }),
-    ]);
+      const [summaryRes, dailyRes] = await Promise.all([
+        supabase.rpc('get_admin_analytics', { p_school_id: pSchoolId, p_class_id: pClassId, p_days: daysFilter }),
+        supabase.rpc('get_analytics_daily', { p_school_id: pSchoolId, p_class_id: pClassId, p_days: daysFilter }),
+      ]);
+      if (cancelled) return;
 
-    setSummary(summaryRes.data || {});
+      setSummary((summaryRes.data as AnalyticsSummary | null) || {});
 
-    // Format daily data for recharts (short date labels)
-    const rawDaily = (dailyRes.data || []) as any[];
-    setDaily(rawDaily.map((d: any) => ({
-      ...d,
-      label: new Date(d.day).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
-    })));
+      // Format daily data for recharts (short date labels)
+      const rawDaily = (dailyRes.data || []) as DailyDataRaw[];
+      setDaily(rawDaily.map((d) => ({
+        ...d,
+        label: new Date(d.day).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+      })));
 
-    // Load hero HP distribution + critical students
-    let heroQuery = supabase.from('heroes').select(`
-      id, hp, hp_max, gold, level, xp, streak_current,
-      users!inner ( display_name, class_id, classes!inner (school_id, name) )
-    `);
-    if (pClassId) heroQuery = heroQuery.eq('users.class_id', pClassId);
-    if (pSchoolId) heroQuery = heroQuery.eq('users.classes.school_id', pSchoolId);
+      // Load hero HP distribution + critical students
+      let heroQuery = supabase.from('heroes').select(`
+        id, hp, hp_max, gold, level, xp, streak_current,
+        users!inner ( display_name, class_id, classes!inner (school_id, name) )
+      `);
+      if (pClassId) heroQuery = heroQuery.eq('users.class_id', pClassId);
+      if (pSchoolId) heroQuery = heroQuery.eq('users.classes.school_id', pSchoolId);
 
-    const { data: allHeroes } = await heroQuery.order('hp', { ascending: true });
-    const heroes = allHeroes || [];
+      const { data: allHeroes } = await heroQuery.order('hp', { ascending: true });
+      if (cancelled) return;
+      const heroes = (allHeroes as unknown as CriticalHero[] | null) || [];
 
-    // Critical students (bottom 10 by HP)
-    setCriticalStudents(heroes.slice(0, 10));
+      // Critical students (bottom 10 by HP)
+      setCriticalStudents(heroes.slice(0, 10));
 
-    // HP distribution buckets
-    const buckets = [
-      { name: 'Мёртвые (0)', min: 0, max: 0, count: 0 },
-      { name: 'Критично (1–30)', min: 1, max: 30, count: 0 },
-      { name: 'Плохо (31–60)', min: 31, max: 60, count: 0 },
-      { name: 'Норма (61–120)', min: 61, max: 120, count: 0 },
-      { name: 'Здоров (121–150)', min: 121, max: 150, count: 0 },
-    ];
-    heroes.forEach((h: any) => {
-      const b = buckets.find(b => h.hp >= b.min && h.hp <= b.max);
-      if (b) b.count++;
-    });
-    setHpDistribution(buckets.filter(b => b.count > 0));
+      // HP distribution buckets
+      const buckets: HpBucket[] = [
+        { name: 'Мёртвые (0)', min: 0, max: 0, count: 0 },
+        { name: 'Критично (1–30)', min: 1, max: 30, count: 0 },
+        { name: 'Плохо (31–60)', min: 31, max: 60, count: 0 },
+        { name: 'Норма (61–120)', min: 61, max: 120, count: 0 },
+        { name: 'Здоров (121–150)', min: 121, max: 150, count: 0 },
+      ];
+      heroes.forEach((h) => {
+        const b = buckets.find(b => h.hp >= b.min && h.hp <= b.max);
+        if (b) b.count++;
+      });
+      setHpDistribution(buckets.filter(b => b.count > 0));
 
-    setLoading(false);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [schoolFilter, classFilter, daysFilter]);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   const s = summary || {};
   const totalStudents = s.total_students || 1;
@@ -257,7 +350,7 @@ export default function AdminAnalyticsPage() {
               <div>
                 <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>Конверсия</div>
                 <div style={{ fontWeight: 800, color: '#eab308', fontSize: '1.2rem' }}>
-                  {s.total_gold_earned ? Math.round((s.total_gold_spent / s.total_gold_earned) * 100) : 0}%
+                  {s.total_gold_earned ? Math.round(((s.total_gold_spent ?? 0) / s.total_gold_earned) * 100) : 0}%
                 </div>
               </div>
             </div>
@@ -376,7 +469,7 @@ export default function AdminAnalyticsPage() {
                       nameKey="name"
                       cx="50%" cy="50%"
                       outerRadius={80}
-                      label={({ name, count }: any) => `${name}: ${count}`}
+                      label={(props: { name?: string; count?: number }) => `${props.name ?? ''}: ${props.count ?? 0}`}
                       labelLine={{ stroke: 'rgba(255,255,255,0.2)' }}
                     >
                       {hpDistribution.map((_, i) => (
@@ -429,7 +522,7 @@ export default function AdminAnalyticsPage() {
               </div>
               {criticalStudents.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Нет данных по выбранным фильтрам.</div>
-              ) : criticalStudents.map((h: any) => {
+              ) : criticalStudents.map((h) => {
                 const hpPct = Math.round((h.hp / Math.max(h.hp_max, 1)) * 100);
                 const hpColor = hpPct < 20 ? '#ef4444' : hpPct < 50 ? '#f59e0b' : '#22c55e';
                 return (

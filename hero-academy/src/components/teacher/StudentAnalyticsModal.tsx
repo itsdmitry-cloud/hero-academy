@@ -78,22 +78,25 @@ export function StudentAnalyticsModal({ student, onClose }: Props) {
 
   useEffect(() => {
     if (!student?.hero_id) return;
-    setLoading(true);
-    const sb = createClient();
-    sb.from('quest_attempts')
-      .select(`
-        id, completed_at, grade, xp_earned, hp_lost,
-        correct_count, mistake_count, status,
-        quests!inner(title, type, subject, difficulty)
-      `)
-      .eq('hero_id', student.hero_id)
-      .eq('status', 'completed')
-      .order('completed_at', { ascending: true })
-      .limit(60)
-      .then(({ data }) => {
-        setAttempts((data ?? []) as unknown as Attempt[]);
-        setLoading(false);
-      });
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const sb = createClient();
+      const { data } = await sb.from('quest_attempts')
+        .select(`
+          id, completed_at, grade, xp_earned, hp_lost,
+          correct_count, mistake_count, status,
+          quests!inner(title, type, subject, difficulty)
+        `)
+        .eq('hero_id', student.hero_id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: true })
+        .limit(60);
+      if (cancelled) return;
+      setAttempts((data ?? []) as unknown as Attempt[]);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [student?.hero_id]);
 
   /* ── Derived data ───────────────────── */

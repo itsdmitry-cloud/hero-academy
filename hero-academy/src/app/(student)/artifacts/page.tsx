@@ -79,11 +79,22 @@ function isExpired(expiresAt: string | null): boolean {
   return new Date(expiresAt).getTime() <= Date.now();
 }
 
-function toView(ha: any): ArtifactView {
-  const rawRow = ha.dbRow || ha;
-  const art = rawRow.artifact as (ArtifactCatalog & { artifact_type?: string }) | undefined;
-  const eff = art?.effect || (art as any)?.effect_type || '';
-  const isLootbox = art?.name?.startsWith('📦') || eff === 'lootbox' || (art as any)?.effect_type === 'lootbox';
+type ArtifactCatalogExt = ArtifactCatalog & {
+  artifact_type?: string;
+  effect_type?: string;
+  season_pool?: string | null;
+};
+
+type HeroArtifactLike = HeroArtifact & {
+  dbRow?: HeroArtifact;
+  charges_left?: number;
+};
+
+function toView(ha: HeroArtifactLike): ArtifactView {
+  const rawRow = (ha.dbRow || ha) as HeroArtifact;
+  const art = rawRow.artifact as ArtifactCatalogExt | undefined;
+  const eff = art?.effect || art?.effect_type || '';
+  const isLootbox = art?.name?.startsWith('📦') || eff === 'lootbox' || art?.effect_type === 'lootbox';
   const isConsumable = !isLootbox && (
     art?.artifact_type === 'consumable' ||
     eff.startsWith('hp_restore') || eff.startsWith('xp_instant') || eff === 'level_up' ||
@@ -107,7 +118,7 @@ function toView(ha: any): ArtifactView {
     isConsumable,
     charges: ha.charges_left ?? rawRow.charges_remaining ?? 0,
     expiresAt: rawRow.expires_at ?? null,
-    seasonPool: (art as any)?.season_pool ?? null,
+    seasonPool: art?.season_pool ?? null,
   };
 }
 
@@ -122,7 +133,7 @@ interface LootResult {
 
 export default function ArtifactsPage() {
   const { user } = useAuth();
-  const { catalog, inventory, loading, equipArtifact, useConsumable, sellArtifact, refetch, getMaxSlots } = useArtifacts();
+  const { catalog, inventory, loading, equipArtifact, consumeArtifact, sellArtifact, refetch, getMaxSlots } = useArtifacts();
   const { hero, openLootbox } = useHero();
   const [selected, setSelected] = useState<ArtifactView | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -168,13 +179,15 @@ export default function ArtifactsPage() {
     let possible: string[] = [];
     if (seasonalTag) {
       const element = seasonalTag.replace('seasonal_', '');
-      possible = catalog.filter((a: any) => a.season_pool === element).map(a => a.icon);
+      possible = (catalog as ArtifactCatalogExt[]).filter((a) => a.season_pool === element).map(a => a.icon);
     } else {
       const validRarities = boxRarity === 'common' ? ['common', 'rare']
         : boxRarity === 'rare' ? ['common', 'rare', 'epic']
         : boxRarity === 'epic' ? ['rare', 'epic', 'legendary']
         : ['epic', 'legendary'];
-      possible = catalog.filter(a => validRarities.includes(a.rarity) && !(a as any).season_pool).map(a => a.icon);
+      possible = (catalog as ArtifactCatalogExt[])
+        .filter(a => validRarities.includes(a.rarity) && !a.season_pool)
+        .map(a => a.icon);
     }
     if (possible.length === 0) possible = ROULETTE_ICONS;
     
@@ -371,7 +384,7 @@ export default function ArtifactsPage() {
                         setActionLoading(true);
                         setActionError(null);
                         setActionMsg(null);
-                        const result = await useConsumable(selected.id);
+                        const result = await consumeArtifact(selected.id);
                         setActionLoading(false);
                         if (result.error) {
                           setActionError(result.error);

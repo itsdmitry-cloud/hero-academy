@@ -128,11 +128,15 @@ export async function getClassAuras(heroId: string) {
   const { data: cHeroes } = await admin.from('heroes').select('id, user_id').in('user_id', students.map(s => s.id));
   if (!cHeroes || cHeroes.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
 
-  const otherHeroIds = cHeroes.filter((h: any) => h.id !== heroId).map((h: any) => h.id);
+  // Local shape: the two columns we SELECT above.
+  interface ClassHeroRow { id: string; user_id: string }
+  const classHeroes = cHeroes as ClassHeroRow[];
+
+  const otherHeroIds = classHeroes.filter(h => h.id !== heroId).map(h => h.id);
   if (otherHeroIds.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
 
   const heroNameMap = new Map<string, string>();
-  cHeroes.forEach((h: any) => {
+  classHeroes.forEach(h => {
     if (h.id !== heroId) {
       heroNameMap.set(h.id, studentMap.get(h.user_id) || 'Студент');
     }
@@ -148,7 +152,20 @@ export async function getClassAuras(heroId: string) {
 
   if (!artifacts) return { xpBoost, goldBoost, dmgReduce, applied };
 
-  for (const a of artifacts as Record<string, any>[]) {
+  // Local shape for rows SELECTed above.
+  interface AuraArtifactJoin {
+    effect: string | null;
+    effect_type: string | null;
+    effect_value: number | null;
+    name: string | null;
+  }
+  interface AuraHeroArtifactRow {
+    hero_id: string;
+    expires_at: string | null;
+    artifacts: AuraArtifactJoin | AuraArtifactJoin[] | null;
+  }
+
+  for (const a of artifacts as unknown as AuraHeroArtifactRow[]) {
     // Check expiration
     if (a.expires_at && new Date(String(a.expires_at)) < now) continue;
 

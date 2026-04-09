@@ -6,14 +6,14 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import styles from './DebugPanel.module.css';
 
 export default function DebugPanel() {
+  // Важно: ВСЕ хуки должны вызываться до любого early return, иначе React
+  // считает их условными (rules-of-hooks). Раньше хуки ниже жили после
+  // `if (is_anonymous) return null`, из-за чего линтер ругался.
   const [open, setOpen] = useState(false);
   const [heroId, setHeroId] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-
-  // Hide debug panel for anonymous/demo users
-  if (user?.is_anonymous === true) return null;
 
   // Input values
   const [xpVal, setXpVal] = useState('500');
@@ -67,6 +67,10 @@ export default function DebugPanel() {
   };
 
   const RARITY_NAMES = ['Common', 'Rare', 'Epic', 'Legendary'];
+
+  // Hide debug panel for anonymous/demo users. Early return должен быть ПОСЛЕ
+  // всех хуков (см. комментарий в начале функции).
+  if (user?.is_anonymous === true) return null;
 
   return (
     <>

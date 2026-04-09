@@ -78,7 +78,7 @@ export default function ArtifactsAdminPage() {
 
   const getEdit = (id: string) => edits[id] || {};
 
-  const updateEdit = (id: string, field: string, value: any) => {
+  const updateEdit = <K extends keyof EditableArtifact>(id: string, field: K, value: EditableArtifact[K]) => {
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 

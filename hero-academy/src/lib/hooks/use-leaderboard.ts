@@ -66,7 +66,14 @@ export function useLeaderboard(scope: 'class' | 'school' = 'class') {
     setLoading(false);
   }, [profile, user, scope, supabase]);
 
-  useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      await fetchLeaderboard();
+    })();
+    return () => { cancelled = true; };
+  }, [fetchLeaderboard]);
 
   return { entries, loading, refetch: fetchLeaderboard };
 }

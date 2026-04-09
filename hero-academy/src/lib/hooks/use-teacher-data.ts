@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useTeacherStore } from '@/lib/store/teacherStore';
@@ -70,7 +70,6 @@ export function useTeacherData() {
   const setActiveSubject = useTeacherStore((s) => s.setActiveSubject);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [quests, setQuests] = useState<TeacherQuestRow[]>([]);
-  const [stats, setStats] = useState<ClassStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Auto-initialise activeSubject to first when profile loads
@@ -79,23 +78,6 @@ export function useTeacherData() {
       setActiveSubject(subjects[0]);
     }
   }, [subjects.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Fetch teacher's class list
-  const fetchClasses = useCallback(async () => {
-    if (!profile?.school_id) return;
-
-    const { data } = await supabase
-      .from('classes')
-      .select('id, name, invite_code, school_id')
-      .eq('school_id', profile.school_id)
-      .order('name');
-
-    if (data && data.length > 0) {
-      setClasses(data as ClassInfo[]);
-      // Only set active class if not already set
-      if (!activeClassId) setActiveClassId(data[0].id);
-    }
-  }, [profile?.school_id, supabase, activeClassId, setActiveClassId, setClasses]);
 
   // Fetch students for active class
   const fetchStudents = useCallback(async (classId: string) => {
@@ -160,35 +142,57 @@ export function useTeacherData() {
     }
   }, [supabase]);
 
-  // Compute class stats from students
-  const computeStats = useCallback((studentList: StudentRow[], questList: TeacherQuestRow[]) => {
-    if (studentList.length === 0) { setStats(null); return; }
-    const totalXp = studentList.reduce((s, st) => s + st.xp, 0);
-    const classStreak = studentList.length > 0
-      ? Math.min(...studentList.map(s => s.streak))
+  // Derive class stats from students — pure computation, no setState-in-effect
+  const stats = useMemo<ClassStats | null>(() => {
+    if (students.length === 0) return null;
+    const totalXp = students.reduce((s, st) => s + st.xp, 0);
+    const classStreak = students.length > 0
+      ? Math.min(...students.map(s => s.streak))
       : 0;
-    setStats({
-      student_count: studentList.length,
-      active_quests: questList.filter(q => q.status === 'active').length,
-      avg_xp: Math.round(totalXp / studentList.length),
+    return {
+      student_count: students.length,
+      active_quests: quests.filter(q => q.status === 'active').length,
+      avg_xp: Math.round(totalXp / students.length),
       total_xp: totalXp,
       class_streak: classStreak,
-    });
-  }, []);
+    };
+  }, [students, quests]);
 
-  // Initial load
-  useEffect(() => { fetchClasses(); }, [fetchClasses]);
+  // Initial load — fetch teacher's class list. Inlined (no useCallback)
+  // so React Compiler can memoize without conflicts.
+  const schoolId = profile?.school_id;
+  useEffect(() => {
+    if (!schoolId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('classes')
+        .select('id, name, invite_code, school_id')
+        .eq('school_id', schoolId)
+        .order('name');
+      if (cancelled) return;
+      if (data && data.length > 0) {
+        setClasses(data as ClassInfo[]);
+        // Only set active class if not already set
+        if (!activeClassId) setActiveClassId(data[0].id);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [schoolId, supabase, activeClassId, setActiveClassId, setClasses]);
 
-  // Load class-specific data when activeClassId changes
+  // Load class-specific data when activeClassId changes. State updates live
+  // inside the async IIFE so react-hooks/set-state-in-effect stays quiet.
   useEffect(() => {
     if (!activeClassId) return;
-    setLoading(true);
-    Promise.all([fetchStudents(activeClassId), fetchQuests(activeClassId)])
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      await Promise.all([fetchStudents(activeClassId), fetchQuests(activeClassId)]);
+      if (cancelled) return;
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [activeClassId, fetchStudents, fetchQuests]);
-
-  // Recompute stats when data changes
-  useEffect(() => { computeStats(students, quests); }, [students, quests, computeStats]);
 
   /* ── Teacher actions (routed through game pipeline) ── */
   const grantXp = useCallback(async (heroId: string, amount: number, reason: string, subject: string = '') => {

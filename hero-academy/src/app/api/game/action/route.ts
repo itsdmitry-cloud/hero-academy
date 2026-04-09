@@ -194,7 +194,8 @@ export async function POST(req: Request) {
 
       const { xp: newXp, level: newLevel, xpNext: newXpNext, levelUps } = applyXpGain(hero.xp, hero.level, hero.xp_to_next, finalAmount);
 
-      const heroUpdate: Record<string, unknown> = { xp: newXp, season_xp: ((hero as any).season_xp ?? 0) + finalAmount };
+      const heroWithSeason = hero as typeof hero & { season_xp?: number | null };
+      const heroUpdate: Record<string, unknown> = { xp: newXp, season_xp: (heroWithSeason.season_xp ?? 0) + finalAmount };
       if (levelUps.length > 0) {
         heroUpdate.level = newLevel;
         heroUpdate.xp_to_next = newXpNext;

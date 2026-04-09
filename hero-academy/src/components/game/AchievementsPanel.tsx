@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Modal } from '@/components/ui/Modal';
 
@@ -23,17 +23,20 @@ export function AchievementsPanel({ heroId }: AchievementsPanelProps) {
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<Collectible | null>(null);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
     if (!heroId) return;
-    const { data } = await supabase
-      .from('hero_collectibles')
-      .select('*')
-      .eq('hero_id', heroId)
-      .order('unlocked_at', { ascending: false });
-    if (data) setCollectibles(data as Collectible[]);
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('hero_collectibles')
+        .select('*')
+        .eq('hero_id', heroId)
+        .order('unlocked_at', { ascending: false });
+      if (cancelled) return;
+      if (data) setCollectibles(data as Collectible[]);
+    })();
+    return () => { cancelled = true; };
   }, [heroId, supabase]);
-
-  useEffect(() => { load(); }, [load]);
 
   if (collectibles.length === 0) {
     return (

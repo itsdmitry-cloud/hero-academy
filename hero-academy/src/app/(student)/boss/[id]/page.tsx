@@ -48,13 +48,7 @@ export default function BossBattlePage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const subRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  /* ── Fetch boss ── */
-  const fetchBoss = useCallback(async () => {
-    const { data } = await supabase.from('boss_events').select('*').eq('id', bossId).single();
-    if (data) setBoss(data as BossEvent);
-    setLoading(false);
-  }, [bossId]);
-
+  /* ── Fetch participants (used by effect and real-time subscription) ── */
   const fetchParticipants = useCallback(async () => {
     const { data } = await supabase
       .from('boss_participants')
@@ -79,10 +73,18 @@ export default function BossBattlePage() {
   }, [bossId]);
 
   useEffect(() => {
-    fetchBoss();
-    fetchParticipants();
+    let cancelled = false;
+    (async () => {
+      // Initial fetch: boss + participants
+      const { data: bossData } = await supabase.from('boss_events').select('*').eq('id', bossId).single();
+      if (cancelled) return;
+      if (bossData) setBoss(bossData as BossEvent);
+      setLoading(false);
+      await fetchParticipants();
+    })();
 
-    // Real-time subscription
+    // Real-time subscription: setState inside channel callback is permitted
+    // by react-hooks/set-state-in-effect (external store).
     const channel = supabase.channel(`boss_battle_${bossId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'boss_events', filter: `id=eq.${bossId}` }, (payload) => {
         setBoss(payload.new as BossEvent);
@@ -91,8 +93,11 @@ export default function BossBattlePage() {
       .subscribe();
     subRef.current = channel;
 
-    return () => { supabase.removeChannel(channel); };
-  }, [bossId, fetchBoss, fetchParticipants]);
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [bossId, fetchParticipants]);
 
   // Timer
   useEffect(() => {

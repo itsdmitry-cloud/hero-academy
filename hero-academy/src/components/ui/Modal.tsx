@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Modal.module.css';
 
@@ -12,13 +12,21 @@ interface ModalProps {
   children: ReactNode;
 }
 
+// Client-only guard для portal: на сервере `mounted === false`, на клиенте
+// после гидратации — `true`. Используем useSyncExternalStore вместо
+// useEffect + setState(true), иначе линтер `react-hooks/set-state-in-effect`
+// справедливо ругается на cascading render после монтирования.
+const noopSubscribe = () => () => {};
+const useIsMounted = () =>
+  useSyncExternalStore(
+    noopSubscribe,
+    () => true,    // client snapshot
+    () => false,   // server snapshot
+  );
+
 export function Modal({ isOpen, onClose, title, size = 'md', children }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

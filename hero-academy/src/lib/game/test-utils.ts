@@ -88,11 +88,19 @@ export async function setupTestSandbox(testPrefix = 'TEST_SANDBOX') {
   };
 }
 
+export interface TestSandbox {
+  schoolId: string;
+  classId: string;
+  teacherId: string;
+  studentIds: string[];
+  heroIds: string[];
+}
+
 /**
  * Clears the sandbox. Since School has cascade deletes attached to classes and users,
  * we delete the school and manual users.
  */
-export async function teardownTestSandbox(sandbox: any) {
+export async function teardownTestSandbox(sandbox: TestSandbox | null | undefined) {
   if (!sandbox) return;
   // Delete heroes
   await supabaseAdmin.from('heroes').delete().in('id', sandbox.heroIds);

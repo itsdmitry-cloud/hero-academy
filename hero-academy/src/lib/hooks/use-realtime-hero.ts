@@ -5,7 +5,7 @@
  * Call from hero page to get instant updates without polling.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useHeroStore } from '@/lib/store/heroStore';
@@ -19,6 +19,7 @@ export interface RealtimeHeroUpdate {
   level: number;
   streak_current: number;
   status: string;
+  season_xp?: number;
 }
 
 export function useRealtimeHero() {
@@ -26,22 +27,31 @@ export function useRealtimeHero() {
   const { user } = useAuth();
   // Read heroId from Zustand store (populated by useSupabaseSync) — avoids extra DB query
   const storeHeroId = useHeroStore(s => s.hero?.heroId);
-  const [heroId, setHeroId] = useState<string | null>(null);
+  // DB-fetched fallback when store is empty / placeholder
+  const [fetchedHeroId, setFetchedHeroId] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<RealtimeHeroUpdate | null>(null);
 
-  // Use store heroId when available; fall back to DB query only if store is empty
+  // Derive the effective heroId via useMemo so we never setState in the
+  // effect body just to copy the store value over.
+  const heroId = useMemo<string | null>(() => {
+    if (storeHeroId && storeHeroId !== 'h1') return storeHeroId;
+    return fetchedHeroId;
+  }, [storeHeroId, fetchedHeroId]);
+
+  // Fall back to a DB lookup when the store has no usable heroId yet
   useEffect(() => {
-    if (storeHeroId && storeHeroId !== 'h1') {
-      setHeroId(storeHeroId);
-      return;
-    }
+    if (storeHeroId && storeHeroId !== 'h1') return;
     if (!user) return;
-    supabase
-      .from('heroes')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => { if (data) setHeroId(data.id); });
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('heroes')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      if (!cancelled && data) setFetchedHeroId(data.id);
+    })();
+    return () => { cancelled = true; };
   }, [user, storeHeroId, supabase]);
 
   // Subscribe to real-time changes
@@ -73,7 +83,7 @@ export function useRealtimeHero() {
               gold: updated.gold,
               level: updated.level,
               streak: updated.streak_current ?? state.hero.streak,
-              season_xp: (updated as any).season_xp ?? state.hero.season_xp,
+              season_xp: updated.season_xp ?? state.hero.season_xp,
             },
           }));
         }

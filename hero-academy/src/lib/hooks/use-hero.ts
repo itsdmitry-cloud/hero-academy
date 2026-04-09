@@ -276,7 +276,16 @@ export function useHero() {
     setLoading(false);
   }, [user, supabase, checkStreakRewards, checkAchievements]);
 
-  useEffect(() => { fetchHero(); }, [fetchHero]);
+  // Auto-fetch on mount / when deps change. State mutations run inside the
+  // async IIFE callback, not in the sync effect body.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      await fetchHero();
+    })();
+    return () => { cancelled = true; };
+  }, [fetchHero]);
 
   return { hero, stats, achievements, loading, refetch: fetchHero, openLootbox };
 }

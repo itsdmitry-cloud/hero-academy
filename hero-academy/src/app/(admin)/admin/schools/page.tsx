@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdminData, AdminClass } from '@/lib/hooks/use-admin-data';
+import { useAdminData, AdminClass, AdminUser } from '@/lib/hooks/use-admin-data';
 import styles from './page.module.css';
 
 export default function SchoolsPage() {
@@ -195,7 +195,7 @@ export default function SchoolsPage() {
     if (selectedSchool) fetchUsers({ schoolId: selectedSchool });
   };
 
-  const handleEditUserClick = async (u: AdminClass | any) => {
+  const handleEditUserClick = async (u: AdminUser) => {
     setEditUserId(u.id);
     setEditUserName(u.display_name);
     setEditUserEmail('Загрузка...');

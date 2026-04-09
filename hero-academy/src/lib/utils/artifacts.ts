@@ -100,7 +100,7 @@ export function calculateQuestResult(
   equippedArtifacts: PlayerArtifact[]
 ): ModifiedResult {
   
-  let result: ModifiedResult = {
+  const result: ModifiedResult = {
     finalXp: rawResult.baseXp,
     finalGold: rawResult.baseGold,
     finalDamage: rawResult.baseDamage,
@@ -240,7 +240,7 @@ export function calculateQuestResult(
     const revive50 = equippedArtifacts.find(a => ARTIFACT_CATALOG[a.defId]?.effect_code === 'PREVENT_DEATH_50');
     const fireRevive = equippedArtifacts.find(a => ARTIFACT_CATALOG[a.defId]?.effect_code === 'FIRE_AUTO_RESURRECT');
     
-    let triggeredRevive = revive50 || fireRevive || revive30;
+    const triggeredRevive = revive50 || fireRevive || revive30;
 
     if (triggeredRevive && hero.activeArtifacts.includes(triggeredRevive.id)) {
       result.preventedDeath = true;

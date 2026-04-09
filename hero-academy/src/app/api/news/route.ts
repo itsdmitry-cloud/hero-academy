@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Local row shape — mirrors the columns we SELECT below.
+interface NewsRow {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  image_url: string | null;
+  target_type: string;
+  target_school_id: string | null;
+  target_class_id: string | null;
+  pinned: boolean;
+  created_at: string;
+}
+
+interface NewsReadRow {
+  news_id: string;
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -45,8 +63,10 @@ export async function GET() {
       return NextResponse.json({ error: 'News query failed: ' + nErr.message }, { status: 500 });
     }
 
+    const newsRows = (rawNews ?? []) as NewsRow[];
+
     // Fetch read states for this user
-    const newsIds = (rawNews || []).map((n: any) => n.id);
+    const newsIds = newsRows.map((n) => n.id);
     let readIds = new Set<string>();
 
     if (newsIds.length > 0) {
@@ -55,16 +75,17 @@ export async function GET() {
         .select('news_id')
         .eq('student_id', user.id)
         .in('news_id', newsIds);
-      if (reads) readIds = new Set(reads.map((r: any) => r.news_id));
+      if (reads) readIds = new Set((reads as NewsReadRow[]).map((r) => r.news_id));
     }
 
-    const news = (rawNews || []).map((n: any) => ({
+    const news = newsRows.map((n) => ({
       ...n,
       is_read: readIds.has(n.id),
     }));
 
     return NextResponse.json({ success: true, news });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
