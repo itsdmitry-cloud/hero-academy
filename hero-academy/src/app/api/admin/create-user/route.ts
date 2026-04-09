@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { normalizeSubjects, escapeLikePattern } from '@/lib/utils/subjects';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,6 +37,9 @@ export async function POST(req: Request) {
     email = `${slug}${ts}@hero.academy`;
   }
   const pwd = password || 'Hero2026!';
+
+  // Нормализуем subjects один раз — дальше везде используется уже чистый массив.
+  const normalizedSubjects = role === 'teacher' ? normalizeSubjects(body.subjects) : [];
 
   try {
     // 1. Create auth user
@@ -92,7 +96,7 @@ export async function POST(req: Request) {
       school_id,
       class_id: class_id || null,
       avatar_url: null,
-      subjects: role === 'teacher' ? (body.subjects || []) : undefined,
+      subjects: role === 'teacher' ? normalizedSubjects : undefined,
     });
 
     if (profileErr) {
@@ -138,10 +142,10 @@ export async function POST(req: Request) {
     }
 
     // 4. Create Subject Bosses if teacher has subjects
-    if (role === 'teacher' && body.subjects && body.subjects.length > 0) {
+    if (role === 'teacher' && normalizedSubjects.length > 0) {
       // Find all classes in this school
       const { data: classes } = await admin.from('classes').select('id').eq('school_id', school_id);
-      
+
       // Find active season for this school
       const { data: activeSeason } = await admin.from('seasons')
         .select('id, starts_at, ends_at')
@@ -152,13 +156,13 @@ export async function POST(req: Request) {
 
       if (classes && activeSeason) {
         for (const cls of classes) {
-          for (const subjectName of body.subjects) {
-            // Check if boss already exists
+          for (const subjectName of normalizedSubjects) {
+            // Check if boss already exists (case-insensitive, чтобы не плодить дубликаты)
             const { data: existingBoss } = await admin.from('subject_bosses')
               .select('id')
               .eq('season_id', activeSeason.id)
               .eq('class_id', cls.id)
-              .eq('subject_id', subjectName)
+              .ilike('subject_id', escapeLikePattern(subjectName))
               .maybeSingle();
 
             if (!existingBoss) {

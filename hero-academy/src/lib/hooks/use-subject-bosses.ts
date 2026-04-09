@@ -5,8 +5,9 @@
  * teacher subject per active season. Uses /api/bosses/ensure which has
  * service-role access to bypass RLS.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { normalizeSubjects } from '@/lib/utils/subjects';
 
 export interface SubjectBoss {
   id: string;
@@ -26,17 +27,20 @@ export function useSubjectBosses(classId: string | null, subjects: string[]) {
   const [loading, setLoading] = useState(true);
   const [seasonMissing, setSeasonMissing] = useState(false);
 
-  const subjectsKey = subjects.join(',');
+  // Нормализуем subjects раз на рендер — эффект ниже перезапускается только
+  // когда реально меняется набор, а не регистр/пробелы (иначе лишние fetch).
+  const normalizedSubjects = useMemo(() => normalizeSubjects(subjects), [subjects]);
+  const subjectsKey = normalizedSubjects.map(s => s.toLowerCase()).join('|');
 
   const fetchAndEnsureBosses = useCallback(async () => {
-    if (!classId || subjects.length === 0) { setBosses([]); setSeasonMissing(false); setLoading(false); return; }
+    if (!classId || normalizedSubjects.length === 0) { setBosses([]); setSeasonMissing(false); setLoading(false); return; }
 
     setLoading(true);
     try {
       const res = await fetch('/api/bosses/ensure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId, subjects }),
+        body: JSON.stringify({ classId, subjects: normalizedSubjects }),
       });
       if (res.ok) {
         const { bosses: data, note } = await res.json();

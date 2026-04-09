@@ -6,6 +6,7 @@ import { useTeacherData } from '@/lib/hooks/use-teacher-data';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { StatCard } from '@/components/ui/StatCard';
 import { useSubjectBosses } from '@/lib/hooks/use-subject-bosses';
+import { isSameSubject } from '@/lib/utils/subjects';
 import styles from './page.module.css';
 
 interface FeedEvent {
@@ -18,8 +19,12 @@ export default function TeacherDashboard() {
   // Always create bosses for ALL teacher subjects on dashboard load
   // Display only the active subject's boss in the UI
   const { bosses: allBosses, seasonMissing } = useSubjectBosses(activeClassId, subjects);
+  // Мы фильтруем через isSameSubject (trim + collapse whitespace + LOWER),
+  // чтобы отображать ровно ОДНОГО босса на предмет, даже если в БД временно
+  // лежат записи разного регистра (миграция subject_bosses_dedupe их выровняет,
+  // но клиент должен быть устойчив и без неё).
   const subjectBosses = activeSubject
-    ? allBosses.filter(b => b.subject_id.toLowerCase() === activeSubject.toLowerCase())
+    ? allBosses.filter(b => isSameSubject(b.subject_id, activeSubject))
     : allBosses;
 
   const [feed, setFeed] = useState<FeedEvent[]>([]);

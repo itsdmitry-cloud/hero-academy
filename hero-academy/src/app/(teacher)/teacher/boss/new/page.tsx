@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { useTeacherData } from '@/lib/hooks/use-teacher-data';
 import { createClient } from '@/lib/supabase/client';
+import { normalizeSubject, escapeLikePattern } from '@/lib/utils/subjects';
 import styles from './page.module.css';
 
 const BOSS_AVATARS = ['🐉', '🐺', '😈', '🦂', '👹', '🐙', '🦇', '🦁', '🤖', '☠️'];
@@ -47,6 +48,10 @@ export default function BossCreatorPage() {
     setSaving(true);
     setError(null);
 
+    // Нормализуем — чтобы " Математика " и "математика" не плодили дубликатов.
+    const normalizedSubject = normalizeSubject(selectedSubject);
+    if (!normalizedSubject) { setError('Выберите предмет'); setSaving(false); return; }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setError('Не авторизован'); setSaving(false); return; }
@@ -59,15 +64,15 @@ export default function BossCreatorPage() {
         .eq('school_id', userRow.school_id).eq('status', 'active').limit(1).maybeSingle();
       if (!season) { setError('Нет активного сезона. Попросите администратора создать сезон.'); setSaving(false); return; }
 
-      // Check if a boss for this class+subject already exists this season
+      // Check if a boss for this class+subject already exists this season (case-insensitive)
       const { data: existing } = await supabase.from('subject_bosses').select('id, name')
         .eq('class_id', activeClassId)
-        .eq('subject_id', selectedSubject)
         .eq('season_id', season.id)
+        .ilike('subject_id', escapeLikePattern(normalizedSubject))
         .maybeSingle();
 
       if (existing) {
-        setError(`Босс по предмету "${selectedSubject}" уже существует этот сезон: "${existing.name}". Удалите старого перед созданием нового.`);
+        setError(`Босс по предмету "${normalizedSubject}" уже существует этот сезон: "${existing.name}". Удалите старого перед созданием нового.`);
         setSaving(false);
         return;
       }
@@ -75,7 +80,7 @@ export default function BossCreatorPage() {
       const { error: insertErr } = await supabase.from('subject_bosses').insert({
         season_id: season.id,
         class_id: activeClassId,
-        subject_id: selectedSubject,
+        subject_id: normalizedSubject,
         name: bossName.trim(),
         avatar: selectedAvatar,
         max_hp: customHp,

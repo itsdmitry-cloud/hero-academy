@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { normalizeSubjects } from '@/lib/utils/subjects';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
     if (role !== undefined) profileUpdate.role = role;
     if (class_id !== undefined) profileUpdate.class_id = class_id;
     if (school_id !== undefined) profileUpdate.school_id = school_id;
-    if (body.subjects !== undefined) profileUpdate.subjects = body.subjects;
+    if (body.subjects !== undefined) profileUpdate.subjects = normalizeSubjects(body.subjects);
 
     if (Object.keys(profileUpdate).length > 0) {
       const { error: profileErr } = await admin.from('users').update(profileUpdate).eq('id', user_id);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { normalizeSubjects, escapeLikePattern } from '@/lib/utils/subjects';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,14 +12,24 @@ const admin = createClient(
  * Ensures that for the active season, this class has a `subject_bosses` record
  * for each given subject in `subjects`.
  *
+ * Subjects приходят в произвольном регистре/с лишними пробелами — перед запросом
+ * их нормализуем и дедупим (trim + collapse whitespace, case-insensitive dedupe).
+ * Сопоставление с существующими боссами — case-insensitive, чтобы не плодить
+ * дубликатов при смене регистра (см. миграцию subject_bosses_dedupe).
+ *
  * Body: { classId: string, subjects: string[] }
  * Returns: { bosses: SubjectBoss[] }
  */
 export async function POST(req: NextRequest) {
-  const { classId, subjects } = await req.json();
+  const { classId, subjects: rawSubjects } = await req.json();
 
-  if (!classId || !subjects || !Array.isArray(subjects)) {
+  if (!classId || !rawSubjects || !Array.isArray(rawSubjects)) {
     return NextResponse.json({ error: 'classId and subjects[] required' }, { status: 400 });
+  }
+
+  const subjects = normalizeSubjects(rawSubjects);
+  if (subjects.length === 0) {
+    return NextResponse.json({ bosses: [] });
   }
 
   // Get school_id from class
@@ -28,41 +39,70 @@ export async function POST(req: NextRequest) {
   // Active season
   const { data: season } = await admin.from('seasons').select('id, name')
     .eq('school_id', classRow.school_id).eq('status', 'active').limit(1).maybeSingle();
-  
+
   if (!season) return NextResponse.json({ bosses: [], note: 'No active season' });
 
-  // Load existing subject bosses for this class + season
+  // Загружаем ВСЕХ боссов класса в этом сезоне (их немного — по одному на предмет),
+  // чтобы сделать case-insensitive матчинг локально и не городить ilike-OR.
   const { data: existingBosses } = await admin.from('subject_bosses')
     .select('*')
     .eq('season_id', season.id)
-    .eq('class_id', classId)
-    .in('subject_id', subjects);
+    .eq('class_id', classId);
 
-  const existingMap = new Map();
-  if (existingBosses) {
-    existingBosses.forEach((b: any) => existingMap.set(b.subject_id, b));
-  }
+  const existingByLowerSubject = new Map<string, Record<string, unknown>>();
+  (existingBosses ?? []).forEach((b: Record<string, unknown>) => {
+    const subjectId = (b.subject_id as string | null) ?? '';
+    existingByLowerSubject.set(subjectId.trim().toLowerCase(), b);
+  });
 
-  const resultBosses = [...(existingBosses ?? [])];
+  const resultBosses: Record<string, unknown>[] = [];
+  const seenLower = new Set<string>();
 
   for (const subj of subjects) {
-    if (!existingMap.has(subj)) {
-      // Create boss for this subject
-      const { data: newBoss, error } = await admin.from('subject_bosses').insert({
-        season_id: season.id,
-        class_id: classId,
-        subject_id: subj,
-        name: `Босс: ${subj}`,
-        avatar: '🐉',
-        max_hp: 50000,
-        current_hp: 50000,
-        is_defeated: false
-      }).select('*').single();
+    const lower = subj.toLowerCase();
+    if (seenLower.has(lower)) continue;
+    seenLower.add(lower);
 
-      if (!error && newBoss) {
-        resultBosses.push(newBoss);
-      }
+    const existing = existingByLowerSubject.get(lower);
+    if (existing) {
+      resultBosses.push(existing);
+      continue;
     }
+
+    const { data: newBoss, error } = await admin.from('subject_bosses').insert({
+      season_id: season.id,
+      class_id: classId,
+      subject_id: subj,
+      name: `Босс: ${subj}`,
+      avatar: '🐉',
+      max_hp: 50000,
+      current_hp: 50000,
+      is_defeated: false,
+    }).select('*').single();
+
+    if (error) {
+      // 23505 = unique_violation: другой запрос уже создал босса между нашим
+      // select и insert. Это единственная «ожидаемая» гонка после миграции,
+      // которая поставила UNIQUE (season_id, class_id, LOWER(subject_id)).
+      // Любая другая ошибка — настоящая проблема, не прячем её за тихим фолбэком.
+      if ((error as { code?: string }).code !== '23505') {
+        console.error('[bosses/ensure] insert failed:', { subject: subj, error });
+        return NextResponse.json(
+          { error: `Failed to create boss for "${subj}": ${error.message}` },
+          { status: 500 },
+        );
+      }
+      const { data: afterRace } = await admin.from('subject_bosses')
+        .select('*')
+        .eq('season_id', season.id)
+        .eq('class_id', classId)
+        .ilike('subject_id', escapeLikePattern(subj))
+        .maybeSingle();
+      if (afterRace) resultBosses.push(afterRace);
+      continue;
+    }
+
+    if (newBoss) resultBosses.push(newBoss);
   }
 
   return NextResponse.json({ bosses: resultBosses });
