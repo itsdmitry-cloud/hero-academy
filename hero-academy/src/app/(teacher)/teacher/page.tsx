@@ -17,7 +17,7 @@ export default function TeacherDashboard() {
   const { classes, activeClassId, setActiveClassId, students, quests, stats, loading, subjects, activeSubject } = useTeacherData();
   // Always create bosses for ALL teacher subjects on dashboard load
   // Display only the active subject's boss in the UI
-  const { bosses: allBosses } = useSubjectBosses(activeClassId, subjects);
+  const { bosses: allBosses, seasonMissing } = useSubjectBosses(activeClassId, subjects);
   const subjectBosses = activeSubject
     ? allBosses.filter(b => b.subject_id.toLowerCase() === activeSubject.toLowerCase())
     : allBosses;
@@ -57,6 +57,19 @@ export default function TeacherDashboard() {
         <StatCard icon="⭐" label="Средний XP" value={displayStats.avg_xp.toLocaleString('ru-RU')} color="xp" />
         <StatCard icon="🔥" label="Стрик класса" value={`${displayStats.class_streak}`} color="streak" />
       </div>
+
+      {/* Season-not-configured banner */}
+      {seasonMissing && (
+        <div style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--bg-glass)', border: '1px solid #f59e0b', borderRadius: 'var(--radius-xl)', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+          <div>
+            <div style={{ fontWeight: 800, color: '#fbbf24', fontSize: 'var(--text-base)' }}>Сезон не настроен</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              Боссы по предметам появятся после того, как администратор создаст и активирует сезон для вашей школы.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subject Boss Bars */}
       {subjectBosses.length > 0 && (

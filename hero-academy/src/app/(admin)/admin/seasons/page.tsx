@@ -134,13 +134,18 @@ export default function SeasonsPage() {
               Нет сезонов. Создайте первый.
             </div>
           )}
-          {seasons.map(s => (
+          {seasons.map(s => {
+            const schoolName = schools.find(sc => sc.id === s.school_id)?.name ?? '—';
+            return (
             <div key={s.id} className={`${styles.seasonCard} ${s.status === 'active' ? styles.seasonActive : ''}`}>
               <div className={styles.seasonHeader}>
                 <span className={styles.seasonName}>{s.name}</span>
                 <span className={`${styles.seasonStatus} ${s.status === 'active' ? styles.sActive : s.status === 'upcoming' ? styles.sUpcoming : styles.sEnded}`}>
                   {s.status === 'active' ? '🟢 Активен' : s.status === 'upcoming' ? '📅 Запланирован' : '⚫ Завершён'}
                 </span>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontWeight: 600 }}>
+                🏫 {schoolName}
               </div>
               <div className={styles.seasonDates}>
                 📅 {new Date(s.starts_at).toLocaleDateString('ru')} — {new Date(s.ends_at).toLocaleDateString('ru')}
@@ -169,7 +174,8 @@ export default function SeasonsPage() {
                 </button>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

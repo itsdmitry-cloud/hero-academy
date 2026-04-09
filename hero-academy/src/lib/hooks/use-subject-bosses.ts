@@ -24,11 +24,12 @@ export function useSubjectBosses(classId: string | null, subjects: string[]) {
   const supabase = createClient();
   const [bosses, setBosses] = useState<SubjectBoss[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seasonMissing, setSeasonMissing] = useState(false);
 
   const subjectsKey = subjects.join(',');
 
   const fetchAndEnsureBosses = useCallback(async () => {
-    if (!classId || subjects.length === 0) { setBosses([]); setLoading(false); return; }
+    if (!classId || subjects.length === 0) { setBosses([]); setSeasonMissing(false); setLoading(false); return; }
 
     setLoading(true);
     try {
@@ -38,8 +39,9 @@ export function useSubjectBosses(classId: string | null, subjects: string[]) {
         body: JSON.stringify({ classId, subjects }),
       });
       if (res.ok) {
-        const { bosses: data } = await res.json();
+        const { bosses: data, note } = await res.json();
         setBosses(data ?? []);
+        setSeasonMissing(note === 'No active season');
       }
     } catch (e) {
       console.error('useSubjectBosses error:', e);
@@ -60,5 +62,5 @@ export function useSubjectBosses(classId: string | null, subjects: string[]) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId, subjectsKey]);
 
-  return { bosses, loading, refetch: fetchAndEnsureBosses };
+  return { bosses, loading, seasonMissing, refetch: fetchAndEnsureBosses };
 }
