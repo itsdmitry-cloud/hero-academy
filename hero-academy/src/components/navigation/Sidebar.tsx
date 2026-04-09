@@ -42,8 +42,9 @@ export function Sidebar({ items, role }: SidebarProps) {
         <Image
           src="/assets/ui/logo.png"
           alt="Академия Героев"
-          width={48}
-          height={48}
+          width={320}
+          height={213}
+          priority
           className={styles.logoImg}
         />
       </div>
