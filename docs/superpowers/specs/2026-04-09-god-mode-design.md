@@ -154,11 +154,11 @@ page state → ReadOnlyGuard context → Presentational components → UI
 
 ### Изменяемые
 - `src/app/(admin)/admin/users/page.tsx` — добавить кнопку «👁 Посмотреть» в строку таблицы
-- `src/app/(student)/hero/page.tsx` — рефакторинг: выделить dumb-часть `HeroViewPresentational`, smart-обёртка остаётся и вызывает dumb с данными из `useHero`/`useHeroStore`/`useSupabaseSync`
-- `src/app/(student)/inventory/page.tsx` — аналогичный рефакторинг: выделить `InventoryViewPresentational`, smart-обёртка кормит его из `useArtifacts` + `useHero`
-- `src/app/(student)/quests/page.tsx` — аналогичный рефакторинг: выделить `QuestsViewPresentational`, smart-обёртка — fetch + `useSeasonBosses`
+- `src/app/(admin)/layout.tsx` — добавить `<ToastContainer />` (сейчас его нет в admin, а ReadOnlyGuard и будущие ошибки требуют toast)
 
-**Замечание:** по данным исследования кодовой базы, текущие экраны ученика — монолитные client-компоненты (~400 строк), поэтому рефакторинг обязателен, не «возможно». Рефакторинг строго поведение-сохраняющий: после него student route должен работать абсолютно так же, как сейчас.
+**Важное решение:** student-страницы (`hero`, `inventory`, `quests`) — монолитные client-компоненты по ~400 строк, с кучей хуков, реалтайм-подписок и локального состояния. Рефакторинг этих файлов несёт высокий риск сломать прод-UX ученика ради вспомогательной фичи админки.
+
+Поэтому God Mode использует **свои собственные презентационные компоненты, написанные с нуля** (`HeroViewPresentational`, `InventoryViewPresentational`, `QuestsViewPresentational`), которые показывают нужный минимум информации (стата героя, инвентарь в табличной форме, список квестов с их статусом). Они живут в `src/components/admin/god-mode/` и **не затрагивают код ученика**. Визуально они не обязаны совпадать с экранами ученика 1:1 — цель админа видеть *данные*, не *идентичный UI*.
 
 ### Существующие паттерны, которые переиспользуем
 - `src/app/api/admin/get-user-details/route.ts` — шаблон admin API с SERVICE_ROLE_KEY (из него берём структуру, но добавляем обязательную проверку `users.role = 'admin'` у вызывающего)
