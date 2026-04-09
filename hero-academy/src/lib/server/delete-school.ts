@@ -1,20 +1,26 @@
 /**
  * Server-side helper: cascade-delete a school and all its users.
  *
- * Why this exists: `users.school_id → schools ON DELETE SET NULL` (see
- * `supabase/migrations/002_core.sql`), so a bare `DELETE FROM schools`
- * orphans every student/teacher. Auth users in `auth.users` also live
- * outside the public schema and must be removed explicitly via
- * `auth.admin.deleteUser`.
+ * Relies on the FK cascades defined in `supabase/migrations/`:
+ *   - `public.users.id → auth.users.id ON DELETE CASCADE`
+ *   - `heroes.user_id → users.id ON DELETE CASCADE`
+ *   - every `*.hero_id → heroes.id ON DELETE CASCADE` (hero_stats,
+ *     hero_artifacts, activity_log, quest_attempts, boss_participants,
+ *     transactions, hero_season_rewards, achievements_unlocked,
+ *     boss_damage_logs, streak_rewards_unlocked, ...)
+ *   - `classes.school_id / seasons.school_id / subject_bosses.school_id
+ *     / subscriptions.school_id / news.target_school_id → schools.id
+ *     ON DELETE CASCADE`
  *
- * This helper performs, in order:
- *   1. Fetch every `users` row with the target `school_id`
- *   2. For each user, the same teardown as `/api/admin/delete-user`:
- *      hero_stats → hero_artifacts → activity_log → heroes →
- *      quest_attempts → boss_participants → unlink parent_id refs →
- *      users row → auth user
- *   3. `DELETE FROM schools WHERE id = X`, which cascades to classes,
- *      seasons, season_bosses and news.target_school_id.
+ * What *doesn't* cascade: `users.school_id → schools ON DELETE SET NULL`
+ * (so a bare `DELETE FROM schools` orphans users) and `auth.users` lives
+ * outside the public schema. So we must:
+ *   1. Delete each auth user first (cascades public.users → heroes → *)
+ *   2. Delete the school (cascades everything attached at school level)
+ *
+ * Auth deletes run in small parallel batches to stay fast even on schools
+ * with many students (e.g. a seeded demo class) without hitting Supabase
+ * admin API limits.
  *
  * Requires a service-role Supabase client — do NOT call from the browser.
  */
@@ -23,6 +29,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export interface CascadeDeleteSchoolResult {
   deleted_users: number;
 }
+
+const AUTH_DELETE_BATCH_SIZE = 5;
 
 export async function cascadeDeleteSchool(
   admin: SupabaseClient,
@@ -39,32 +47,52 @@ export async function cascadeDeleteSchool(
 
   const userIds = (schoolUsers ?? []).map((u: { id: string }) => u.id);
 
-  // 2. Tear down each user (mirrors /api/admin/delete-user).
-  for (const uid of userIds) {
-    const { data: hero } = await admin
-      .from('heroes')
-      .select('id')
-      .eq('user_id', uid)
-      .maybeSingle();
-
-    if (hero) {
-      await admin.from('hero_stats').delete().eq('hero_id', hero.id);
-      await admin.from('hero_artifacts').delete().eq('hero_id', hero.id);
-      await admin.from('activity_log').delete().eq('hero_id', hero.id);
-      await admin.from('quest_attempts').delete().eq('hero_id', hero.id);
-      await admin.from('boss_participants').delete().eq('hero_id', hero.id);
-    }
-
-    await admin.from('heroes').delete().eq('user_id', uid);
-    await admin.from('users').update({ parent_id: null }).eq('parent_id', uid);
-    await admin.from('users').delete().eq('id', uid);
-
-    const { error: authErr } = await admin.auth.admin.deleteUser(uid);
-    if (authErr) throw new Error(`auth delete ${uid}: ${authErr.message}`);
+  // 2. Unlink parent references before deleting (parent_id → users ON DELETE SET NULL
+  // is safe, but doing it explicitly in a single update beats N cascaded updates).
+  if (userIds.length > 0) {
+    const { error: unlinkErr } = await admin
+      .from('users')
+      .update({ parent_id: null })
+      .in('parent_id', userIds);
+    if (unlinkErr) throw new Error(`unlink parents: ${unlinkErr.message}`);
   }
 
-  // 3. Delete the school. Cascade handles classes, seasons, season_bosses, news.
-  const { error: schoolErr } = await admin.from('schools').delete().eq('id', schoolId);
+  // 3. Delete auth users in parallel batches. Each auth delete cascades
+  // public.users → heroes → (hero_stats, hero_artifacts, activity_log,
+  // quest_attempts, boss_participants, transactions, hero_season_rewards,
+  // achievements_unlocked, boss_damage_logs) automatically.
+  for (let i = 0; i < userIds.length; i += AUTH_DELETE_BATCH_SIZE) {
+    const batch = userIds.slice(i, i + AUTH_DELETE_BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(uid => admin.auth.admin.deleteUser(uid)),
+    );
+    for (let j = 0; j < results.length; j++) {
+      const err = results[j].error;
+      if (!err) continue;
+      // Ignore "User not found" — means auth.users was already cleaned up
+      // by a previous attempt; public.users row will be removed below.
+      if (err.message?.toLowerCase().includes('not found')) continue;
+      throw new Error(`auth delete ${batch[j]}: ${err.message}`);
+    }
+  }
+
+  // 4. Remove any public.users rows that survived (shouldn't happen in
+  // a healthy DB, but previous failed runs can leave orphaned profiles
+  // whose auth counterpart is already gone).
+  if (userIds.length > 0) {
+    const { error: orphanErr } = await admin
+      .from('users')
+      .delete()
+      .in('id', userIds);
+    if (orphanErr) throw new Error(`delete orphan users: ${orphanErr.message}`);
+  }
+
+  // 5. Delete the school. Cascades: classes → quests/quest_attempts,
+  // seasons → subject_bosses → boss_damage_logs, news, subscriptions.
+  const { error: schoolErr } = await admin
+    .from('schools')
+    .delete()
+    .eq('id', schoolId);
   if (schoolErr) throw new Error(`delete school: ${schoolErr.message}`);
 
   return { deleted_users: userIds.length };

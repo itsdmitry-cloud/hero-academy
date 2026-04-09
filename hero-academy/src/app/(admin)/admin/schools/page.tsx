@@ -18,6 +18,7 @@ export default function SchoolsPage() {
   const [newSchoolName, setNewSchoolName] = useState('');
   const [showAddSchool, setShowAddSchool] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingSchoolId, setDeletingSchoolId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Create class
@@ -89,14 +90,22 @@ export default function SchoolsPage() {
   };
 
   const handleDeleteSchool = async (id: string, name: string) => {
+    console.log('[delete-school] click', { id, name });
     const ok = window.confirm(
       `Удалить школу "${name}"?\n\nБудут безвозвратно удалены все ученики, учителя, их герои, классы и сезоны этой школы.`
     );
+    console.log('[delete-school] confirm result:', ok);
     if (!ok) return;
-    setSaving(true);
+    setDeletingSchoolId(id);
+    showFeedback(`⏳ Удаляем "${name}"…`, 60000);
     const { error, deleted_users } = await deleteSchool(id);
-    setSaving(false);
-    if (error) { showFeedback(`Ошибка: ${error}`); return; }
+    setDeletingSchoolId(null);
+    if (error) {
+      console.error('[delete-school] failed:', error);
+      showFeedback(`❌ Ошибка удаления "${name}": ${error}`, 10000);
+      return;
+    }
+    console.log('[delete-school] success:', { deleted_users });
     showFeedback(`✅ Школа "${name}" и ${deleted_users} пользователей удалены`, 6000);
     if (selectedSchool === id) {
       setSelectedSchool(null);
@@ -325,10 +334,10 @@ export default function SchoolsPage() {
                       >✏️</button>
                       <button
                         onClick={e => { e.stopPropagation(); handleDeleteSchool(s.id, s.name); }}
-                        disabled={saving}
-                        style={btnDelete}
+                        disabled={deletingSchoolId !== null}
+                        style={{ ...btnDelete, opacity: deletingSchoolId && deletingSchoolId !== s.id ? 0.4 : 1 }}
                         title="Удалить школу со всеми учениками"
-                      >🗑️</button>
+                      >{deletingSchoolId === s.id ? '⏳' : '🗑️'}</button>
                       <span className={styles.statusBadge} style={{ color: 'var(--accent-xp)' }}>🟢</span>
                     </span>
                   </div>

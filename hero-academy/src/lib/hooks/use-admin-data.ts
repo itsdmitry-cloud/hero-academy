@@ -350,17 +350,25 @@ export function useAdminData() {
 
   /* ── Delete School (cascade) ── */
   const deleteSchool = useCallback(async (id: string) => {
-    const res = await fetch('/api/admin/delete-school', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ school_id: id }),
-    });
-    const data = await res.json();
-    if (!res.ok) return { error: data.error ?? 'Unknown error', deleted_users: 0 };
-    fetchSchools();
-    fetchClasses();
-    fetchUsers();
-    return { error: null, deleted_users: data.deleted_users ?? 0 };
+    try {
+      const res = await fetch('/api/admin/delete-school', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ school_id: id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error('[deleteSchool] API error', res.status, data);
+        return { error: data.error ?? `HTTP ${res.status}`, deleted_users: 0 };
+      }
+      fetchSchools();
+      fetchClasses();
+      fetchUsers();
+      return { error: null, deleted_users: data.deleted_users ?? 0 };
+    } catch (err) {
+      console.error('[deleteSchool] network error', err);
+      return { error: String(err), deleted_users: 0 };
+    }
   }, [fetchSchools, fetchClasses, fetchUsers]);
 
   /* ── Update Class ── */
