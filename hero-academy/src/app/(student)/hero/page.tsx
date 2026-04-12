@@ -122,7 +122,7 @@ function formatStat(num: number): string {
 
 export default function HeroPage() {
   const { hero, activity, synced } = useHeroStore();
-  const { equipArtifact, inventory: dbInventory } = useArtifacts();
+  const { equipArtifact, inventory: dbInventory, refetch: refetchArtifacts } = useArtifacts();
   const { profile } = useAuth();
   useSupabaseSync();
   useRealtimeHero();
@@ -325,6 +325,7 @@ export default function HeroPage() {
           seasonXp={hero.season_xp}
           heroId={hero.heroId}
           element="fire"
+          onClaim={refetchArtifacts}
         />
       </section>
 

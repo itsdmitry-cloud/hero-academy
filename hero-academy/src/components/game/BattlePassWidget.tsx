@@ -32,13 +32,14 @@ interface BattlePassWidgetProps {
   onClaim?: () => void;
 }
 
-export function BattlePassWidget({ seasonXp, heroId, element = 'fire' }: BattlePassWidgetProps) {
+export function BattlePassWidget({ seasonXp, heroId, element = 'fire', onClaim }: BattlePassWidgetProps) {
   const supabase = createClient();
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [claimedTiers, setClaimedTiers] = useState<Set<number>>(new Set());
   const [claiming, setClaiming] = useState<number | null>(null);
   const [claimResult, setClaimResult] = useState<{ tier: number; granted: string[] } | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   const el = SEASON_ELEMENTS[element];
   const tiers = buildSeasonPassTiers(element);
@@ -61,6 +62,7 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire' }: BattleP
     if (!user) return;
     setClaiming(tier);
     setClaimResult(null);
+    setClaimError(null);
     try {
       const res = await fetch('/api/game/claim-pass-reward', {
         method: 'POST',
@@ -71,7 +73,12 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire' }: BattleP
       if (data.success) {
         setClaimedTiers(prev => new Set([...prev, tier]));
         setClaimResult({ tier, granted: data.granted });
+        onClaim?.();
+      } else {
+        setClaimError(data.error ?? 'Не удалось забрать награду');
       }
+    } catch {
+      setClaimError('Ошибка сети. Попробуй ещё раз.');
     } finally {
       setClaiming(null);
     }
@@ -148,6 +155,22 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire' }: BattleP
       {/* ── Full Modal ── */}
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setClaimResult(null); }} title={<span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Image src={`/assets/artifacts/chest_v3_${element}.png`} width={24} height={24} alt="" /> {el.label} • Боевой Пропуск</span>} size="md">
         <div style={{ maxHeight: '65vh', overflowY: 'auto', padding: '0.25rem' }}>
+          {/* Claim error toast */}
+          {claimError && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '0.75rem 1rem', marginBottom: '0.75rem',
+              textAlign: 'center', animation: 'slideDown 0.3s ease',
+            }}>
+              <div style={{ fontWeight: 900, color: '#ef4444', fontSize: '1rem' }}>Ошибка</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                {claimError}
+              </div>
+            </div>
+          )}
+
           {/* Claim result toast */}
           {claimResult && (
             <div style={{

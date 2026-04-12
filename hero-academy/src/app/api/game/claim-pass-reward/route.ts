@@ -92,13 +92,14 @@ export async function POST(req: NextRequest) {
       }
 
       case 'lootbox': {
-        // Seasonal chests have no rarity — just one per element
+        // Seasonal chests — find by base name (DB names include emoji + rarity suffix)
         const chestName = SEASON_ELEMENTS[element].chestName;
 
         const { data: artifact } = await admin
           .from('artifacts')
           .select('id, name, max_charges')
-          .eq('name', chestName)
+          .ilike('name', `%${chestName}%`)
+          .limit(1)
           .maybeSingle();
 
         if (artifact) {
