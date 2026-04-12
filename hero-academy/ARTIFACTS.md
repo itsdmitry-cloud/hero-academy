@@ -150,7 +150,7 @@
 | Крест Возрождения | death_save | +50 HP | passive | 1 | — | `leg_cross.png` |
 | Мантия Прогульщика | royal_set_1 | — | passive | ∞ | ∞ | `roy_mantle.png` |
 | Непробиваемая Эгида | damage_shield | 100% | passive | 3 | — | `leg_aegis.png` |
-| Песочные Часы Времени | undo_crit | — | consumable | 1 | — | `leg_hourglass.png` |
+| Песочные Часы Стойкости | team_dmg_reduce | −20% | passive | — | 96ч (4д) | `leg_hourglass.png` |
 | Печать Директора | royal_set_5 | — | passive | ∞ | ∞ | `roy_seal.png` |
 | Посох Властителя | xp_boost | +200% доска | passive | 5 | — | `leg_staff.png` |
 | Свиток Истины | xp_boost | +300% Босс | passive | 1 | — | `leg_scroll.png` |
@@ -162,11 +162,10 @@
 
 ## 6. Специальные механики
 
-### death_save vs undo_crit
+### death_save
 | Артефакт | Код | Поведение при HP ≤ 0 |
 |---|---|---|
-| Младшее Перо Феникса / Крест Возрождения | `death_save` | Герой выживает с N HP (приоритет 2) |
-| Песочные Часы Времени | `undo_crit` | Смертельный удар **отменяется** → HP остаётся прежним (приоритет 1) |
+| Младшее Перо Феникса / Крест Возрождения | `death_save` | Герой выживает с N HP |
 
 ### streak_protect
 - **Charge-based** (Свеча Полуночника, Ночная Свеча): каждый пропущенный день = −1 заряд

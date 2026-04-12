@@ -410,12 +410,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, effect: 'skip_day', value: 1, message: '📜 Домашка пропущена без потери HP!' });
     }
 
-    if (effect === 'retry_quest') {
-      await consumeArtifact();
-      await logActivity('artifact_retry_quest', { effect: 'retry_quest' });
-      return NextResponse.json({ success: true, effect: 'retry_quest', value: 1, message: '⏳ Вы можете переделать последний квест!' });
-    }
-
     if (effect === 'force_level_up') {
       const { xp, level, xpNext } = applyXpGain(hero.xp, hero.level, hero.xp_to_next, hero.xp_to_next - hero.xp);
       await admin.from('heroes').update({ xp, level, xp_to_next: xpNext }).eq('id', hero.id);

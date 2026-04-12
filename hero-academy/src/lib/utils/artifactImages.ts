@@ -43,7 +43,7 @@ export const ARTIFACT_IMAGES: Record<string, string> = {
 
   // === LEGENDARY (10) ===
   'leg_crown':     '/assets/artifacts/leg_crown.png',      // Корона Академии
-  'leg_hourglass': '/assets/artifacts/leg_hourglass.png',  // Песочные Часы Времени
+  'leg_hourglass': '/assets/artifacts/leg_hourglass.png',  // Песочные Часы Стойкости
   'leg_cross':     '/assets/artifacts/leg_cross.png',      // Крест Возрождения
   'leg_staff':     '/assets/artifacts/leg_staff.png',      // Посох Властителя
   'leg_dragon':    '/assets/artifacts/leg_dragon.png',     // Золотой Дракон

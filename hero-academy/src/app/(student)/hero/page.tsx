@@ -94,9 +94,8 @@ const SHELF_EFFECT_LABELS: Record<string, (v: number) => string> = {
   passive_damage_reduction:    v => `−${v} к урону`,
   cosmetic:                    () => 'Украшение',
   skip_day:                    () => 'Пропуск ДЗ без потери HP',
-  retry_quest:                 () => 'Повторная попытка',
-  team_xp:                     v => `+${v}% XP всему классу`,
   team_dmg_reduce:             v => `−${v}% урона классу`,
+  team_xp:                     v => `+${v}% XP всему классу`,
   royal_set_piece:             () => 'Часть Королевского набора',
 };
 function shelfEffectLabel(effectStr: string, effectTypeStr: string, value: number): string {

@@ -96,7 +96,6 @@ function mapEffectToDB(code: string): { effect_type: EffectTypeEnum; effect: str
   if (code === 'CLASSWORK_XP_200')    return { effect_type: 'xp_boost',       effect: 'xp_boost',              effect_value: 200 };
   if (code === 'FLAT_XP_100')         return { effect_type: 'xp_boost',       effect: 'xp_instant',            effect_value: 100 };
   // Special
-  if (code === 'RETRY_QUEST')         return { effect_type: 'skip_day',       effect: 'retry_quest',           effect_value: 1 };
   if (code === 'FORCE_LEVEL_UP')      return { effect_type: 'xp_boost',       effect: 'force_level_up',        effect_value: 1 };
   if (code === 'TEAM_XP_10')          return { effect_type: 'xp_boost',  effect: 'team_xp',               effect_value: 10 };
   if (code === 'TEAM_XP_GOLD_10')    return { effect_type: 'xp_boost',  effect: 'team_xp,team_gold',     effect_value: 10 };

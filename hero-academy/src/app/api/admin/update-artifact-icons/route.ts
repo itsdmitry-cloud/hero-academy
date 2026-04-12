@@ -47,7 +47,7 @@ export async function POST() {
     'Младшее Перо Феникса':      '/assets/artifacts/epi_feather.png',
     // LEGENDARY
     'Корона Академии':           '/assets/artifacts/leg_crown.png',
-    'Песочные Часы Времени':     '/assets/artifacts/leg_hourglass.png',
+    'Песочные Часы Стойкости':   '/assets/artifacts/leg_hourglass.png',
     'Крест Возрождения':         '/assets/artifacts/leg_cross.png',
     'Посох Властителя':          '/assets/artifacts/leg_staff.png',
     'Золотой Дракон':            '/assets/artifacts/leg_dragon.png',

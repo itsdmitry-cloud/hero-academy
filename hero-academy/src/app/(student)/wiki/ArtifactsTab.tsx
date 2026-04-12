@@ -58,11 +58,12 @@ function getEffectDescription(code: string) {
     'SKIP_HOMEWORK': 'Легальный пропуск 1 ДЗ без штрафа',
     'PREVENT_DEATH_30': 'Спасает от смерти, оставляя 30 HP',
     'PREVENT_DEATH_50': 'Спасает от смерти, оставляя 50 HP',
-    'RETRY_QUEST': 'Позволяет пересдать плохую оценку',
     'GOLD_MULTIPLIER_3X': 'Умножает все добытое золото в x3 раза',
     'BOSS_MULTIPLIER_3X': 'Умножает весь XP с Босса в x3 раза',
     'FORCE_LEVEL_UP': 'Мгновенно повышает Уровень на +1',
     'TEAM_XP_10': 'Дает пассивно +10% XP всему классу',
+    'TEAM_XP_GOLD_10': '+10% XP и Gold всему классу',
+    'TEAM_DMG_REDUCE_20': '−20% урона всему классу',
     'ROYAL_PIECE': 'Часть древнего сета Директора. Собери все 5 штук.'
   };
   return map[code] || 'Секретный эффект';

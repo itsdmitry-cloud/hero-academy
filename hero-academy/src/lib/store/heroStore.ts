@@ -158,8 +158,6 @@ export const useHeroStore = create<HeroStore>()(
           addToast({ type: 'streak', title: 'Стрик защищён!', message: `${def.name} защитит стрик на 1 день`, icon: '🔥', duration: 3000 });
         } else if (code === 'SKIP_HOMEWORK') {
           addToast({ type: 'artifact', title: 'Пропуск ДЗ!', message: `${def.name} — одно ДЗ можно пропустить`, icon: '📜', duration: 3000 });
-        } else if (code === 'RETRY_QUEST') {
-          addToast({ type: 'artifact', title: 'Пересдача!', message: `${def.name} — можно пересдать одну работу`, icon: '🔄', duration: 3000 });
         } else {
           addToast({ type: 'artifact', title: def.name, message: 'Эффект применён!', icon: '✨', duration: 3000 });
         }
