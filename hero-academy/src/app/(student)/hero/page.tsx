@@ -13,6 +13,7 @@ import { useStreak } from '@/lib/hooks/use-streak';
 import { useArtifacts, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
 import { BattlePassWidget } from '@/components/game/BattlePassWidget';
 import { AchievementsPanel } from '@/components/game/AchievementsPanel';
+import { ClassAuraBanner } from '@/components/game/ClassAuraBanner';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
@@ -261,6 +262,9 @@ export default function HeroPage() {
           </div>
         </div>
       )}
+
+      {/* === CLASS AURA BANNER === */}
+      {hero.heroId && <ClassAuraBanner heroId={hero.heroId} />}
 
       {/* === HERO SECTION === */}
       <section className={styles.heroSection}>
