@@ -143,6 +143,24 @@ export function useSupabaseSync() {
           if (log.gold_change > 0) msgs.push(`💰 +${log.gold_change} Золота`);
           if (log.hp_change > 0) msgs.push(`❤️ +${log.hp_change} HP`);
 
+        // ── TEAM ARTIFACT ACTIVATED ──────────────────────────────────
+        } else if (log.action === 'team_artifact_activated') {
+          const actName = String(meta.activator_name ?? 'Одноклассник');
+          const artNameStr = String(meta.artifact ?? 'Командный артефакт');
+          const icon = String(meta.icon ?? '✨');
+          const effectVal = Number(meta.effect_value ?? 0);
+          const durationH = meta.duration_hours ? Number(meta.duration_hours) : null;
+
+          if (durationH) {
+            questName = `${icon} ${actName} активировал(а) «${artNameStr}»`;
+            resultMsg = '🛡️ Аура класса!';
+            msgs.push(`🔥 ${artNameStr} — +${effectVal}% на ${durationH}ч для всего класса`);
+          } else {
+            questName = `${icon} ${actName} использовал(а) «${artNameStr}»`;
+            resultMsg = '🎊 Подарок классу!';
+            msgs.push(`🔥 ${artNameStr} — эффект применён ко всему классу`);
+          }
+
         // ── STREAK ───────────────────────────────────────────────────────────
         } else if (log.action === 'streak_bonus' || log.action === 'streak_reward' || log.action === 'streak_update') {
           const days = meta.days ?? meta.streak ?? '?';
