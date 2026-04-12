@@ -214,6 +214,17 @@ export function useArtifacts() {
       return { error: error.message };
     }
     await fetchArtifacts();
+
+    // Notify class if this is a team artifact
+    const isTeamArtifact = effect.split(',').some(e => e.trim().startsWith('team_'));
+    if (isTeamArtifact) {
+      fetch('/api/game/team-artifact-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heroArtifactId }),
+      }).catch(() => {}); // fire-and-forget, don't block equip
+    }
+
     return { error: null };
   }, [supabase, inventory, fetchArtifacts]);
 
