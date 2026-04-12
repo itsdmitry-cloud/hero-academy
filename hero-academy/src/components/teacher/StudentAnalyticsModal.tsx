@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, Cell, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip, Cell,
 } from 'recharts';
 import { createClient } from '@/lib/supabase/client';
 import { Modal } from '@/components/ui/Modal';

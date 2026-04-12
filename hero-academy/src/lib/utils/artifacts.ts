@@ -5,7 +5,7 @@
  * and provides client-side game logic (calculateQuestResult).
  */
 
-import { ARTIFACT_REGISTRY, REGISTRY_BY_KEY, ROYAL_SET_KEYS, type ArtifactEntry } from '@/lib/game/artifact-registry';
+import { ARTIFACT_REGISTRY, ROYAL_SET_KEYS, type ArtifactEntry } from '@/lib/game/artifact-registry';
 
 // ─── Re-export types and catalog ─────────────────────────────
 

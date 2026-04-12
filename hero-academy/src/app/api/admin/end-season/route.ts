@@ -56,10 +56,6 @@ export async function POST(req: NextRequest) {
   const heroIds = (heroes || []).map(h => h.id);
   if (heroIds.length > 0) {
     // Batch update: reset HP to hp_max, activate heroes, clear streak
-    // We need hp_max per hero, so use a simple approach
-    for (const h of heroes as { id: string; }[]) {
-      // For now, fetch hp_max individually (hero count per school is typically < 200)
-    }
     // More efficient: set hp = hp_max using raw SQL via RPC, or batch by hp_max values
     // Fallback: update all at once with a reasonable default, then fix individually
     await admin.from('heroes')

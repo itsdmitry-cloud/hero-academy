@@ -35,18 +35,6 @@ interface LeaderboardView {
 
 
 
-interface GuildEntry {
-  rank: number;
-  name: string;
-  banner: string;
-  members: number;
-  totalXp: number;
-  streak: number;
-}
-
-/* TODO: guild leaderboard — load from DB when guild system is fully implemented */
-const guilds: GuildEntry[] = [];
-
 const rankEmojis = ['🥇', '🥈', '🥉'];
 
 /* ── Convert Supabase entry to view model ── */
@@ -63,10 +51,10 @@ function toView(e: LeaderboardEntry): LeaderboardView {
 }
 
 export default function LeaderboardPage() {
-  const { user } = useAuth();
+  useAuth();
   const [scope, setScope] = useState<LeaderboardScope>('class');
-  const { entries: classEntries, loading: classLoading } = useLeaderboard('class');
-  const { entries: schoolEntries, loading: schoolLoading } = useLeaderboard('school');
+  const { entries: classEntries } = useLeaderboard('class');
+  const { entries: schoolEntries } = useLeaderboard('school');
 
   const activeEntries = scope === 'school' ? schoolEntries : classEntries;
   const displayData: LeaderboardView[] = activeEntries.map(toView);

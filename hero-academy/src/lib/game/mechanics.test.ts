@@ -10,10 +10,6 @@ import {
   xpToNext,
   xpProgress,
   applyXpGain,
-  avatarTier,
-  avatarPath,
-  pickRarity,
-  computeDropChance,
 } from '@/lib/game/math';
 
 // ─────────────────────────────────────────────────────────────

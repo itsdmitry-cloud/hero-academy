@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { ARTIFACT_CATALOG, ArtifactDef, Rarity } from '@/lib/utils/artifacts';
 import { useHeroStore } from '@/lib/store/heroStore';

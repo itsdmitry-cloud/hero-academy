@@ -29,8 +29,8 @@ const templates: QuestTemplate[] = [
 
 export default function QuestBuilderPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { classes, activeClassId, setActiveClassId, createQuest, activeSubject, subjects, quests } = useTeacherData();
+  useAuth();
+  const { classes, activeClassId, createQuest, activeSubject, subjects, quests } = useTeacherData();
 
   // Subject is always taken from the sidebar switcher — no local picker
   const subject = activeSubject || subjects[0] || 'Математика';

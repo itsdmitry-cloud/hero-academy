@@ -286,7 +286,6 @@ export async function POST(req: Request) {
     // Load boss ONCE — try new model (season_boss_class_hp) first, fallback to legacy (subject_bosses)
     let bossId: string | null = null;
     let bossCurrentHp = 0;
-    let _bossName = subject ?? 'Босс';
     let bossTable: 'season_boss_class_hp' | 'subject_bosses' = 'season_boss_class_hp';
 
     if (seasonId) {
@@ -304,7 +303,6 @@ export async function POST(req: Request) {
         if (classHp && classHp.current_hp > 0) {
           bossId = classHp.id;
           bossCurrentHp = classHp.current_hp;
-          _bossName = seasonBoss.name;
           bossTable = 'season_boss_class_hp';
         }
       }
@@ -320,7 +318,6 @@ export async function POST(req: Request) {
         if (boss && boss.current_hp > 0) {
           bossId = boss.id;
           bossCurrentHp = boss.current_hp;
-          _bossName = (boss as Record<string, unknown>).name as string ?? _bossName;
           bossTable = 'subject_bosses';
         }
       }

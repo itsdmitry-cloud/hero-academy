@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useShop, type ShopItem } from '@/lib/hooks/use-shop';
 import { useHero } from '@/lib/hooks/use-hero';
-import { useArtifacts, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
+import { useArtifacts } from '@/lib/hooks/use-artifacts';
 import { useAuth } from '@/lib/supabase/auth-context';
 import styles from './page.module.css';
 
@@ -77,9 +77,9 @@ function toView(item: ShopItem): ShopItemView {
 }
 
 export default function ShopPage() {
-  const { user } = useAuth();
-  const { items: supaItems, loading: shopLoading, buyItem } = useShop();
-  const { hero, loading: heroLoading, refetch: refetchHero } = useHero();
+  useAuth();
+  const { items: supaItems, buyItem } = useShop();
+  const { hero, refetch: refetchHero } = useHero();
   const { catalog: artifactCatalog } = useArtifacts();
 
   const [category, setCategory] = useState<ShopCategory>('all');

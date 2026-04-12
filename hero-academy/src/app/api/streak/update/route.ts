@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
@@ -13,7 +13,7 @@ const admin = createAdminClient(
  * Returns streak result including milestone bonuses.
  * Now includes streak_protect artifact check.
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
 

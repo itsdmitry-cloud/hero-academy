@@ -15,8 +15,8 @@ interface FeedEvent {
 }
 
 export default function TeacherDashboard() {
-  const { user } = useAuth();
-  const { classes, activeClassId, setActiveClassId, students, quests, stats, loading, subjects, activeSubject } = useTeacherData();
+  useAuth();
+  const { classes, activeClassId, students, quests, stats, loading, subjects, activeSubject } = useTeacherData();
   // Always create bosses for ALL teacher subjects on dashboard load
   // Display only the active subject's boss in the UI
   const { bosses: allBosses, seasonMissing } = useSubjectBosses(activeClassId, subjects);

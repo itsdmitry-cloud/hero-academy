@@ -14,7 +14,6 @@ import {
   MAX_BP_TIER,
   TOTAL_BP_XP,
   type SeasonElement,
-  type BPTier,
 } from '@/lib/game/seasonPassConfig';
 
 /* ── Styles (inline for now) ── */
@@ -33,7 +32,7 @@ interface BattlePassWidgetProps {
   onClaim?: () => void;
 }
 
-export function BattlePassWidget({ seasonXp, heroId, element = 'fire', onClaim }: BattlePassWidgetProps) {
+export function BattlePassWidget({ seasonXp, heroId, element = 'fire' }: BattlePassWidgetProps) {
   const supabase = createClient();
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
@@ -79,7 +78,6 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire', onClaim }
   };
 
   const unclaimedCount = tiers.filter(t => t.xpRequired <= seasonXp && !claimedTiers.has(t.tier)).length;
-  const pct = progress.currentTier >= MAX_BP_TIER ? 100 : progress.xpForTier > 0 ? Math.min(100, Math.round((progress.xpInTier / progress.xpForTier) * 100)) : 0;
 
   return (
     <>

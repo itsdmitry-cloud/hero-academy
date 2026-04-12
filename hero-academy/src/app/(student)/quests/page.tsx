@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSeasonBosses, type SeasonBossData } from '@/lib/hooks/use-season-bosses';
 import { Modal } from '@/components/ui/Modal';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
 

@@ -25,7 +25,7 @@ function nameColor(name: string) {
 }
 
 export default function StudentsPage() {
-  const { user } = useAuth();
+  useAuth();
   const { classes, activeClassId, setActiveClassId, students, stats, loading, grantXp, damageHp } = useTeacherData();
 
   const [selected, setSelected] = useState<StudentRow | null>(null);

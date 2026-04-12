@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import styles from './page.module.css';
@@ -66,7 +66,6 @@ interface QuestInfo {
 
 export default function CheckHomeworkPage() {
   const { id: questId } = useParams<{ id: string }>();
-  const router = useRouter();
 
   const [quest, setQuest] = useState<QuestInfo | null>(null);
   const [students, setStudents] = useState<StudentRow[]>([]);

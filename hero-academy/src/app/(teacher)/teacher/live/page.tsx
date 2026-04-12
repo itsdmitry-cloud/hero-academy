@@ -15,23 +15,16 @@ const BUFF_LABELS   = ['Блестящий ответ', 'Отличная раб
 const DEBUFF_LABELS = ['Отвлёкся', 'Мешает вести урок', 'Списывание'];
 const ALL_LABELS    = [...BUFF_LABELS, ...DEBUFF_LABELS];
 
-const hpColor = (hp: number, max: number) => {
-  const pct = hp / max;
-  if (pct > 0.6) return 'var(--accent-xp)';
-  if (pct > 0.3) return 'var(--accent-gold)';
-  return 'var(--accent-hp)';
-};
-
 export default function LiveRadarPage() {
-  const { user } = useAuth();
-  const { classes, activeClassId, setActiveClassId, subjects, grantXp, damageHp, activeSubject, createQuest, quests } = useTeacherData();
+  useAuth();
+  const { activeClassId, subjects, grantXp, damageHp, activeSubject, createQuest, quests } = useTeacherData();
   const { students: liveStudents, loading, optimisticUpdate } = useRealtimeClass(activeClassId);
 
   const students: LiveStudentState[] = liveStudents;
 
   const [selected, setSelected] = useState<LiveStudentState | null>(null);
   const [actionLog, setActionLog] = useState<{ id: number; text: string; type: 'buff' | 'debuff' }[]>([]);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading] = useState(false);
   // Buff/Debuff counters per student → per subject → per action label
   // e.g. allLessonCounters[heroId][биология][Блестящий ответ] = 3
   const [allLessonCounters, setAllLessonCounters] = useState<Record<string, Record<string, Record<string, number>>>>({});

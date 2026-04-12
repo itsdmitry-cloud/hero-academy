@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // ── Re-export pure math from the single source of truth ──
 export { xpPerLevel, cumulativeXpForLevel, xpToNext, xpProgress, applyXpGain } from '@/lib/game/math';
-import { cumulativeXpForLevel, applyXpGain } from '@/lib/game/math';
+import { applyXpGain } from '@/lib/game/math';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

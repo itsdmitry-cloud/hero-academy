@@ -74,10 +74,6 @@ function getSeasonalTag(art: ArtifactCatalog): string | null {
   return SEASONAL_CHEST_MAP[art.name] ?? null;
 }
 
-function isSeasonalLootbox(art: ArtifactCatalog): boolean {
-  return !!getSeasonalTag(art);
-}
-
 function isConsumable(art: ArtifactCatalog) {
   const eff = art.effect || (art as ArtifactCatalogExt).effect_type || '';
   return !isLootbox(art) && (
@@ -87,7 +83,7 @@ function isConsumable(art: ArtifactCatalog) {
 }
 
 export default function InventoryPage() {
-  const { catalog, inventory, loading, equipArtifact, consumeArtifact, sellArtifact, refetch } = useArtifacts();
+  const { catalog, inventory, loading, equipArtifact, consumeArtifact, refetch } = useArtifacts();
   const { hero, openLootbox } = useHero();
   const [activeTab, setActiveTab] = useState<TabId>('all');
   const [selectedItem, setSelectedItem] = useState<HeroArtifact | null>(null);
@@ -98,7 +94,6 @@ export default function InventoryPage() {
   const [rouletteItem, setRouletteItem] = useState('✨');
 
   const lootboxItems = inventory.filter(i => i.artifact && isLootbox(i.artifact));
-  const normalItems = inventory.filter(i => i.artifact && !isLootbox(i.artifact));
 
   const filterItem = (item: HeroArtifact) => {
     const art = item.artifact;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateQuestResult, HeroState, QuestResult, PlayerArtifact, ARTIFACT_CATALOG } from '@/lib/utils/artifacts';
+import { calculateQuestResult, HeroState, QuestResult, PlayerArtifact } from '@/lib/utils/artifacts';
 
 describe('Artifacts Engine - calculateQuestResult', () => {
 
