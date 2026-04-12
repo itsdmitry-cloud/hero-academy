@@ -11,6 +11,10 @@ import styles from './page.module.css';
 
 const supabase = createClient();
 
+const BUFF_LABELS   = ['Блестящий ответ', 'Отличная работа', 'Помощь товарищу'];
+const DEBUFF_LABELS = ['Отвлёкся', 'Мешает вести урок', 'Списывание'];
+const ALL_LABELS    = [...BUFF_LABELS, ...DEBUFF_LABELS];
+
 const hpColor = (hp: number, max: number) => {
   const pct = hp / max;
   if (pct > 0.6) return 'var(--accent-xp)';
@@ -31,10 +35,6 @@ export default function LiveRadarPage() {
   // Buff/Debuff counters per student → per subject → per action label
   // e.g. allLessonCounters[heroId][биология][Блестящий ответ] = 3
   const [allLessonCounters, setAllLessonCounters] = useState<Record<string, Record<string, Record<string, number>>>>({});
-
-  const BUFF_LABELS   = ['Блестящий ответ', 'Отличная работа', 'Помощь товарищу'];
-  const DEBUFF_LABELS = ['Отвлёкся', 'Мешает вести урок', 'Списывание'];
-  const ALL_LABELS    = [...BUFF_LABELS, ...DEBUFF_LABELS];
 
   // Fetch per-action counts from activity_log (current season only)
   useEffect(() => {

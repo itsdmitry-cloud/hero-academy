@@ -99,10 +99,14 @@ export default function BossBattlePage() {
     };
   }, [bossId, fetchParticipants]);
 
-  // Timer
+  // Timer — extract primitive deps to avoid restarting on every boss HP change
+  const bossStartedAt = boss?.started_at ?? null;
+  const bossStatus = boss?.status ?? null;
+  const bossTimerMinutes = boss?.timer_minutes ?? 0;
+
   useEffect(() => {
-    if (!boss || boss.status !== 'active' || !boss.started_at) return;
-    const endTime = new Date(boss.started_at).getTime() + boss.timer_minutes * 60000;
+    if (!bossStatus || bossStatus !== 'active' || !bossStartedAt) return;
+    const endTime = new Date(bossStartedAt).getTime() + bossTimerMinutes * 60000;
     const update = () => {
       const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
       setTimeLeft(remaining);
@@ -113,7 +117,7 @@ export default function BossBattlePage() {
     update();
     timerRef.current = setInterval(update, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [boss?.started_at, boss?.status, boss?.timer_minutes]);
+  }, [bossStartedAt, bossStatus, bossTimerMinutes]);
 
   const handleAnswer = async () => {
     if (!boss || !user || dealing) return;
