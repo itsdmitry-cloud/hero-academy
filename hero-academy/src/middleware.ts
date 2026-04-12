@@ -1,13 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import { createClient } from '@/lib/supabase/server';
 
 // Routes accessible without authentication
 const publicRoutes = ['/', '/auth/login', '/auth/join', '/wiki'];
 
 export async function middleware(request: NextRequest) {
-  // Always refresh tokens/session
-  const response = await updateSession(request);
+  // Refresh tokens/session and get the authenticated user in one pass
+  const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
   // Allow public routes and static assets
@@ -15,11 +14,8 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Check session
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (!session) {
+  // Redirect to login if no authenticated user
+  if (!user) {
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
