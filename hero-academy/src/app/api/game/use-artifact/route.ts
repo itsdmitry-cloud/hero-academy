@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
-import { applyXpGain } from '@/lib/game/constants';
+import { applyXpGain, ACTIVITY_ACTIONS } from '@/lib/game/constants';
 
 const admin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,6 +87,37 @@ export async function POST(req: Request) {
       });
     };
 
+    // Helper: log team artifact activation for all class heroes
+    const logTeamActivation = async (
+      heroes: { id: string; user_id: string }[],
+      opts: { effect: string; effect_value: number; icon: string; duration_hours?: number | null; expires_at?: string | null },
+    ) => {
+      const { data: activatorUser } = await admin.from('users').select('display_name').eq('id', user.id).single();
+      const activatorName = activatorUser?.display_name ?? 'Герой';
+
+      const entries = heroes.map(h => ({
+        hero_id: h.id,
+        user_id: h.user_id,
+        action: ACTIVITY_ACTIONS.TEAM_ARTIFACT_ACTIVATED,
+        xp_change: 0,
+        gold_change: 0,
+        hp_change: 0,
+        metadata: {
+          artifact: artName,
+          activator_name: activatorName,
+          effect: opts.effect,
+          effect_value: opts.effect_value,
+          duration_hours: opts.duration_hours ?? null,
+          expires_at: opts.expires_at ?? null,
+          icon: opts.icon,
+        },
+      }));
+
+      if (entries.length > 0) {
+        await admin.from('activity_log').insert(entries);
+      }
+    };
+
     // ══════════════════════════════════════════
     // SIMPLE CONSUMABLES (single hero)
     // ══════════════════════════════════════════
@@ -167,6 +198,13 @@ export async function POST(req: Request) {
       await consumeArtifact();
       if (logEntries.length > 0) await admin.from('activity_log').insert(logEntries);
 
+      if (heroes) {
+        await logTeamActivation(
+          heroes.map(h => ({ id: h.id, user_id: h.user_id })),
+          { effect: 'class_hp', effect_value: val, icon: '❤️' },
+        );
+      }
+
       return NextResponse.json({ success: true, effect: 'class_hp', value: val, message: `❤️ +${val} HP для ${healed} учеников!` });
     }
 
@@ -207,6 +245,13 @@ export async function POST(req: Request) {
       await consumeArtifact();
       if (logEntries.length > 0) await admin.from('activity_log').insert(logEntries);
 
+      if (heroes) {
+        await logTeamActivation(
+          heroes.map(h => ({ id: h.id, user_id: h.user_id })),
+          { effect: 'class_xp', effect_value: val, icon: '⚡' },
+        );
+      }
+
       return NextResponse.json({ success: true, effect: 'class_xp', value: val, message: `⚡ +${val} XP для ${boosted} учеников!` });
     }
 
@@ -244,6 +289,13 @@ export async function POST(req: Request) {
 
       await consumeArtifact();
       if (logEntries.length > 0) await admin.from('activity_log').insert(logEntries);
+
+      if (heroes) {
+        await logTeamActivation(
+          heroes.map(h => ({ id: h.id, user_id: h.user_id })),
+          { effect: 'class_gold', effect_value: val, icon: '💰' },
+        );
+      }
 
       return NextResponse.json({ success: true, effect: 'class_gold', value: val, message: `💰 +${val} золота для ${gifted} учеников!` });
     }
