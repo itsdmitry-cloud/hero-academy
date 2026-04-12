@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { rollArtifactDrop, DIFFICULTY_MAP, applyXpGain, xpToNext, getEconomyConfig, ACTIVITY_ACTIONS, distributeBossKillRewards } from '@/lib/game/constants';
+import { rollArtifactDrop, DIFFICULTY_MAP, applyXpGain, getEconomyConfig, distributeBossKillRewards } from '@/lib/game/constants';
 import { decrementCharge, getArtifactModifiers } from '@/lib/game/artifact-engine';
 
 const admin = createClient(
@@ -195,10 +195,11 @@ export async function POST(req: Request) {
       const { xp: newXp, level: newLevel, xpNext: newXpNext, levelUps } = applyXpGain(hero.xp, hero.level, hero.xp_to_next, finalAmount);
 
       const heroWithSeason = hero as typeof hero & { season_xp?: number | null };
-      const heroUpdate: Record<string, unknown> = { xp: newXp, season_xp: (heroWithSeason.season_xp ?? 0) + finalAmount };
+      const heroUpdate: Record<string, unknown> = {
+        xp: newXp, level: newLevel, xp_to_next: newXpNext,
+        season_xp: (heroWithSeason.season_xp ?? 0) + finalAmount,
+      };
       if (levelUps.length > 0) {
-        heroUpdate.level = newLevel;
-        heroUpdate.xp_to_next = newXpNext;
         pipeline.push(`🎉 Уровень ${levelUps.join(' → ')}!`);
       }
       await admin.from('heroes').update(heroUpdate).eq('id', hero_id);

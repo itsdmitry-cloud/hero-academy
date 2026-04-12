@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { rollArtifactDrop, DIFFICULTY_MAP, getEconomyConfig, ACTIVITY_ACTIONS, applyXpGain, distributeBossKillRewards } from '@/lib/game/constants';
-import { getHeroMods, decrementCharge, type HeroMods } from '@/lib/game/artifact-engine';
+import { getHeroMods, decrementCharge } from '@/lib/game/artifact-engine';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -209,11 +209,11 @@ async function processHero(
   // Build hero update (includes season_xp for Battle Pass)
   const heroWithSeason = hero as typeof hero & { season_xp?: number | null };
   const heroUpdate: Record<string, unknown> = {
-    xp: newXp, gold: newGold, hp: newHp,
+    xp: newXp, level: newLevel, xp_to_next: newXpNext,
+    gold: newGold, hp: newHp,
     status: newHp === 0 ? 'inactive' : 'active',
     season_xp: (heroWithSeason.season_xp ?? 0) + finalXp,
   };
-  if (newLevel > hero.level) { heroUpdate.level = newLevel; heroUpdate.xp_to_next = newXpNext; }
 
   // Fire streak + hero update + activity_log + quest_attempts in parallel
   await Promise.all([
@@ -286,7 +286,7 @@ export async function POST(req: Request) {
     // Load boss ONCE — try new model (season_boss_class_hp) first, fallback to legacy (subject_bosses)
     let bossId: string | null = null;
     let bossCurrentHp = 0;
-    let bossName = subject ?? 'Босс';
+    let _bossName = subject ?? 'Босс';
     let bossTable: 'season_boss_class_hp' | 'subject_bosses' = 'season_boss_class_hp';
 
     if (seasonId) {
@@ -304,7 +304,7 @@ export async function POST(req: Request) {
         if (classHp && classHp.current_hp > 0) {
           bossId = classHp.id;
           bossCurrentHp = classHp.current_hp;
-          bossName = seasonBoss.name;
+          _bossName = seasonBoss.name;
           bossTable = 'season_boss_class_hp';
         }
       }
@@ -320,7 +320,7 @@ export async function POST(req: Request) {
         if (boss && boss.current_hp > 0) {
           bossId = boss.id;
           bossCurrentHp = boss.current_hp;
-          bossName = (boss as Record<string, unknown>).name as string ?? bossName;
+          _bossName = (boss as Record<string, unknown>).name as string ?? _bossName;
           bossTable = 'subject_bosses';
         }
       }

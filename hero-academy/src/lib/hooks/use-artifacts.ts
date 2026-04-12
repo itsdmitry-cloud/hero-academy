@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useHeroStore } from '@/lib/store/heroStore';
+import { cumulativeXpForLevel } from '@/lib/game/math';
 import type { PlayerArtifact } from '@/lib/utils/artifacts';
 
 /* ──────────── types ──────────── */
@@ -250,10 +251,9 @@ export function useArtifacts() {
       // Cumulative XP: add val, then check level-up
       const newXp = (hero.xp as number) + val;
       let newLevel = hero.level as number;
-      while (newXp >= newLevel * (1000 + 250 * (newLevel + 1))) { newLevel++; }
-      const newXpNext = newLevel * (1000 + 250 * (newLevel + 1));
-      const heroUpd: Record<string, unknown> = { xp: newXp };
-      if (newLevel > (hero.level as number)) { heroUpd.level = newLevel; heroUpd.xp_to_next = newXpNext; }
+      while (newXp >= cumulativeXpForLevel(newLevel + 1)) { newLevel++; }
+      const newXpNext = cumulativeXpForLevel(newLevel + 1);
+      const heroUpd: Record<string, unknown> = { xp: newXp, level: newLevel, xp_to_next: newXpNext };
       await supabase.from('heroes').update(heroUpd).eq('id', hero.id);
       await supabase.from('activity_log').insert({ hero_id: hero.id, user_id: session.user.id, action: 'potion_used', xp_change: val, metadata: { artifact: art.name } });
       await supabase.from('hero_artifacts').delete().eq('id', heroArtifactId);
@@ -273,9 +273,9 @@ export function useArtifacts() {
 
     if (effect === 'level_up') {
       const newLevel = (hero.level as number) + 1;
-      const newXpNext = newLevel * (1000 + 250 * (newLevel + 1)); // cumulativeXpForLevel(newLevel+1)
+      const newXpNext = cumulativeXpForLevel(newLevel + 1);
       // Set XP to the threshold for the new level (so progress bar starts at 0%)
-      const newXp = (newLevel - 1) * (1000 + 250 * newLevel); // cumulativeXpForLevel(newLevel)
+      const newXp = cumulativeXpForLevel(newLevel);
       await supabase.from('heroes').update({ level: newLevel, xp: newXp, xp_to_next: newXpNext }).eq('id', hero.id);
       await supabase.from('activity_log').insert({ hero_id: hero.id, user_id: session.user.id, action: 'potion_used', xp_change: 0, metadata: { artifact: art.name, new_level: newLevel } });
       await supabase.from('hero_artifacts').delete().eq('id', heroArtifactId);

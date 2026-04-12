@@ -383,11 +383,10 @@ export async function distributeBossKillRewards(opts: {
       hr.xp ?? 0, hr.level ?? 1, hr.xp_to_next, myXp
     );
     const heroUpd: Record<string, unknown> = {
-      xp: bkXp,
+      xp: bkXp, level: bkLevel, xp_to_next: bkXpNext,
       gold: (hr.gold ?? 0) + myGold,
       season_xp: (hr.season_xp ?? 0) + myXp,
     };
-    if (bkLevelUps.length > 0) { heroUpd.level = bkLevel; heroUpd.xp_to_next = bkXpNext; }
     heroUpdates.push({ id: heroId, data: heroUpd });
 
     const dmgPct = totalDamage > 0 ? myDmg / totalDamage : 0;

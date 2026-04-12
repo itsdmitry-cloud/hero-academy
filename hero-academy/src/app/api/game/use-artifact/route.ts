@@ -102,8 +102,7 @@ export async function POST(req: Request) {
 
     if (effect === 'xp_instant' || effect === 'consumable_xp') {
       const { xp, level, xpNext } = applyXpGain(hero.xp, hero.level, hero.xp_to_next, val);
-      const upd: Record<string, unknown> = { xp, status: 'active', season_xp: (hero.season_xp ?? 0) + val };
-      if (level > hero.level) { upd.level = level; upd.xp_to_next = xpNext; }
+      const upd: Record<string, unknown> = { xp, level, xp_to_next: xpNext, status: 'active', season_xp: (hero.season_xp ?? 0) + val };
       await admin.from('heroes').update(upd).eq('id', hero.id);
       await consumeArtifact();
       await logActivity('potion_used', { effect: 'xp_instant' }, { xp: val });
@@ -188,8 +187,7 @@ export async function POST(req: Request) {
       if (heroes) {
         for (const h of heroes) {
           const { xp, level, xpNext } = applyXpGain(h.xp, h.level, h.xp_to_next, val);
-          const upd: Record<string, unknown> = { xp, season_xp: (h.season_xp ?? 0) + val };
-          if (level > h.level) { upd.level = level; upd.xp_to_next = xpNext; }
+          const upd: Record<string, unknown> = { xp, level, xp_to_next: xpNext, season_xp: (h.season_xp ?? 0) + val };
           await admin.from('heroes').update(upd).eq('id', h.id);
           boosted++;
 
@@ -318,8 +316,7 @@ export async function POST(req: Request) {
       if (!luckyHero) return NextResponse.json({ error: 'Герой получателя не найден' }, { status: 400 });
 
       const { xp, level, xpNext } = applyXpGain(luckyHero.xp, luckyHero.level, luckyHero.xp_to_next, val);
-      const upd: Record<string, unknown> = { xp, gold: luckyHero.gold + val, season_xp: (luckyHero.season_xp ?? 0) + val };
-      if (level > luckyHero.level) { upd.level = level; upd.xp_to_next = xpNext; }
+      const upd: Record<string, unknown> = { xp, level, xp_to_next: xpNext, gold: luckyHero.gold + val, season_xp: (luckyHero.season_xp ?? 0) + val };
       await admin.from('heroes').update(upd).eq('id', luckyHero.id);
 
       await consumeArtifact();
@@ -390,10 +387,10 @@ export async function POST(req: Request) {
       const newHp = Math.min(hero.hp_max, hero.hp + comboHp);
       const { xp, level, xpNext } = applyXpGain(hero.xp, hero.level, hero.xp_to_next, comboXp);
       const upd: Record<string, unknown> = {
-        xp, gold: hero.gold + comboGold, hp: newHp, status: 'active',
+        xp, level, xp_to_next: xpNext,
+        gold: hero.gold + comboGold, hp: newHp, status: 'active',
         season_xp: (hero.season_xp ?? 0) + comboXp,
       };
-      if (level > hero.level) { upd.level = level; upd.xp_to_next = xpNext; }
       await admin.from('heroes').update(upd).eq('id', hero.id);
       await consumeArtifact();
       await logActivity('potion_used', { effect: 'combo' }, { xp: comboXp, gold: comboGold, hp: comboHp });

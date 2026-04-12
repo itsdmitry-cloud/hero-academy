@@ -6,6 +6,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StreakProgressBar } from '@/components/ui/StreakProgressBar';
 import { useHeroStore } from '@/lib/store/heroStore';
+import { xpProgress } from '@/lib/game/math';
 import { useSupabaseSync } from '@/lib/hooks/use-supabase-sync';
 import { useRealtimeHero } from '@/lib/hooks/use-realtime-hero';
 import { useStreak } from '@/lib/hooks/use-streak';
@@ -291,7 +292,7 @@ export default function HeroPage() {
             <StatCard icon="❤️" label="HP" value={`${hero.hp}`} color="hp" trend={hero.hp < 30 ? 'LOW' : undefined} />
           </div>
           <div className={styles.bars}>
-            <ProgressBar value={hero.xp} max={hero.xp_to_next} color="xp" label="Опыт" showValue size="md" />
+            <ProgressBar value={xpProgress(hero.xp, hero.level).current} max={xpProgress(hero.xp, hero.level).needed} color="xp" label={`Опыт (Ур. ${hero.level})`} showValue size="md" />
             <ProgressBar value={hero.hp} max={hero.hp_max} color="hp" label="Здоровье" showValue size="md" />
           </div>
           <div className={styles.infoTiles}>
