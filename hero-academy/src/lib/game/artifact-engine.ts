@@ -57,6 +57,18 @@ export interface HeroMods {
   protectiveArts: ProtectiveArt[];
 }
 
+export interface AuraDetail {
+  artifactName: string;
+  activatorName: string;
+  effect: string;
+  effectValue: number;
+  effectLabel: string;
+  expiresAt: string | null;
+  durationHours: number | null;
+  icon: string;
+  rarity: string;
+}
+
 // ─── Classification ──────────────────────────────────────────
 
 /**
@@ -95,7 +107,7 @@ export async function decrementCharge(heroArtifactId: string, currentCharges: nu
 
 // ─── Hero Modifier Resolution ────────────────────────────────
 
-const classAurasCache = new Map<string, { data: { xpBoost: number, goldBoost: number, dmgReduce: number, applied: string[] }, expires: number }>();
+const classAurasCache = new Map<string, { data: { xpBoost: number, goldBoost: number, dmgReduce: number, applied: string[], details: AuraDetail[] }, expires: number }>();
 
 export async function getClassAuras(heroId: string) {
   // Check local short-lived cache (prevents DB spam during grade-batch loops)
@@ -108,7 +120,8 @@ export async function getClassAuras(heroId: string) {
   let goldBoost = 0;
   let dmgReduce = 0;
   const applied: string[] = [];
-  const emptyResult = { xpBoost, goldBoost, dmgReduce, applied };
+  const details: AuraDetail[] = [];
+  const emptyResult = { xpBoost, goldBoost, dmgReduce, applied, details };
 
   // 1. Get classId of current hero
   const { data: heroData } = await admin.from('heroes').select('user_id').eq('id', heroId).single();
@@ -120,20 +133,20 @@ export async function getClassAuras(heroId: string) {
 
   // 2. Get other heroes in class
   const { data: students } = await admin.from('users').select('id, display_name').eq('class_id', classId).eq('role', 'student');
-  if (!students || students.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
+  if (!students || students.length === 0) return { xpBoost, goldBoost, dmgReduce, applied, details };
 
   const studentMap = new Map<string, string>(); // user_id -> name
   students.forEach(s => studentMap.set(s.id, s.display_name));
 
   const { data: cHeroes } = await admin.from('heroes').select('id, user_id').in('user_id', students.map(s => s.id));
-  if (!cHeroes || cHeroes.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
+  if (!cHeroes || cHeroes.length === 0) return { xpBoost, goldBoost, dmgReduce, applied, details };
 
   // Local shape: the two columns we SELECT above.
   interface ClassHeroRow { id: string; user_id: string }
   const classHeroes = cHeroes as ClassHeroRow[];
 
   const otherHeroIds = classHeroes.filter(h => h.id !== heroId).map(h => h.id);
-  if (otherHeroIds.length === 0) return { xpBoost, goldBoost, dmgReduce, applied };
+  if (otherHeroIds.length === 0) return { xpBoost, goldBoost, dmgReduce, applied, details };
 
   const heroNameMap = new Map<string, string>();
   classHeroes.forEach(h => {
@@ -146,11 +159,11 @@ export async function getClassAuras(heroId: string) {
   const now = new Date();
   const { data: artifacts } = await admin
     .from('hero_artifacts')
-    .select('hero_id, expires_at, artifacts!inner(effect, effect_type, effect_value, name)')
+    .select('hero_id, expires_at, artifacts!inner(effect, effect_type, effect_value, name, icon, rarity, duration_hours)')
     .in('hero_id', otherHeroIds)
     .eq('is_equipped', true);
 
-  if (!artifacts) return { xpBoost, goldBoost, dmgReduce, applied };
+  if (!artifacts) return { xpBoost, goldBoost, dmgReduce, applied, details };
 
   // Local shape for rows SELECTed above.
   interface AuraArtifactJoin {
@@ -158,6 +171,9 @@ export async function getClassAuras(heroId: string) {
     effect_type: string | null;
     effect_value: number | null;
     name: string | null;
+    icon: string | null;
+    rarity: string | null;
+    duration_hours: number | null;
   }
   interface AuraHeroArtifactRow {
     hero_id: string;
@@ -203,9 +219,27 @@ export async function getClassAuras(heroId: string) {
       dmgReduce += val;
       applied.push(`Аура: ${art.name} от ${ownerName} (−${val}% Урон)`);
     }
+
+    // Build detail for banner
+    let effectLabel = '';
+    if (isTeamXp || isTeamBoss) effectLabel = `+${val}% XP всему классу`;
+    if (isTeamGold) effectLabel = `+${val}% Золото всему классу`;
+    if (isTeamDmgReduce) effectLabel = `−${val}% Урон всему классу`;
+
+    details.push({
+      artifactName: String(art.name ?? 'Артефакт'),
+      activatorName: ownerName,
+      effect: isTeamXp ? 'team_xp' : isTeamBoss ? 'team_boss_dmg' : isTeamGold ? 'team_gold' : 'team_dmg_reduce',
+      effectValue: val,
+      effectLabel,
+      expiresAt: a.expires_at ?? null,
+      durationHours: art.duration_hours ?? null,
+      icon: String(art.icon ?? '✨'),
+      rarity: String(art.rarity ?? 'rare'),
+    });
   }
 
-  const result = { xpBoost, goldBoost, dmgReduce, applied };
+  const result = { xpBoost, goldBoost, dmgReduce, applied, details };
   
   // Cache for 5 seconds (grade-batch protection)
   classAurasCache.set(heroId, { data: result, expires: Date.now() + 5000 });
