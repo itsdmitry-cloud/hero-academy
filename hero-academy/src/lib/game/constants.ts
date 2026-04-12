@@ -150,6 +150,7 @@ export const ACTIVITY_ACTIONS = {
   STREAK_REWARD:      'streak_reward',   // legacy — historical logs
   LEVEL_UP:           'level_up',
   ADMIN_UNDO:         'admin_undo',
+  TEAM_ARTIFACT_ACTIVATED: 'team_artifact_activated',
 } as const;
 
 /* ═══════ Rarity weights per numeric difficulty ═══════ */
