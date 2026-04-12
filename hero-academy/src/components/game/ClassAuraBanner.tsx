@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import styles from './ClassAuraBanner.module.css';
 
 interface AuraDetail {
   artifactName: string;
@@ -94,68 +95,46 @@ export function ClassAuraBanner({ heroId }: ClassAuraBannerProps) {
   const timeLeft = aura.expiresAt ? formatTimeLeft(aura.expiresAt) : '';
 
   return (
-    <div style={{
-      background: gradient,
-      borderRadius: 'var(--radius-lg, 12px)',
-      padding: '0.75rem 1rem',
-      marginBottom: '1rem',
-      color: 'white',
-      position: 'relative',
-      overflow: 'hidden',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-        <span style={{ fontSize: '1.3rem' }}>{aura.icon}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: '0.85rem', lineHeight: 1.2 }}>
+    <div className={styles.banner} style={{ background: gradient }}>
+      <div className={styles.slide}>
+        <div className={styles.iconWrap}>
+          {aura.icon && aura.icon.includes('/') ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={aura.icon}
+              alt={aura.artifactName}
+              className={styles.iconImg}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : (
+            <span className={styles.iconEmoji}>{aura.icon || '✨'}</span>
+          )}
+        </div>
+        <div className={styles.textBlock}>
+          <div className={styles.title}>
             {aura.activatorName} активировал(а) «{aura.artifactName}»
           </div>
-          <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>
+          <div className={styles.effect}>
             {aura.effectLabel}
           </div>
         </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Осталось</div>
-          <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{timeLeft}</div>
+        <div className={styles.timer}>
+          <div className={styles.timerLabel}>Осталось</div>
+          <div className={styles.timerValue}>{timeLeft}</div>
         </div>
       </div>
 
-      <div style={{
-        height: '4px',
-        background: 'rgba(255,255,255,0.25)',
-        borderRadius: '2px',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          height: '100%',
-          width: `${progress}%`,
-          background: 'rgba(255,255,255,0.8)',
-          borderRadius: '2px',
-          transition: 'width 1s linear',
-        }} />
+      <div className={styles.progressTrack}>
+        <div className={styles.progressFill} style={{ width: `${progress}%` }} />
       </div>
 
       {auras.length > 1 && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '4px',
-          marginTop: '0.4rem',
-        }}>
+        <div className={styles.dots}>
           {auras.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrentIndex(i)}
-              style={{
-                width: i === safeIndex ? '16px' : '6px',
-                height: '6px',
-                borderRadius: '3px',
-                background: i === safeIndex ? 'white' : 'rgba(255,255,255,0.4)',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
+              className={`${styles.dot} ${i === safeIndex ? styles.dotActive : styles.dotInactive}`}
             />
           ))}
         </div>

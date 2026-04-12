@@ -1,0 +1,160 @@
+.banner {
+  border-radius: var(--radius-lg, 12px);
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 1rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.slide {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.iconWrap {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconImg {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+.iconEmoji {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.textBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.effect {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timer {
+  text-align: right;
+  flex-shrink: 0;
+  padding-left: 0.25rem;
+}
+
+.timerLabel {
+  font-size: 0.6rem;
+  opacity: 0.8;
+  line-height: 1;
+}
+
+.timerValue {
+  font-weight: 800;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.progressTrack {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 0.35rem;
+}
+
+.dot {
+  height: 5px;
+  border-radius: 3px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dotActive {
+  width: 14px;
+  background: white;
+}
+
+.dotInactive {
+  width: 5px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Wider screens: allow bigger fonts and icon */
+@media (min-width: 480px) {
+  .banner {
+    padding: 0.75rem 1rem;
+  }
+
+  .iconWrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  .iconImg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .iconEmoji {
+    font-size: 1.4rem;
+  }
+
+  .title {
+    font-size: 0.85rem;
+    white-space: normal;
+  }
+
+  .effect {
+    font-size: 0.75rem;
+    white-space: normal;
+  }
+
+  .timerLabel {
+    font-size: 0.65rem;
+  }
+
+  .timerValue {
+    font-size: 0.9rem;
+  }
+
+  .progressTrack {
+    height: 4px;
+  }
+}
