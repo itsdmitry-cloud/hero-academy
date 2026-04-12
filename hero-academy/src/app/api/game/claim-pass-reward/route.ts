@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   // 4. Check not already claimed
   let seasonId = hero.season_id;
   if (!seasonId) {
-    const { data: activeSeason } = await admin.from('seasons').select('id').eq('is_active', true).limit(1).single();
+    const { data: activeSeason } = await admin.from('seasons').select('id').eq('status', 'active').limit(1).single();
     if (activeSeason) {
       seasonId = activeSeason.id;
       // Auto-heal hero
