@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { Modal } from '@/components/ui/Modal';
@@ -105,7 +106,7 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire', onClaim }
           }} />
         )}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src={`/assets/artifacts/chest_v3_${element}.png`} alt="chest" style={{ width: 44, height: 44, objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))', zIndex: 1 }} />
+          <Image src={`/assets/artifacts/chest_v3_${element}.png`} alt="chest" width={44} height={44} style={{ objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))', zIndex: 1 }} />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>
@@ -147,7 +148,7 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire', onClaim }
       </div>
 
       {/* ── Full Modal ── */}
-      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setClaimResult(null); }} title={<span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><img src={`/assets/artifacts/chest_v3_${element}.png`} style={{ width: 24, height: 24 }} alt="" /> {el.label} • Боевой Пропуск</span>} size="md">
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setClaimResult(null); }} title={<span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Image src={`/assets/artifacts/chest_v3_${element}.png`} width={24} height={24} alt="" /> {el.label} • Боевой Пропуск</span>} size="md">
         <div style={{ maxHeight: '65vh', overflowY: 'auto', padding: '0.25rem' }}>
           {/* Claim result toast */}
           {claimResult && (
@@ -208,7 +209,7 @@ export function BattlePassWidget({ seasonXp, heroId, element = 'fire', onClaim }
                         color: isClaimed ? 'var(--text-secondary)' : (RARITY_GLOW[r.type] ?? 'var(--text-primary)'),
                       }}>
                         {r.type === 'lootbox' ? (
-                          <img src={`/assets/artifacts/chest_v3_${element}.png`} style={{ width: 18, height: 18, objectFit: 'contain' }} alt="Chest" />
+                          <Image src={`/assets/artifacts/chest_v3_${element}.png`} width={18} height={18} style={{ objectFit: 'contain' }} alt="Chest" />
                         ) : (
                           getRewardIcon(r, element)
                         )}

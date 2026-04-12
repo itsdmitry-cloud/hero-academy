@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
 
@@ -109,7 +110,7 @@ export default function NewsAdminPage() {
     if (newImageFile) {
       const ext = newImageFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-      const { data, error } = await supabase.storage.from('news').upload(fileName, newImageFile);
+      const { error } = await supabase.storage.from('news').upload(fileName, newImageFile);
       if (error) {
         alert('Ошибка при загрузке картинки: ' + error.message);
         setPublishing(false);
@@ -288,7 +289,7 @@ export default function NewsAdminPage() {
               <span className={styles.newsTitle}>{n.title}</span>
               {n.pinned && <span className={styles.pinBadge}>📌</span>}
             </div>
-            {n.image_url && <img src={n.image_url} alt="News" style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px' }} />}
+            {n.image_url && <div style={{ position: 'relative', width: '100%', height: '140px', borderRadius: '8px', marginTop: '10px', overflow: 'hidden' }}><Image src={n.image_url} alt="News" fill style={{ objectFit: 'cover' }} unoptimized /></div>}
             <p className={styles.newsBody}>{n.body}</p>
             <div className={styles.newsMeta}>
               <span className={styles.newsTarget}>{getTargetLabel(n)}</span>

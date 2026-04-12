@@ -104,7 +104,6 @@ export default function ParentOverview() {
     ? mockRecentAll
     : mockRecentAll.filter(g => g.type === gradeFilter);
 
-  const activeSubjectData = mockSubjects.find(s => s.name === activeSubject);
 
   return (
     <div className={styles.page}>

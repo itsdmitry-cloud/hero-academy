@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { ARTIFACT_CATALOG, Rarity } from '@/lib/utils/artifacts';
 import { ARTIFACT_IMAGES } from '@/lib/utils/artifactImages';
 import styles from './page.module.css';
@@ -16,7 +17,7 @@ const RARITY_INFO: Record<Rarity, { title: string, chance: string, source: strin
 function ArtifactIcon({ id }: { id: string }) {
   const imgSrc = ARTIFACT_IMAGES[id];
   if (imgSrc) {
-    return <img src={imgSrc} alt="" style={{ width: 48, height: 48, objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.5))' }} />;
+    return <Image src={imgSrc} alt="" width={48} height={48} style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.5))' }} />;
   }
   return <span style={{ fontSize: 32 }}>✨</span>;
 }

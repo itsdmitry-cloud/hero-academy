@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { ARTIFACT_CATALOG, ArtifactDef, Rarity } from '@/lib/utils/artifacts';
 import { useHeroStore } from '@/lib/store/heroStore';
 import { useToastStore } from '@/lib/store/toastStore';
@@ -16,19 +17,19 @@ interface LootBoxModalProps {
 const TIER_CONFIG: Record<LootBoxTier, { name: string; icon: React.ReactNode; rarityPool: Rarity[]; color: string }> = {
   silver: {
     name: 'Редкий Сундук',
-    icon: <img src="/assets/lootboxes/rare.png" alt="Silver" style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
+    icon: <Image src="/assets/lootboxes/rare.png" alt="Silver" width={80} height={80} style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
     rarityPool: ['common', 'common', 'common', 'rare', 'rare'],
     color: '#94a3b8',
   },
   gold: {
     name: 'Эпический Сундук',
-    icon: <img src="/assets/lootboxes/epic.png" alt="Gold" style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
+    icon: <Image src="/assets/lootboxes/epic.png" alt="Gold" width={80} height={80} style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
     rarityPool: ['rare', 'rare', 'epic', 'epic', 'legendary'],
     color: '#eab308',
   },
   legendary: {
     name: 'Легендарный Сундук',
-    icon: <img src="/assets/lootboxes/legendary.png" alt="Legendary" style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
+    icon: <Image src="/assets/lootboxes/legendary.png" alt="Legendary" width={80} height={80} style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
     rarityPool: ['epic', 'epic', 'legendary', 'legendary', 'legendary'],
     color: '#f97316',
   },
@@ -49,10 +50,12 @@ function getItemIcon(id: string) {
   if (!src) return '✨';
   
   return (
-    <img 
-      src={src} 
-      alt={id} 
-      style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+    <Image
+      src={src}
+      alt={id}
+      width={80}
+      height={80}
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
     />
   );
 }

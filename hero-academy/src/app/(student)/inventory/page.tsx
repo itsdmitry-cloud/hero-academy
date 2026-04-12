@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useArtifacts, type HeroArtifact, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
 import { useHero } from '@/lib/hooks/use-hero';
 import styles from './page.module.css';
@@ -33,6 +34,7 @@ const RARITY_NAMES: Record<string, string> = {
 function ArtifactIcon({ icon, name, size = '100%' }: { icon: string; name: string; size?: string }) {
   if (icon && icon.includes('/')) {
     return (
+      /* eslint-disable-next-line @next/next/no-img-element */
       <img
         src={icon}
         alt={name}
@@ -226,7 +228,7 @@ export default function InventoryPage() {
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '0.5rem', width: 80, height: 80, margin: '0 auto' }}>
                  {lootResult.artifact.icon?.includes('/') ? (
-                   <img src={lootResult.artifact.icon} alt={lootResult.artifact.name} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }} />
+                   <Image src={lootResult.artifact.icon} alt={lootResult.artifact.name} width={80} height={80} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }} />
                  ) : (
                    <span style={{ fontSize: '4rem' }}>{lootResult.artifact.icon || '💎'}</span>
                  )}
@@ -249,7 +251,7 @@ export default function InventoryPage() {
                 <div className={styles.detailIcon} style={actionLoading && isLootbox(selectedItem.artifact) ? { transform: 'scale(1.7)', filter: 'drop-shadow(0 0 25px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 10px var(--accent-xp))', transition: 'all 0.1s ease', zIndex: 10 } : { transition: 'all 0.3s ease' }}>
                   {actionLoading && isLootbox(selectedItem.artifact) ? (
                     rouletteItem?.includes('/') ? (
-                      <img src={rouletteItem} alt="spin" style={{ width: '4.5rem', height: '4.5rem', objectFit: 'contain' }} />
+                      <Image src={rouletteItem} alt="spin" width={72} height={72} style={{ width: '4.5rem', height: '4.5rem', objectFit: 'contain' }} />
                     ) : (
                       <span style={{ fontSize: '4.5rem', filter: 'none', display: 'inline-block' }}>{rouletteItem}</span>
                     )

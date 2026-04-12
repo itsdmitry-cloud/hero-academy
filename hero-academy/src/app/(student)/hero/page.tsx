@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import Image from 'next/image';
 import { StatCard } from '@/components/ui/StatCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StreakProgressBar } from '@/components/ui/StreakProgressBar';
@@ -118,9 +119,9 @@ function formatStat(num: number): string {
 }
 
 export default function HeroPage() {
-  const { hero, stats, activity, synced, completeQuest, resetProgress } = useHeroStore();
-  const { equipArtifact, inventory: dbInventory, loading: dbLoading } = useArtifacts();
-  const { profile } = useAuth();
+  const { hero, activity, synced } = useHeroStore();
+  const { equipArtifact, inventory: dbInventory } = useArtifacts();
+  useAuth();
   useSupabaseSync();
   useRealtimeHero();
   const { result: streakResult, showMilestone } = useStreak();
@@ -252,12 +253,14 @@ export default function HeroPage() {
       <section className={styles.heroSection}>
         <div className={styles.avatarSide}>
           <div className={styles.frameWrapper}>
-            <img src="/assets/ui/avatar-frame.png" alt="" className={styles.frameImg} aria-hidden="true" />
+            <Image src="/assets/ui/avatar-frame.png" alt="" className={styles.frameImg} aria-hidden="true" width={200} height={200} />
             <div className={styles.avatarInner}>
-              <img
+              <Image
                 src={`/assets/avatars/${hero.gender === 'female' ? 'f' : 'm'}_${Math.min(20, Math.max(1, Math.floor(hero.level / 5) + 1)).toString().padStart(2, '0')}.png`}
                 alt="Hero Avatar"
                 className={styles.heroAvatarImage}
+                width={160}
+                height={160}
               />
             </div>
           </div>
@@ -323,7 +326,7 @@ export default function HeroPage() {
             >
               {artifact.icon ? (
                 <span className={styles.artifactIcon}>
-                  {artifact.icon.includes('/') ? <img src={artifact.icon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : artifact.icon}
+                  {artifact.icon.includes('/') ? <Image src={artifact.icon} alt="icon" width={40} height={40} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : artifact.icon}
                 </span>
               ) : null}
               {artifact.kind === 'locked' && artifact.unlockLevel && (
@@ -345,7 +348,7 @@ export default function HeroPage() {
           <div className={styles.shelfDetail}>
             <div className={styles.shelfDetailIcon} style={{ fontSize: 56, width: 80, height: 80, margin: '0 auto' }}>
               {selectedShelfObj.icon?.includes('/') ? (
-                <img src={selectedShelfObj.icon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <Image src={selectedShelfObj.icon} alt="icon" width={80} height={80} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
                 getArtifactIcon(selectedShelfObj.artifact.id) !== '💎' ? getArtifactIcon(selectedShelfObj.artifact.id) : (selectedShelfObj.artifact.icon || '💎')
               )}
@@ -610,8 +613,8 @@ export default function HeroPage() {
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
                     {n.image_url && (
-                      <div style={{ flexShrink: 0, width: '60px', height: '60px', transition: 'all 0.3s' }}>
-                        <img src={n.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                      <div style={{ flexShrink: 0, width: '60px', height: '60px', transition: 'all 0.3s', position: 'relative' }}>
+                        <Image src={n.image_url} alt="" fill style={{ objectFit: 'cover', borderRadius: '8px' }} unoptimized />
                       </div>
                     )}
                     
@@ -650,8 +653,8 @@ export default function HeroPage() {
           }}>
             <div className={styles.shelfDetail} style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'auto', maxHeight: '80vh' }}>
               {modalNews.image_url && (
-                <div style={{ width: '100%', height: '200px', backgroundColor: '#000' }}>
-                  <img src={modalNews.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ width: '100%', height: '200px', backgroundColor: '#000', position: 'relative' }}>
+                  <Image src={modalNews.image_url} alt="" fill style={{ objectFit: 'cover' }} unoptimized />
                 </div>
               )}
               <div style={{ padding: '1.5rem', overflowY: 'auto' }}>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { StatCard } from '@/components/ui/StatCard';
 import { useAdminData } from '@/lib/hooks/use-admin-data';
 import styles from '../page.module.css';
 import {

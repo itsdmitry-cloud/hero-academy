@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTeacherData } from '@/lib/hooks/use-teacher-data';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -171,7 +172,7 @@ export default function TeacherDashboard() {
               <div key={s.id} className={`${styles.studentRow} ${s.status === 'inactive' ? styles.inactive : ''}`}>
                 <span className={styles.studentAvatar} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {s.avatar_url && s.avatar_url.startsWith('/') ? (
-                    <img src={s.avatar_url} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '50%' }} />
+                    <Image src={s.avatar_url} alt="" width={36} height={36} style={{ objectFit: 'cover', borderRadius: '50%' }} />
                   ) : (s.avatar_url || '🧙‍♂️')}
                 </span>
                 <div className={styles.studentInfo}>

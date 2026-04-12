@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import styles from './page.module.css';
 
 export default function StudentTab() {
@@ -23,7 +24,7 @@ export default function StudentTab() {
           </p>
         </div>
         <div className={styles.loreImageWrapper}>
-          <img src="/assets/wiki/academy.png" alt="Hero Academy" className={styles.loreImage} />
+          <Image src="/assets/wiki/academy.png" alt="Hero Academy" className={styles.loreImage} width={400} height={300} />
           <div className={styles.imageCaption}>Парящая техно-магическая цитадель Hero Academy</div>
         </div>
       </section>
@@ -31,7 +32,7 @@ export default function StudentTab() {
       {/* SECTION 2: CORE RESOURCES (HP, XP, GOLD) */}
       <section className={`${styles.loreSection} ${styles.loreSectionReverse}`}>
         <div className={styles.loreImageWrapper}>
-          <img src="/assets/wiki/boss.png" alt="Boss Battle" className={styles.loreImage} />
+          <Image src="/assets/wiki/boss.png" alt="Boss Battle" className={styles.loreImage} width={400} height={300} />
           <div className={styles.imageCaption}>Сражение с Кибер-Драконом на контрольной</div>
         </div>
         <div className={styles.loreContent}>
@@ -120,7 +121,7 @@ export default function StudentTab() {
         </div>
         
         <div className={styles.loreImageWrapper}>
-          <img src="/assets/wiki/loot.png" alt="Loot and Artifacts" className={styles.loreImage} />
+          <Image src="/assets/wiki/loot.png" alt="Loot and Artifacts" className={styles.loreImage} width={400} height={300} />
           <div className={styles.imageCaption}>Древний сундук с магическими предметами и зельями восстановления</div>
         </div>
       </section>

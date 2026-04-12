@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { ARTIFACT_CATALOG } from '@/lib/utils/artifacts';
 import { ARTIFACT_IMAGES } from '@/lib/utils/artifactImages';
 import styles from './page.module.css';
@@ -134,7 +135,7 @@ export default function ArtifactsAdminPage() {
             <div key={art.id} className={`${styles.tableRow} ${isEditing ? styles.tableRowEditing : ''}`}>
               <div className={styles.artName}>
                 {imgSrc ? (
-                  <img src={imgSrc} alt="" width={32} height={32} style={{ objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))' }} />
+                  <Image src={imgSrc} alt="" width={32} height={32} style={{ objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))' }} />
                 ) : (
                   <span className={styles.artEmoji}>{art.type === 'consumable' ? '⚗️' : '💎'}</span>
                 )}

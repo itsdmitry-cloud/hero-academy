@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Modal } from '@/components/ui/Modal';
 import { useArtifacts, type HeroArtifact, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
 import { useHero } from '@/lib/hooks/use-hero';
@@ -133,7 +134,7 @@ interface LootResult {
 
 export default function ArtifactsPage() {
   const { user } = useAuth();
-  const { catalog, inventory, loading, equipArtifact, consumeArtifact, sellArtifact, refetch, getMaxSlots } = useArtifacts();
+  const { catalog, inventory, equipArtifact, consumeArtifact, sellArtifact, refetch, getMaxSlots } = useArtifacts();
   const { hero, openLootbox } = useHero();
   const [selected, setSelected] = useState<ArtifactView | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -250,7 +251,7 @@ export default function ArtifactsPage() {
             {item ? (
               <>
                 <span className={styles.icon}>
-                  {item.icon?.includes('/') ? <img src={item.icon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : item.icon}
+                  {item.icon?.includes('/') ? <Image src={item.icon} alt="icon" width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : item.icon}
                 </span>
                 <span className={styles.name}>{item.name}</span>
                 {item.quantity > 1 && <span className={styles.qty}>x{item.quantity}</span>}
@@ -275,7 +276,7 @@ export default function ArtifactsPage() {
             {lootResult && lootResult.won && lootResult.artifact ? (
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '0.5rem', width: 80, height: 80, margin: '0 auto' }}>
-                  {lootResult.artifact.icon?.includes('/') ? <img src={lootResult.artifact.icon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : lootResult.artifact.icon}
+                  {lootResult.artifact.icon?.includes('/') ? <Image src={lootResult.artifact.icon} alt="icon" width={80} height={80} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : lootResult.artifact.icon}
                 </div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 900, color: lootResult.seasonal ? '#f97316' : rarityColors[lootResult.artifact.rarity], marginBottom: '0.25rem' }}>
                   🎉 Выпал артефакт!
@@ -302,8 +303,8 @@ export default function ArtifactsPage() {
              <>
               <div className={`${styles.detailIcon} ${styles[`rarity_${selected.rarity}`]}`}
               style={opening ? { transform: 'scale(1.7)', filter: 'drop-shadow(0 0 25px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 10px var(--accent-xp))', transition: 'all 0.1s ease', zIndex: 10 } : { transition: 'all 0.3s ease' }}>
-              {opening ? <span style={{ display: 'inline-block', fontSize: '4.5rem', filter: 'none' }}>{rouletteItem?.includes('/') ? <img src={rouletteItem} alt="spin" style={{ width: '4.5rem', height: '4.5rem', objectFit: 'contain' }} /> : rouletteItem}</span> : (
-                selected.icon?.includes('/') ? <img src={selected.icon} alt="icon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : selected.icon
+              {opening ? <span style={{ display: 'inline-block', fontSize: '4.5rem', filter: 'none' }}>{rouletteItem?.includes('/') ? <Image src={rouletteItem} alt="spin" width={72} height={72} style={{ width: '4.5rem', height: '4.5rem', objectFit: 'contain' }} /> : rouletteItem}</span> : (
+                selected.icon?.includes('/') ? <Image src={selected.icon} alt="icon" width={80} height={80} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : selected.icon
               )}
             </div>
             <h2 className={styles.detailName}>{selected.name}</h2>

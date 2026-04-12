@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useShop, type ShopItem } from '@/lib/hooks/use-shop';
@@ -28,7 +29,7 @@ const BOX_POOLS: Record<string, string[]> = {
 /** Render icon: file path → <img>, otherwise emoji */
 function ArtIcon({ icon, size = 24 }: { icon: string; size?: number }) {
   if (icon.startsWith('/') || icon.startsWith('http')) {
-    return <img src={icon} alt="" width={size} height={size} style={{ objectFit: 'contain' }} />;
+    return <Image src={icon} alt="" width={size} height={size} style={{ objectFit: 'contain' }} />;
   }
   return <span style={{ fontSize: Math.max(28, size * 0.7) }}>{icon}</span>;
 }

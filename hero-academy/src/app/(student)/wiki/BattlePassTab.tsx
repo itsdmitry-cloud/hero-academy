@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import styles from './page.module.css';
 
 export default function BattlePassTab() {
@@ -25,7 +26,7 @@ export default function BattlePassTab() {
           </p>
         </div>
         <div className={styles.loreImageWrapper}>
-          <img src="/assets/ui/bp_fire_chest.png" alt="Огненный Сундук" className={styles.loreImage} />
+          <Image src="/assets/ui/bp_fire_chest.png" alt="Огненный Сундук" className={styles.loreImage} width={400} height={300} />
           <div className={styles.imageCaption}>🔥 Огненный Сундук — награда Сезона Пламени</div>
         </div>
       </section>
@@ -33,7 +34,7 @@ export default function BattlePassTab() {
       {/* SECTION 2: HOW IT WORKS */}
       <section className={`${styles.loreSection} ${styles.loreSectionReverse}`}>
         <div className={styles.loreImageWrapper}>
-          <img src="/assets/ui/bp_reward_track.png" alt="Лента наград" className={styles.loreImage} />
+          <Image src="/assets/ui/bp_reward_track.png" alt="Лента наград" className={styles.loreImage} width={400} height={300} />
           <div className={styles.imageCaption}>Путь Героя через 30 уровней Боевого Пропуска</div>
         </div>
         <div className={styles.loreContent}>
@@ -136,7 +137,7 @@ export default function BattlePassTab() {
       {/* SECTION 4: REWARDS & HALL OF FAME */}
       <section className={`${styles.loreSection} ${styles.loreSectionReverse}`}>
         <div className={styles.loreImageWrapper}>
-          <img src="/assets/ui/bp_hall_of_fame.png" alt="Зал Славы" className={styles.loreImage} />
+          <Image src="/assets/ui/bp_hall_of_fame.png" alt="Зал Славы" className={styles.loreImage} width={400} height={300} />
           <div className={styles.imageCaption}>Зал Славы — витрина твоих легендарных реликвий</div>
         </div>
         <div className={styles.loreContent}>
