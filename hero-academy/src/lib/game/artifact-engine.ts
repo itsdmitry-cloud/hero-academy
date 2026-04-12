@@ -326,6 +326,18 @@ export async function getHeroMods(heroId: string): Promise<HeroMods> {
   passiveDmgReduce += auras.dmgReduce;
   xpArtifacts.push(...auras.applied.filter(a => a.includes('XP') || a.includes('Опыт')));
   goldArtifacts.push(...auras.applied.filter(a => a.includes('Золото')));
+  // Add aura dmg_reduce as synthetic passiveDmgArts so the damage pipeline applies them
+  for (const d of auras.details) {
+    if (d.effect === 'team_dmg_reduce' && d.effectValue > 0) {
+      passiveDmgArts.push({
+        heroArtifactId: '',
+        name: `${d.artifactName} (аура от ${d.activatorName})`,
+        value: d.effectValue,
+        chargesLeft: 0,
+        maxCharges: 0,
+      });
+    }
+  }
 
   return {
     xpBoost:          Math.min(xpBoost, 200),
@@ -436,6 +448,18 @@ export async function getArtifactModifiers(heroId: string, actionType: 'damage' 
   if (actionType === 'damage') {
     passive_dmg_reduction += auras.dmgReduce;
     applied.push(...auras.applied.filter(a => a.includes('Урон')));
+    // Add aura dmg_reduce as synthetic passiveDmgArts so the damage pipeline applies them
+    for (const d of auras.details) {
+      if (d.effect === 'team_dmg_reduce' && d.effectValue > 0) {
+        passiveDmgArts.push({
+          heroArtifactId: '',
+          name: `${d.artifactName} (аура от ${d.activatorName})`,
+          value: d.effectValue,
+          chargesLeft: 0,
+          maxCharges: 0,
+        });
+      }
+    }
   }
 
   // Decrement charges for non-damage artifacts
