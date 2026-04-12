@@ -13,6 +13,7 @@ import { useArtifacts, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
 import { BattlePassWidget } from '@/components/game/BattlePassWidget';
 import { AchievementsPanel } from '@/components/game/AchievementsPanel';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
 
 // ───────── Local types ─────────
@@ -121,7 +122,7 @@ function formatStat(num: number): string {
 export default function HeroPage() {
   const { hero, activity, synced } = useHeroStore();
   const { equipArtifact, inventory: dbInventory } = useArtifacts();
-  useAuth();
+  const { profile } = useAuth();
   useSupabaseSync();
   useRealtimeHero();
   const { result: streakResult, showMilestone } = useStreak();
@@ -138,10 +139,22 @@ export default function HeroPage() {
   const [expandedActivity, setExpandedActivity] = useState<Set<string>>(new Set());
   const [activityFilter, setActivityFilter] = useState<'all' | 'quest' | 'boss'>('all');
 
+  // Active season name
+  const [seasonName, setSeasonName] = useState<string | null>(null);
+
   // Live News State
   const [studentNews, setStudentNews] = useState<NewsItem[]>([]);
   const [showNews, setShowNews] = useState(false);
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!profile?.school_id) return;
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.from('seasons').select('name').eq('school_id', profile.school_id).eq('status', 'active').limit(1).maybeSingle()
+      .then(({ data }) => { if (!cancelled && data) setSeasonName(data.name); });
+    return () => { cancelled = true; };
+  }, [profile?.school_id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -296,7 +309,7 @@ export default function HeroPage() {
             </div>
             <div className={styles.infoTile}>
               <span className={styles.tileLabel}>Сезон</span>
-              <span className={styles.tileValue}>Зима 2026</span>
+              <span className={styles.tileValue}>{seasonName ?? '—'}</span>
             </div>
           </div>
         </div>
