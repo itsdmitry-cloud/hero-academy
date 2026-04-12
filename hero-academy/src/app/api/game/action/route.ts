@@ -74,19 +74,30 @@ export async function POST(req: Request) {
         pipeline.push(`🛡️ ${arts.shield.name}: Урон полностью поглощён! (заряд -1)`);
         await decrementCharge(arts.shield.heroArtifactId, arts.shield.chargesLeft);
       } else if (arts.passive_dmg_reduction > 0) {
-        // ── PASSIVE %: reduce damage, consume charges on charge-based passive arts ──
-        finalAmount = Math.round(afterBalance * (1 - arts.passive_dmg_reduction / 100));
-        const passiveLabels = arts.passiveDmgArts.map(a => `${a.name} (-${a.value}%)`);
-        pipeline.push(`Пассивная защита (-${arts.passive_dmg_reduction}%): ${finalAmount} [${passiveLabels.join(', ')}]`);
+        // ── PASSIVE %: reduce damage ──
+        // Duration-based (no charges): all stack. Charge-based: only ONE per hit, in order.
+        let activeReduction = 0;
+        const activeLabels: string[] = [];
+
+        for (const art of arts.passiveDmgArts) {
+          if (art.maxCharges === 0) {
+            activeReduction += art.value;
+            activeLabels.push(`${art.name} (-${art.value}%)`);
+          }
+        }
+        const activeChargeArt = arts.passiveDmgArts.find(a => a.maxCharges > 0);
+        if (activeChargeArt) {
+          activeReduction += activeChargeArt.value;
+          activeLabels.push(`${activeChargeArt.name} (-${activeChargeArt.value}%, заряд -1)`);
+          await decrementCharge(activeChargeArt.heroArtifactId, activeChargeArt.chargesLeft);
+        }
+
+        activeReduction = Math.min(activeReduction, 90);
+        finalAmount = Math.round(afterBalance * (1 - activeReduction / 100));
+        pipeline.push(`Пассивная защита (-${activeReduction}%): ${finalAmount} [${activeLabels.join(', ')}]`);
         // Apply randomness
         finalAmount = finalAmount > 0 ? Math.round(finalAmount * randomFactor) : 0;
         if (finalAmount > 0) pipeline.push(`Рандом (${randomPct >= 0 ? '+' : ''}${randomPct}%): ${finalAmount}`);
-        // Decrement charges on passive dmg artifacts
-        for (const art of arts.passiveDmgArts) {
-          if (art.maxCharges > 0) {
-            await decrementCharge(art.heroArtifactId, art.chargesLeft);
-          }
-        }
       } else {
         // ── No protection ──
         finalAmount = afterBalance;

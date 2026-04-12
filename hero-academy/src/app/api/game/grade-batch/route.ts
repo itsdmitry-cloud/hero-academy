@@ -66,6 +66,8 @@ async function processHero(
   let finalHp = 0;
   let shieldUsed = false;
   let shieldName = '';
+  let activeReduction = 0;
+  const activePassiveLabels: string[] = [];
 
   if (baseHp > 0 && afterBalanceHp > 0) {
     if (mods.shield) {
@@ -75,15 +77,23 @@ async function processHero(
       shieldName = mods.shield.name;
       await decrementCharge(mods.shield.heroArtifactId, mods.shield.chargesLeft);
     } else if (mods.passiveDmgReduce > 0) {
-      // PASSIVE: % reduction, consume 1 charge from each charge-based passive art
-      const afterPassive = Math.round(afterBalanceHp * (1 - mods.passiveDmgReduce / 100));
-      finalHp = afterPassive > 0 ? Math.round(afterPassive * randomFactor) : 0;
-      // Decrement charges on passive dmg artifacts (only charge-based ones, only when damage existed)
+      // Duration-based (no charges): all stack. Charge-based: only ONE per hit, in order.
       for (const art of mods.passiveDmgArts) {
-        if (art.maxCharges > 0) {
-          await decrementCharge(art.heroArtifactId, art.chargesLeft);
+        if (art.maxCharges === 0) {
+          activeReduction += art.value;
+          activePassiveLabels.push(`${art.name} (-${art.value}%)`);
         }
       }
+      const activeChargeArt = mods.passiveDmgArts.find(a => a.maxCharges > 0);
+      if (activeChargeArt) {
+        activeReduction += activeChargeArt.value;
+        activePassiveLabels.push(`${activeChargeArt.name} (-${activeChargeArt.value}%, заряд -1)`);
+        await decrementCharge(activeChargeArt.heroArtifactId, activeChargeArt.chargesLeft);
+      }
+
+      activeReduction = Math.min(activeReduction, 90);
+      const afterPassive = Math.round(afterBalanceHp * (1 - activeReduction / 100));
+      finalHp = afterPassive > 0 ? Math.round(afterPassive * randomFactor) : 0;
     } else {
       // No protection at all
       finalHp = Math.round(afterBalanceHp * randomFactor);
@@ -110,15 +120,14 @@ async function processHero(
   xpPipeline.push(`Рандом (${randomPct >= 0 ? '+' : ''}${randomPct}%): ${finalXp}`);
 
   // Build HP pipeline
-  const passiveDmgLabels = mods.passiveDmgArts.map(a => `${a.name} (-${a.value}%)`);
   const hpPipeline: string[] = [`Базовый урон: ${baseHp}`];
   if (eco.dmg_multiplier !== 100) hpPipeline.push(`Баланс (${eco.dmg_multiplier}%): ${afterBalanceHp}`);
   if (shieldUsed) {
     hpPipeline.push(`🛡️ ${shieldName}: Урон полностью поглощён! (заряд -1)`);
     hpPipeline.push(`Отнято HP: 0`);
-  } else if (mods.passiveDmgReduce > 0) {
-    const afterPassive = Math.round(afterBalanceHp * (1 - mods.passiveDmgReduce / 100));
-    hpPipeline.push(`Пассивная защита (-${mods.passiveDmgReduce}%): ${afterPassive} [${passiveDmgLabels.join(', ')}]`);
+  } else if (activeReduction > 0) {
+    const afterPassive = Math.round(afterBalanceHp * (1 - activeReduction / 100));
+    hpPipeline.push(`Пассивная защита (-${activeReduction}%): ${afterPassive} [${activePassiveLabels.join(', ')}]`);
     if (afterPassive > 0) hpPipeline.push(`Рандом (${randomPct >= 0 ? '+' : ''}${randomPct}%): ${finalHp}`);
     if (finalHp > 0) hpPipeline.push(`Отнято HP: -${finalHp}`);
   } else if (finalHp > 0) {
@@ -196,8 +205,8 @@ async function processHero(
       balancePct:  eco.dmg_multiplier,
       afterBalance: baseHp > 0 ? afterBalanceHp : 0,
       shield:      shieldUsed ? shieldName : null,
-      passivePct:  mods.passiveDmgReduce > 0 ? mods.passiveDmgReduce : null,
-      passiveNames: baseHp > 0 ? mods.passiveDmgArts.map(a => `${a.name} (-${a.value}%)`) : [],
+      passivePct:  activeReduction > 0 ? activeReduction : null,
+      passiveNames: baseHp > 0 ? activePassiveLabels : [],
       randomPct:   baseHp > 0 ? (shieldUsed ? 0 : randomPct) : 0,
       undoCrit:    undoCrit ? saveArtName : null,
       deathSaved:  deathSaved ? saveArtName : null,
