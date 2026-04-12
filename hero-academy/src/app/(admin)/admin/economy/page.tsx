@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAdminData } from '@/lib/hooks/use-admin-data';
 import type { EconomyConfig } from '@/lib/hooks/use-admin-data';
 import styles from './page.module.css';
@@ -97,8 +97,9 @@ export default function EconomyPage() {
   }, []);
 
   // Derive current cascade config (class → school → global → default).
-  // React Compiler auto-memoizes this — no manual useMemo needed.
-  const resolvedConfig: { config: BalanceConfig; source: ConfigSource } = (() => {
+  // useMemo keeps the object reference stable so the "store previous value"
+  // pattern below doesn't trigger infinite re-renders.
+  const resolvedConfig = useMemo<{ config: BalanceConfig; source: ConfigSource }>(() => {
     const classId   = scope === 'class'  ? selectedClass  || null : null;
     const schoolId  = scope === 'school' ? selectedSchool || null : null;
     const classSchoolId = scope === 'class' && selectedClass
@@ -130,8 +131,8 @@ export default function EconomyPage() {
         };
       }
     }
-    return { config: { ...DEFAULT_BALANCE }, source: 'default' };
-  })();
+    return { config: { ...DEFAULT_BALANCE }, source: 'default' as const };
+  }, [scope, selectedClass, selectedSchool, classes, economyConfig]);
 
   const configSource = resolvedConfig.source;
 
