@@ -11,6 +11,7 @@ const admin = createClient(
 interface GradeEntry {
   heroId: string;
   score: number;   // 1–5
+  notSubmitted?: boolean; // true = «Не сдал» (score=1 + метка для метаданных)
   xp: number;     // already score-adjusted
   gold: number;
   hpDamage: number;
@@ -38,7 +39,7 @@ async function processHero(
   numDifficulty: number,
   questType: string,
 ) {
-  const { heroId, score, xp: baseXp, gold: baseGold, hpDamage: baseHp } = g;
+  const { heroId, score, notSubmitted, xp: baseXp, gold: baseGold, hpDamage: baseHp } = g;
   if (!heroId) return { heroId: '', bossDamage: 0 };
 
   // Load hero + artifact mods in parallel
@@ -235,7 +236,13 @@ async function processHero(
           admin.from('activity_log').insert({
             hero_id: heroId, user_id: teacherId, action: ACTIVITY_ACTIONS.QUEST_GRADED,
             xp_change: finalXp, gold_change: finalGold, hp_change: -finalHp,
-            metadata: { quest_id: questId, score, subject, breakdown },
+            metadata: {
+              quest_id: questId,
+              score,
+              subject,
+              breakdown,
+              ...(notSubmitted ? { submission_status: 'not_submitted' } : {}),
+            },
           })
         ).catch(() => {})
       : Promise.resolve(),

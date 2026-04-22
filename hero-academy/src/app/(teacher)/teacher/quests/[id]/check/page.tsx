@@ -49,8 +49,11 @@ interface StudentRow {
   heroId: string;
   name: string;
   score: number; // 1–5, default 5
+  notSubmitted: boolean; // «Не сдал» — score=1 + флаг для метаданных
   hasArtifacts: boolean; // just a flag — actual calc done server-side
 }
+
+const NOT_SUBMITTED_COLOR = '#a855f7';
 
 interface QuestInfo {
   id: string;
@@ -109,7 +112,7 @@ export default function CheckHomeworkPage() {
         hasArtifacts = (equipped?.length ?? 0) > 0;
       }
 
-      return { userId: u.id as string, heroId, name: u.display_name as string, score: 5, hasArtifacts };
+      return { userId: u.id as string, heroId, name: u.display_name as string, score: 5, notSubmitted: false, hasArtifacts };
     }));
 
     setStudents(rows);
@@ -119,7 +122,11 @@ export default function CheckHomeworkPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const setScore = (userId: string, score: number) => {
-    setStudents(prev => prev.map(s => s.userId === userId ? { ...s, score } : s));
+    setStudents(prev => prev.map(s => s.userId === userId ? { ...s, score, notSubmitted: false } : s));
+  };
+
+  const setNotSubmitted = (userId: string) => {
+    setStudents(prev => prev.map(s => s.userId === userId ? { ...s, score: 1, notSubmitted: true } : s));
   };
 
   const handleFinish = async () => {
@@ -175,6 +182,7 @@ export default function CheckHomeworkPage() {
           return {
             heroId: s.heroId,
             score: s.score,
+            notSubmitted: s.notSubmitted,
             xp:       Math.round(quest.xp_reward  * cfg.xpPct),
             gold:     Math.round(quest.gold_reward * cfg.goldPct),
             hpDamage: cfg.hpDamage, // absolute; backend applies eco + artifact + random
@@ -268,27 +276,48 @@ export default function CheckHomeworkPage() {
                     </div>
                   </div>
 
-                  {/* 1–5 Score buttons */}
-                  <div className={styles.statusCell} style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
-                    {[0, 1, 2, 3, 4, 5].map(n => (
-                      <button
-                        key={n}
-                        onClick={() => setScore(student.userId, n)}
-                        style={{
-                          width: 36, height: 36,
-                          borderRadius: '50%',
-                          border: student.score === n ? `2px solid ${SCORE_CONFIG[n].color}` : '1px solid rgba(255,255,255,0.15)',
-                          background: student.score === n ? SCORE_CONFIG[n].color : 'rgba(255,255,255,0.05)',
-                          color: student.score === n ? '#fff' : 'var(--text-secondary)',
-                          fontWeight: 800, fontSize: '0.9rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
-                          transform: student.score === n ? 'scale(1.15)' : 'scale(1)',
-                        }}
-                      >
-                        {n === 0 ? 'НБ' : n}
-                      </button>
-                    ))}
+                  {/* Кнопки оценок: НБ, 1-5, «Не сдал» */}
+                  <div className={styles.statusCell} style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {[0, 1, 2, 3, 4, 5].map(n => {
+                      const isSelected = student.score === n && !student.notSubmitted;
+                      return (
+                        <button
+                          key={n}
+                          onClick={() => setScore(student.userId, n)}
+                          style={{
+                            width: 36, height: 36,
+                            borderRadius: '50%',
+                            border: isSelected ? `2px solid ${SCORE_CONFIG[n].color}` : '1px solid rgba(255,255,255,0.15)',
+                            background: isSelected ? SCORE_CONFIG[n].color : 'rgba(255,255,255,0.05)',
+                            color: isSelected ? '#fff' : 'var(--text-secondary)',
+                            fontWeight: 800, fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                            transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+                          }}
+                        >
+                          {n === 0 ? 'НБ' : n}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setNotSubmitted(student.userId)}
+                      title="Не сдал задание — 30 HP урона, 0 XP, 0 Gold"
+                      style={{
+                        minWidth: 70, height: 36,
+                        padding: '0 0.5rem',
+                        borderRadius: 18,
+                        border: student.notSubmitted ? `2px solid ${NOT_SUBMITTED_COLOR}` : '1px solid rgba(255,255,255,0.15)',
+                        background: student.notSubmitted ? NOT_SUBMITTED_COLOR : 'rgba(255,255,255,0.05)',
+                        color: student.notSubmitted ? '#fff' : 'var(--text-secondary)',
+                        fontWeight: 800, fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        transform: student.notSubmitted ? 'scale(1.1)' : 'scale(1)',
+                      }}
+                    >
+                      Не сдал
+                    </button>
                   </div>
 
                   <div className={styles.effectCell}>
