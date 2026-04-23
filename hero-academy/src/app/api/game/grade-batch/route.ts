@@ -299,43 +299,20 @@ export async function POST(req: Request) {
 
     const seasonId = seasonRow.data?.id ?? null;
 
-    // Load boss ONCE — try new model (season_boss_class_hp) first, fallback to legacy (subject_bosses)
+    // Load boss ONCE from subject_bosses
     let bossId: string | null = null;
     let bossCurrentHp = 0;
-    let bossTable: 'season_boss_class_hp' | 'subject_bosses' = 'season_boss_class_hp';
 
-    if (seasonId) {
-      // New model: season_boss → season_boss_class_hp
-      const { data: seasonBoss } = await admin.from('season_boss')
-        .select('id, name').eq('season_id', seasonId).maybeSingle();
-
-      if (seasonBoss) {
-        const { data: classHp } = await admin.from('season_boss_class_hp')
-          .select('id, current_hp')
-          .eq('season_boss_id', seasonBoss.id)
-          .eq('class_id', classId)
-          .maybeSingle();
-
-        if (classHp && classHp.current_hp > 0) {
-          bossId = classHp.id;
-          bossCurrentHp = classHp.current_hp;
-          bossTable = 'season_boss_class_hp';
-        }
-      }
-
-      // Fallback: legacy subject_bosses
-      if (!bossId && subject) {
-        const { data: boss } = await admin.from('subject_bosses')
-          .select('id, current_hp, name')
-          .eq('season_id', seasonId)
-          .eq('class_id', classId)
-          .ilike('subject_id', subject)
-          .maybeSingle();
-        if (boss && boss.current_hp > 0) {
-          bossId = boss.id;
-          bossCurrentHp = boss.current_hp;
-          bossTable = 'subject_bosses';
-        }
+    if (seasonId && subject) {
+      const { data: boss } = await admin.from('subject_bosses')
+        .select('id, current_hp, name')
+        .eq('season_id', seasonId)
+        .eq('class_id', classId)
+        .ilike('subject_id', subject)
+        .maybeSingle();
+      if (boss && boss.current_hp > 0) {
+        bossId = boss.id;
+        bossCurrentHp = boss.current_hp;
       }
     }
 
@@ -357,10 +334,7 @@ export async function POST(req: Request) {
         current_hp: newBossHp,
         is_defeated: newBossHp === 0,
       };
-      if (newBossHp === 0 && bossTable === 'season_boss_class_hp') {
-        bossUpdate.defeated_at = new Date().toISOString();
-      }
-      await admin.from(bossTable).update(bossUpdate).eq('id', bossId);
+      await admin.from('subject_bosses').update(bossUpdate).eq('id', bossId);
 
       // Log individual boss damage per hero (boss_damage_logs only, no separate activity_log entry)
       const heroHits = results.filter(r => r.bossDamage > 0 && r.heroId);

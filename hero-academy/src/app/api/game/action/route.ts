@@ -230,44 +230,19 @@ export async function POST(req: Request) {
               .maybeSingle();
 
             if (season) {
-               // Try new model first: season_boss → season_boss_class_hp
-               let bossRow: { id: string; current_hp: number } | null = null;
-               let bossTableName: string = 'season_boss_class_hp';
-
-               const { data: seasonBoss } = await admin.from('season_boss')
-                 .select('id').eq('season_id', season.id).maybeSingle();
-               if (seasonBoss) {
-                 const { data: classHp } = await admin.from('season_boss_class_hp')
-                   .select('id, current_hp')
-                   .eq('season_boss_id', seasonBoss.id)
-                   .eq('class_id', classData.class_id)
-                   .maybeSingle();
-                 if (classHp && classHp.current_hp > 0) bossRow = classHp;
-               }
-
-               // Fallback: legacy subject_bosses
-               if (!bossRow) {
-                 const { data: legacyBoss } = await admin.from('subject_bosses')
-                   .select('id, current_hp')
-                   .eq('season_id', season.id)
-                   .eq('class_id', classData.class_id)
-                   .ilike('subject_id', subject)
-                   .maybeSingle();
-                 if (legacyBoss && legacyBoss.current_hp > 0) {
-                   bossRow = legacyBoss;
-                   bossTableName = 'subject_bosses';
-                 }
-               }
+               const { data: bossRow } = await admin.from('subject_bosses')
+                 .select('id, current_hp')
+                 .eq('season_id', season.id)
+                 .eq('class_id', classData.class_id)
+                 .ilike('subject_id', subject)
+                 .maybeSingle();
 
                if (bossRow && bossRow.current_hp > 0) {
                  const bossDamage = finalAmount;
                  pipeline.push(`🐉 Урон боссу = XP: ${bossDamage}`);
                  const newBossHp = Math.max(0, bossRow.current_hp - bossDamage);
                  const bossUpd: Record<string, unknown> = { current_hp: newBossHp, is_defeated: newBossHp === 0 };
-                 if (newBossHp === 0 && bossTableName === 'season_boss_class_hp') {
-                   bossUpd.defeated_at = new Date().toISOString();
-                 }
-                 await admin.from(bossTableName).update(bossUpd).eq('id', bossRow.id);
+                 await admin.from('subject_bosses').update(bossUpd).eq('id', bossRow.id);
 
                  await admin.from('boss_damage_logs').insert({
                    boss_id: bossRow.id,
