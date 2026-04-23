@@ -5,9 +5,12 @@ import { resolve } from 'path';
 const BASE_URL = 'http://localhost:3000';
 const OUT_DIR = resolve(process.cwd(), '../presentation-assets/screenshots');
 
-// Test student credentials — must exist via setup-test-data.mjs
-const TEST_STUDENT_EMAIL = 'student1@test.local';
-const TEST_STUDENT_PASSWORD = 'test12345';
+// Test credentials — must exist via setup-test-data.mjs
+const TEST_STUDENT_EMAIL = 'student@hero.academy';
+const TEST_STUDENT_PASSWORD = 'Student123!';
+
+const PARENT_EMAIL = 'parent@hero.academy';
+const PARENT_PASSWORD = 'Parent123!';
 
 interface Shot {
   slide: number;
@@ -23,11 +26,10 @@ const STUDENT_SHOTS: Shot[] = [
   { slide: 10, name: 'artifacts',       path: '/artifacts',      waitForSelector: 'text=/артефакт/i' },
   { slide: 12, name: 'shop',            path: '/shop',           waitForSelector: 'text=/магазин/i' },
   { slide: 13, name: 'leaderboard',     path: '/leaderboard',    waitForSelector: 'text=/лидер|топ/i' },
-  { slide: 14, name: 'boss-active',     path: '/boss',           waitForSelector: 'text=/босс|hp/i' },
+  // Slide 14 boss screenshot taken manually — see Task 5.
+  // Route is /boss/[id] (dynamic), and there is no /api/bosses/active
+  // endpoint to look up the ID from. seed_boss.js doesn't hardcode an ID either.
 ];
-
-const PARENT_EMAIL = 'parent1@test.local';
-const PARENT_PASSWORD = 'test12345';
 
 const PARENT_SHOTS: Shot[] = [
   { slide: 15, name: 'parent-dashboard', path: '/parent', waitForSelector: 'text=/оценк|прогресс/i' },
@@ -43,12 +45,13 @@ async function login(page: Page, email: string, password: string) {
 
 async function captureShot(page: Page, shot: Shot) {
   await page.goto(`${BASE_URL}${shot.path}`, { waitUntil: 'domcontentloaded' });
+
+  if (page.url().includes('/auth/login')) {
+    throw new Error(`Redirected to login while capturing ${shot.path} — session invalid`);
+  }
+
   if (shot.waitForSelector) {
-    try {
-      await page.waitForSelector(shot.waitForSelector, { timeout: 10_000 });
-    } catch {
-      console.warn(`  ⚠️  Selector "${shot.waitForSelector}" not found on ${shot.path} — capturing anyway`);
-    }
+    await page.waitForSelector(shot.waitForSelector, { timeout: 10_000 });
   }
   await page.waitForTimeout(1000); // Let animations settle
   const file = `${OUT_DIR}/slide-${shot.slide}-${shot.name}.png`;
@@ -60,20 +63,27 @@ async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
 
   const browser = await chromium.launch();
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const page = await context.newPage();
 
+  // Student context — isolated from parent session
+  const studentCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const studentPage = await studentCtx.newPage();
   console.log('📸 Student screenshots...');
-  await login(page, TEST_STUDENT_EMAIL, TEST_STUDENT_PASSWORD);
+  await login(studentPage, TEST_STUDENT_EMAIL, TEST_STUDENT_PASSWORD);
   for (const shot of STUDENT_SHOTS) {
-    await captureShot(page, shot);
+    await captureShot(studentPage, shot);
   }
+  await studentCtx.close();
 
+  // Parent context — fresh context so /auth/login doesn't redirect an
+  // already-authenticated student session.
+  const parentCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const parentPage = await parentCtx.newPage();
   console.log('\n📸 Parent screenshots...');
-  await login(page, PARENT_EMAIL, PARENT_PASSWORD);
+  await login(parentPage, PARENT_EMAIL, PARENT_PASSWORD);
   for (const shot of PARENT_SHOTS) {
-    await captureShot(page, shot);
+    await captureShot(parentPage, shot);
   }
+  await parentCtx.close();
 
   await browser.close();
   console.log('\n✨ Done.');
