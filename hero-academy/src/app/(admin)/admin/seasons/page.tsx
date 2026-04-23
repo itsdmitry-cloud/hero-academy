@@ -26,6 +26,7 @@ export default function SeasonsPage() {
   const [saving, setSaving] = useState(false);
   const [ending, setEnding] = useState<string | null>(null);
   const [activating, setActivating] = useState<string | null>(null);
+  const [recalculating, setRecalculating] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const activateSeason = useCallback(async (seasonId: string) => {
@@ -40,6 +41,91 @@ export default function SeasonsPage() {
     if (!res.ok) { setFeedback(`❌ Ошибка: ${data.error}`); }
     else { setFeedback('✅ Сезон активирован! Теперь боссы будут создаваться для этого сезона.'); if (refetch) refetch(); }
     setTimeout(() => setFeedback(null), 4000);
+  }, [refetch]);
+
+  const recalculateBossHp = useCallback(async (seasonId: string, seasonName: string) => {
+    setRecalculating(seasonId);
+    try {
+      // 1. Dry run
+      const dryRes = await fetch('/api/admin/recalculate-boss-hp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seasonId, dryRun: true }),
+      });
+      if (!dryRes.ok) {
+        const msg = await dryRes.text();
+        window.alert(`Ошибка dryRun: ${msg}`);
+        return;
+      }
+      const plan = (await dryRes.json()) as {
+        changes: Array<{
+          className: string;
+          subjectId: string;
+          oldMaxHp: number;
+          newMaxHp: number;
+          oldCurrentHp: number;
+          newCurrentHp: number;
+        }>;
+        newBosses: Array<{ className: string; subjectId: string; maxHp: number }>;
+        skipped: Array<{ className: string; subjectId: string; reason: string }>;
+      };
+
+      // 2. Build diff text
+      const lines: string[] = [`Пересчёт HP для сезона "${seasonName}":`, ''];
+      if (plan.changes.length > 0) {
+        lines.push('Изменения:');
+        for (const c of plan.changes) {
+          lines.push(
+            `• ${c.className} · ${c.subjectId}: ${c.oldMaxHp} → ${c.newMaxHp} HP (текущий: ${c.oldCurrentHp} → ${c.newCurrentHp})`,
+          );
+        }
+        lines.push('');
+      }
+      if (plan.newBosses.length > 0) {
+        lines.push(`Новые боссы: ${plan.newBosses.length}`);
+        for (const b of plan.newBosses) {
+          lines.push(`• ${b.className} · ${b.subjectId}: ${b.maxHp} HP`);
+        }
+        lines.push('');
+      }
+      if (plan.skipped.length > 0) {
+        lines.push('Пропущены (повержен, награды розданы):');
+        for (const sk of plan.skipped) {
+          lines.push(`• ${sk.className} · ${sk.subjectId}`);
+        }
+        lines.push('');
+      }
+      if (plan.changes.length === 0 && plan.newBosses.length === 0) {
+        window.alert('Всё уже актуально — изменений нет.');
+        return;
+      }
+      lines.push('Применить?');
+
+      if (!window.confirm(lines.join('\n'))) return;
+
+      // 3. Apply
+      const applyRes = await fetch('/api/admin/recalculate-boss-hp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seasonId, dryRun: false }),
+      });
+      if (!applyRes.ok) {
+        const msg = await applyRes.text();
+        window.alert(`Ошибка применения: ${msg}`);
+        return;
+      }
+      const applied = (await applyRes.json()) as { appliedCount?: number; warnings?: string[] };
+      let msg = `Готово: обновлено ${applied.appliedCount ?? 0} боссов.`;
+      if (applied.warnings && applied.warnings.length > 0) {
+        msg += `\n\nWarnings:\n${applied.warnings.join('\n')}`;
+      }
+      window.alert(msg);
+      if (refetch) refetch();
+    } catch (err) {
+      window.alert(`Ошибка: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setRecalculating(null);
+    }
   }, [refetch]);
 
   /* ── End Season: reset HP+streak, archive leaderboard ── */
@@ -168,13 +254,31 @@ export default function SeasonsPage() {
                 </>
               )}
               {s.status === 'active' && (
-                <button
-                  onClick={() => endSeason(s.id)}
-                  disabled={ending === s.id}
-                  style={{ marginTop: '0.75rem', width: '100%', padding: '0.5rem', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: 'var(--radius-lg)', color: '#f87171', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
-                >
-                  {ending === s.id ? '⏳ Завершение...' : '🏁 Завершить сезон'}
-                </button>
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => endSeason(s.id)}
+                    disabled={ending === s.id}
+                    style={{ flex: 1, padding: '0.5rem', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: 'var(--radius-lg)', color: '#f87171', fontWeight: 700, cursor: ending === s.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
+                  >
+                    {ending === s.id ? '⏳ Завершение...' : '🏁 Завершить сезон'}
+                  </button>
+                  <button
+                    onClick={() => recalculateBossHp(s.id, s.name)}
+                    disabled={recalculating === s.id}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      border: '1px solid rgba(139,92,246,0.4)',
+                      background: 'rgba(139,92,246,0.15)',
+                      color: '#a78bfa',
+                      cursor: recalculating === s.id ? 'wait' : 'pointer',
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {recalculating === s.id ? '⏳ Пересчёт…' : '🔄 Пересчитать HP'}
+                  </button>
+                </div>
               )}
             </div>
             );
