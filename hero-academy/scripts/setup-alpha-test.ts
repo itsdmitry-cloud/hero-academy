@@ -33,6 +33,9 @@ const BOSS_DESCRIPTION = 'Древний страж математических
 const BOSS_BASE_HP = 15000;
 const BOSS_HP_MULTIPLIER = 240;
 const BOSS_MAX_HP = Math.round(BOSS_BASE_HP * BOSS_HP_MULTIPLIER / 100);
+const BOSS_REWARD_POOL_XP = 25000;
+const BOSS_REWARD_POOL_GOLD = 5000;
+const UUID_REGEX = /^[0-9a-f-]{36}$/i;
 
 const ECONOMY_CONFIG = {
   xp_multiplier: 300,
@@ -52,6 +55,12 @@ function parseArgs(): { classIds: string[] } {
   const classIds = process.argv[idx + 1].split(',').map(s => s.trim()).filter(Boolean);
   if (classIds.length === 0) {
     console.error('At least one class-id required');
+    process.exit(1);
+  }
+  const invalidIds = classIds.filter(id => !UUID_REGEX.test(id));
+  if (invalidIds.length > 0) {
+    console.error(`❌ Неверный формат UUID для class-id: ${invalidIds.join(', ')}`);
+    console.error('   Ожидается формат: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 символов)');
     process.exit(1);
   }
   return { classIds };
@@ -81,22 +90,24 @@ async function main() {
   classes.forEach(c => console.log(`   · ${c.name} (${c.id})`));
 
   // 2. Upsert season
-  const { data: existingSeason } = await supabase
+  const { data: existingSeason, error: seasonSelectErr } = await supabase
     .from('seasons')
     .select('id, name, status')
     .eq('school_id', schoolId)
     .eq('name', SEASON_NAME)
     .maybeSingle();
+  if (seasonSelectErr) throw seasonSelectErr;
 
   let seasonId: string;
   if (existingSeason) {
     console.log(`⏭  Season "${SEASON_NAME}" exists (${existingSeason.id}, status=${existingSeason.status})`);
     seasonId = existingSeason.id;
-    await supabase.from('seasons').update({
+    const { error: seasonUpdateErr } = await supabase.from('seasons').update({
       starts_at: SEASON_STARTS,
       ends_at: SEASON_ENDS,
       status: 'active',
     }).eq('id', seasonId);
+    if (seasonUpdateErr) throw seasonUpdateErr;
   } else {
     const { data: inserted, error } = await supabase
       .from('seasons')
@@ -115,24 +126,26 @@ async function main() {
   }
 
   // 3. Upsert season_boss
-  const { data: existingBoss } = await supabase
+  const { data: existingBoss, error: bossSelectErr } = await supabase
     .from('season_boss')
     .select('id, name')
     .eq('season_id', seasonId)
     .maybeSingle();
+  if (bossSelectErr) throw bossSelectErr;
 
   let bossId: string;
   if (existingBoss) {
     console.log(`⏭  Boss "${existingBoss.name}" exists (${existingBoss.id})`);
     bossId = existingBoss.id;
-    await supabase.from('season_boss').update({
+    const { error: bossUpdateErr } = await supabase.from('season_boss').update({
       name: BOSS_NAME,
       avatar: BOSS_AVATAR,
       description: BOSS_DESCRIPTION,
       base_hp: BOSS_BASE_HP,
-      reward_pool_xp: 25000,
-      reward_pool_gold: 5000,
+      reward_pool_xp: BOSS_REWARD_POOL_XP,
+      reward_pool_gold: BOSS_REWARD_POOL_GOLD,
     }).eq('id', bossId);
+    if (bossUpdateErr) throw bossUpdateErr;
   } else {
     const { data: inserted, error } = await supabase
       .from('season_boss')
@@ -142,8 +155,8 @@ async function main() {
         avatar: BOSS_AVATAR,
         description: BOSS_DESCRIPTION,
         base_hp: BOSS_BASE_HP,
-        reward_pool_xp: 25000,
-        reward_pool_gold: 5000,
+        reward_pool_xp: BOSS_REWARD_POOL_XP,
+        reward_pool_gold: BOSS_REWARD_POOL_GOLD,
       })
       .select('id')
       .single();
@@ -154,19 +167,21 @@ async function main() {
 
   // 4. Upsert season_boss_class_hp per class
   for (const cls of classes) {
-    const { data: existingHp } = await supabase
+    const { data: existingHp, error: hpSelectErr } = await supabase
       .from('season_boss_class_hp')
       .select('id, current_hp')
       .eq('season_boss_id', bossId)
       .eq('class_id', cls.id)
       .maybeSingle();
+    if (hpSelectErr) throw hpSelectErr;
 
     if (existingHp) {
       console.log(`⏭  Boss HP for class "${cls.name}" exists (current_hp=${existingHp.current_hp})`);
       // Don't reset current_hp — test may already be running
-      await supabase.from('season_boss_class_hp').update({
+      const { error: hpUpdateErr } = await supabase.from('season_boss_class_hp').update({
         max_hp: BOSS_MAX_HP,
       }).eq('id', existingHp.id);
+      if (hpUpdateErr) throw hpUpdateErr;
     } else {
       const { error } = await supabase.from('season_boss_class_hp').insert({
         season_boss_id: bossId,
