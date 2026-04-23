@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { normalizeSubjects, escapeLikePattern } from '@/lib/utils/subjects';
 import { calculateBossHp, weeksBetween } from '@/lib/game/boss-hp';
+import { getEconomyConfig } from '@/lib/game/constants';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,7 +53,15 @@ export async function POST(req: NextRequest) {
   const seasonWeeks = season.starts_at && season.ends_at
     ? weeksBetween(season.starts_at as string, season.ends_at as string)
     : null;
-  const bossHp = calculateBossHp({ studentCount: studentCount ?? null, seasonWeeks });
+  // Загружаем `boss_hp_multiplier` из economy_config (cascade class → school → global).
+  // Cache TTL = 30s, поэтому один вызов здесь дешёвый; применяется к ВСЕМ боссам
+  // в цикле ниже (они все — этого же класса).
+  const eco = await getEconomyConfig({ classId });
+  const bossHp = calculateBossHp({
+    studentCount: studentCount ?? null,
+    seasonWeeks,
+    multiplierPct: eco.boss_hp_multiplier,
+  });
 
   // Загружаем ВСЕХ боссов класса в этом сезоне (их немного — по одному на предмет),
   // чтобы сделать case-insensitive матчинг локально и не городить ilike-OR.

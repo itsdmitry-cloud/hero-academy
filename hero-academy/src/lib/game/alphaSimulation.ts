@@ -20,6 +20,7 @@
  */
 
 import { cumulativeXpForLevel, MAX_HP } from './math';
+import { calculateBossHp } from './boss-hp';
 
 // Re-export shared invariant so consumers can import from this module too.
 export { MAX_HP };
@@ -28,17 +29,30 @@ export { MAX_HP };
 export const HP_REGEN_PER_DAY = 5;
 export const SCHOOL_DAYS = 14;
 
+// ── Alpha-test class params (used by real boss-hp formula) ─────
+// Seeded for alpha-test май 2026: школа Циркуль, 1 класс «6», 15 учеников.
+// seasonWeeks = weeksBetween(2026-05-04, 2026-05-29) = round(25/7) = 4.
+export const ALPHA_STUDENTS_PER_CLASS = 15;
+export const ALPHA_SEASON_WEEKS = 4;
+
 // ── Alpha-test economy_config (spec 2026-04-22 §5) ─────────────
+// ECONOMY values хранятся как фракции (3.0 = 300%), но runtime multiplier
+// в БД — проценты. Конвертируем на границе: `×100` при передаче в calculateBossHp.
 export const ECONOMY = {
   xp_multiplier:        3.0,   // 300%
   gold_multiplier:      2.5,   // 250%
   dmg_multiplier:       0.65,  // 65% (2026-04-23 calibration: 40→65 after simulation showed 0 deaths/class)
   drop_rate_multiplier: 1.20,  // 120%
-  boss_hp_multiplier:   4.20,  // 420% (2026-04-23 calibration: 240→420 after simulation showed 194% boss overshoot)
+  boss_hp_multiplier:   4.20,  // 420% (2026-04-23 calibration; re-verify after formula fix)
 } as const;
 
-export const BOSS_BASE_HP_PER_CLASS = 15_000;
-export const BOSS_MAX_HP_PER_CLASS = Math.round(BOSS_BASE_HP_PER_CLASS * ECONOMY.boss_hp_multiplier); // 63_000
+// Используем реальную формулу calculateBossHp(). После фикса boss_hp_multiplier
+// это единый источник истины — симуляция совпадает с production-поведением.
+export const BOSS_MAX_HP_PER_CLASS = calculateBossHp({
+  studentCount: ALPHA_STUDENTS_PER_CLASS,
+  seasonWeeks: ALPHA_SEASON_WEEKS,
+  multiplierPct: ECONOMY.boss_hp_multiplier * 100,
+});
 
 // ── Grade → base reward multipliers (spec §2) ──────────────────
 export type Grade = 5 | 4 | 3 | 2 | 1;

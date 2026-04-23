@@ -33,6 +33,50 @@ describe('calculateBossHp', () => {
   });
 });
 
+describe('calculateBossHp — multiplierPct (economy_config.boss_hp_multiplier)', () => {
+  it('multiplierPct: 100 equals omitting the parameter (baseline)', () => {
+    // 20 students * 3 * 10 weeks * 20 = 12 000
+    const baseline = calculateBossHp({ studentCount: 20, seasonWeeks: 10 });
+    const explicit = calculateBossHp({ studentCount: 20, seasonWeeks: 10, multiplierPct: 100 });
+    expect(explicit).toBe(baseline);
+    expect(explicit).toBe(12_000);
+  });
+
+  it('multiplierPct: 420 with 15 students / 3 weeks yields 11340 HP (alpha calibration)', () => {
+    // 15 * 3 * 3 * 20 = 2700 → × 4.2 = 11 340
+    expect(
+      calculateBossHp({ studentCount: 15, seasonWeeks: 3, multiplierPct: 420 }),
+    ).toBe(11_340);
+  });
+
+  it('multiplierPct: 50 with tiny class still floors at MIN_HP = 1000', () => {
+    // 1 * 3 * 1 * 20 * 0.5 = 30 → clamp to 1000 (floor applied AFTER multiply)
+    expect(
+      calculateBossHp({ studentCount: 1, seasonWeeks: 1, multiplierPct: 50 }),
+    ).toBe(1_000);
+  });
+
+  it('defensive: multiplierPct undefined/null/0/-10/NaN is treated as 100', () => {
+    // Baseline reference: 20 * 3 * 10 * 20 = 12 000 (no multiplier effect).
+    const baseline = 12_000;
+    expect(
+      calculateBossHp({ studentCount: 20, seasonWeeks: 10, multiplierPct: undefined }),
+    ).toBe(baseline);
+    expect(
+      calculateBossHp({ studentCount: 20, seasonWeeks: 10, multiplierPct: null }),
+    ).toBe(baseline);
+    expect(
+      calculateBossHp({ studentCount: 20, seasonWeeks: 10, multiplierPct: 0 }),
+    ).toBe(baseline);
+    expect(
+      calculateBossHp({ studentCount: 20, seasonWeeks: 10, multiplierPct: -10 }),
+    ).toBe(baseline);
+    expect(
+      calculateBossHp({ studentCount: 20, seasonWeeks: 10, multiplierPct: Number.NaN }),
+    ).toBe(baseline);
+  });
+});
+
 describe('weeksBetween', () => {
   it('counts full weeks between two ISO dates', () => {
     expect(weeksBetween('2026-01-01T00:00:00Z', '2026-04-02T00:00:00Z')).toBe(13);

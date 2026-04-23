@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { normalizeSubjects, escapeLikePattern } from '@/lib/utils/subjects';
 import { calculateBossHp, weeksBetween } from '@/lib/game/boss-hp';
+import { getEconomyConfig } from '@/lib/game/constants';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -173,10 +174,15 @@ export async function POST(req: Request) {
                 .eq('class_id', cls.id)
                 .eq('role', 'student');
 
+              // Cascade class → school → global. Cache TTL = 30s — цикл по
+              // классам одной школы обращается к одним и тем же ключам.
+              const eco = await getEconomyConfig({ classId: cls.id });
+
               // Single source of truth — та же формула, что и в /api/bosses/ensure.
               const calculatedHp = calculateBossHp({
                 studentCount: studentCount ?? null,
                 seasonWeeks: weeksBetween(activeSeason.starts_at, activeSeason.ends_at),
+                multiplierPct: eco.boss_hp_multiplier,
               });
 
               await admin.from('subject_bosses').insert({

@@ -28,7 +28,7 @@ const SLIDERS = [
   { key: 'xp_multiplier', label: 'Множитель XP', icon: '⭐', color: '#eab308', min: 25, max: 500, unit: '%', desc: 'Множитель опыта за квесты, боссов, уроки' },
   { key: 'gold_multiplier', label: 'Множитель Gold', icon: '💰', color: '#f59e0b', min: 25, max: 500, unit: '%', desc: 'Множитель золота за задания и активность' },
   { key: 'drop_rate_multiplier', label: 'Шанс дропа', icon: '🎲', color: '#a855f7', min: 10, max: 500, unit: '%', desc: 'Модификатор шанса выпадения артефактов' },
-  { key: 'boss_hp_multiplier', label: 'HP Боссов', icon: '🐉', color: '#f43f5e', min: 25, max: 400, unit: '%', desc: 'Модификатор здоровья боссов (сложность)' },
+  { key: 'boss_hp_multiplier', label: 'HP Боссов', icon: '🐉', color: '#f43f5e', min: 25, max: 600, unit: '%', desc: 'Модификатор здоровья боссов (сложность)' },
   { key: 'hp_regen_rate', label: 'Реген HP', icon: '💚', color: '#22c55e', min: 0, max: 300, unit: '%', desc: 'Скорость восстановления HP (0% = нет регена)' },
 ] as const;
 
