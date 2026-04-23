@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   // Deactivate other active seasons in this school
   const { error: deactivateError } = await admin
     .from('seasons')
-    .update({ status: 'archived' })
+    .update({ status: 'ended' })
     .eq('school_id', season.school_id)
     .eq('status', 'active')
     .neq('id', seasonId);
