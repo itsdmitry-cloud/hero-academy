@@ -205,8 +205,8 @@ function main() {
     console.log('');
     console.log('⚠️  Some spec targets not met. Suggested knobs:');
     console.log('     — xp_multiplier  (currently 300%): bump for higher level / BP tier');
-    console.log('     — dmg_multiplier (currently  40%): bump for more deaths, drop for fewer');
-    console.log('     — boss_hp_multiplier (currently 240%): drop if boss survives, bump if dying too soon');
+    console.log('     — dmg_multiplier (currently  65%): bump for more deaths, drop for fewer');
+    console.log('     — boss_hp_multiplier (currently 420%): drop if boss survives, bump if dying too soon');
     process.exit(1);
   }
 }

@@ -4,8 +4,8 @@
  * Idempotent seed script that sets up:
  *   1. Season "Огненный Сезон" (fire element, 2026-05-04 → 2026-05-25)
  *   2. season_boss (base_hp=15000)
- *   3. season_boss_class_hp per class (max_hp=36000 = base_hp × 240%)
- *   4. economy_config per class (xp=300, gold=250, dmg=40, drop=120, boss_hp=240)
+ *   3. season_boss_class_hp per class (max_hp=63000 = base_hp × 420%)
+ *   4. economy_config per class (xp=300, gold=250, dmg=65, drop=120, boss_hp=420)
  *
  * Usage:
  *   npx tsx scripts/setup-alpha-test.ts --class-ids <uuid1>,<uuid2>
@@ -31,7 +31,7 @@ const BOSS_NAME = 'Дракон Алгебры';
 const BOSS_AVATAR = '🐉';
 const BOSS_DESCRIPTION = 'Древний страж математических тайн. Пал — освободишь класс от двоек на всё лето.';
 const BOSS_BASE_HP = 15000;
-const BOSS_HP_MULTIPLIER = 240;
+const BOSS_HP_MULTIPLIER = 420;
 const BOSS_MAX_HP = Math.round(BOSS_BASE_HP * BOSS_HP_MULTIPLIER / 100);
 const BOSS_REWARD_POOL_XP = 25000;
 const BOSS_REWARD_POOL_GOLD = 5000;
@@ -40,7 +40,7 @@ const UUID_REGEX = /^[0-9a-f-]{36}$/i;
 const ECONOMY_CONFIG = {
   xp_multiplier: 300,
   gold_multiplier: 250,
-  dmg_multiplier: 40,
+  dmg_multiplier: 65,
   drop_rate_multiplier: 120,
   boss_hp_multiplier: BOSS_HP_MULTIPLIER,
   hp_regen_rate: 100,

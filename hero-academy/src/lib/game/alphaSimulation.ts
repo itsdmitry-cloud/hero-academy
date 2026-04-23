@@ -32,13 +32,13 @@ export const SCHOOL_DAYS = 14;
 export const ECONOMY = {
   xp_multiplier:        3.0,   // 300%
   gold_multiplier:      2.5,   // 250%
-  dmg_multiplier:       0.40,  // 40%
+  dmg_multiplier:       0.65,  // 65% (2026-04-23 calibration: 40→65 after simulation showed 0 deaths/class)
   drop_rate_multiplier: 1.20,  // 120%
-  boss_hp_multiplier:   2.40,  // 240%
+  boss_hp_multiplier:   4.20,  // 420% (2026-04-23 calibration: 240→420 after simulation showed 194% boss overshoot)
 } as const;
 
 export const BOSS_BASE_HP_PER_CLASS = 15_000;
-export const BOSS_MAX_HP_PER_CLASS = Math.round(BOSS_BASE_HP_PER_CLASS * ECONOMY.boss_hp_multiplier); // 36_000
+export const BOSS_MAX_HP_PER_CLASS = Math.round(BOSS_BASE_HP_PER_CLASS * ECONOMY.boss_hp_multiplier); // 63_000
 
 // ── Grade → base reward multipliers (spec §2) ──────────────────
 export type Grade = 5 | 4 | 3 | 2 | 1;
