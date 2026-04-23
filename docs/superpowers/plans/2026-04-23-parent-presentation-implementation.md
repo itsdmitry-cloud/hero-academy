@@ -852,8 +852,8 @@ _(To be filled in as tasks complete)_
 
 - Consent form URL: https://docs.google.com/forms/d/e/1FAIpQLScC3W8PX1N6fwBh38euGwImk6MN2iefawjnagGEukDpdo7ITA/viewform
 - Consent form ID: 19QIYkZwId3bQX-CfgnBUyM6TBvhMyglBSsPKwD9-BeA
-- Presentation URL:
-- Presentation ID:
+- Presentation URL: https://docs.google.com/presentation/d/1K8AJ6crAHDxuyiNktObfed25yA4m2ojsTmmYBAiXA-I/edit
+- Presentation ID: 1K8AJ6crAHDxuyiNktObfed25yA4m2ojsTmmYBAiXA-I
 - Childhood photo path:
 - Family photo path:
 - Telegram:
