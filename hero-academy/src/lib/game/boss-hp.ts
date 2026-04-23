@@ -10,9 +10,15 @@
  * настраиваемый процентный множитель из `economy_config.boss_hp_multiplier`
  * (cascade: class → school → global). Дефолт множителя = 100% (без изменений).
  *
- * Дефолты подобраны на основе симуляций в `scripts/test-boss-hp.ts`:
+ * Дефолты подобраны на основе симуляций в `scripts/test-boss-hp.ts` и
+ *   `scripts/simulate-alpha-test.ts`:
  *   - 3 урока/неделю на предмет (типичная нагрузка в средней школе)
- *   - 20 урона/урок (XP за аккуратную домашку = урон боссу)
+ *   - 80 урона/урок — среднее XP за оценку при multiplier=100%.
+ *     Расчёт: AVG_BASE_XP ≈ 135 (см. alphaSimulation.ts) × медианный
+ *     GRADE_MULT ~0.55 (смесь 5/4/3) ≈ 74. Округлено до 80, чтобы босс
+ *     не падал за первую неделю при нормальной активности класса.
+ *     (Было 20 до 2026-04-23 — занижено примерно в 4×, из-за чего
+ *     калибровка alpha с boss_hp=420% давала overshoot 461%.)
  *
  * Минимальный порог HP = 1000 применяется ПОСЛЕ умножения на множитель,
  * чтобы класс с низким `boss_hp_multiplier` всё равно не провалился ниже 1000
@@ -32,12 +38,13 @@ export interface BossHpInput {
 }
 
 // Дефолты для класса, по которому нет данных (например, ensure без доступа
-// к seasons/users). Выбраны так, чтобы получилось ~9000 HP — средний босс.
+// к seasons/users). Выбраны так, чтобы получилось ~36000 HP при multiplier=100%
+// (10 × 3 × 15 × 80) — средний босс, живущий примерно всю четверть.
 const DEFAULT_STUDENTS = 10;
 const DEFAULT_WEEKS = 15;
 
 const LESSONS_PER_WEEK = 3;
-const AVG_DAMAGE_PER_LESSON = 20;
+const AVG_DAMAGE_PER_LESSON = 80;
 const MIN_HP = 1000;
 const DEFAULT_MULTIPLIER_PCT = 100;
 
