@@ -11,10 +11,10 @@ interface StreakMilestone {
 }
 
 const MILESTONES: StreakMilestone[] = [
-  { day: 3,  emoji: '🔥', xp: 100,  gold: 20 },
-  { day: 7,  emoji: '💎', xp: 250,  gold: 50 },
-  { day: 14, emoji: '🏆', xp: 500,  gold: 100 },
-  { day: 30, emoji: '👑', xp: 1000, gold: 250 },
+  { day: 3,  emoji: '🔥', xp: 150,  gold: 50 },
+  { day: 6,  emoji: '💎', xp: 300,  gold: 150 },
+  { day: 10, emoji: '🏆', xp: 600,  gold: 300 },
+  { day: 14, emoji: '👑', xp: 1000, gold: 500 },
 ];
 
 interface StreakProgressBarProps {
@@ -59,7 +59,7 @@ export function StreakProgressBar({ currentStreak, bestStreak }: StreakProgressB
           ? '💡 Получи XP от учителя на уроке — и стрик начнётся!'
           : nextMilestone
           ? `💡 Получай XP на каждом уроке. До награды: ${daysToNext} ${daysToNext === 1 ? 'уч. день' : 'уч. дня'}`
-          : '🌟 Максимальный стрик! Продолжай — каждые 7 дней +сундук!'
+          : '🌟 Максимальный стрик! Ты прошёл весь альфа-тест на стриках!'
         }
         <span style={{ display: 'block', opacity: 0.7, marginTop: '2px' }}>Выходные не считаются — стрик сохраняется в пт→пн</span>
       </div>
