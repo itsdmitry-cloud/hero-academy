@@ -81,6 +81,109 @@ export function buildBossCreationPlan(input: BuildBossCreationPlanInput): BossCr
   return { toCreate, skipped, subjects: [...subjects] };
 }
 
+export interface BossChange {
+  bossId: string;
+  className: string;
+  subjectId: string;
+  oldMaxHp: number;
+  newMaxHp: number;
+  oldCurrentHp: number;
+  newCurrentHp: number;
+}
+
+export interface NewBossInRecalc {
+  classId: string;
+  className: string;
+  subjectId: string;
+  maxHp: number;
+}
+
+export interface SkippedBoss {
+  bossId: string;
+  className: string;
+  subjectId: string;
+  reason: 'defeated';
+}
+
+export interface RecalcPlan {
+  changes: BossChange[];
+  newBosses: NewBossInRecalc[];
+  skipped: SkippedBoss[];
+}
+
+export interface BuildRecalcPlanInput {
+  classes: readonly ClassInfo[];
+  subjects: readonly string[];
+  existing: readonly ExistingBoss[];
+  seasonWeeks: number;
+  multiplierResolver: (classId: string) => number;
+}
+
+export function buildRecalcPlan(input: BuildRecalcPlanInput): RecalcPlan {
+  const { classes, subjects, existing, seasonWeeks, multiplierResolver } = input;
+  const classMap = new Map(classes.map((c) => [c.id, c]));
+  const existingKey = (classId: string, subjectId: string) =>
+    `${classId}::${subjectId.toLowerCase()}`;
+  const existingMap = new Map(existing.map((b) => [existingKey(b.class_id, b.subject_id), b]));
+
+  const changes: BossChange[] = [];
+  const skipped: SkippedBoss[] = [];
+
+  for (const boss of existing) {
+    const cls = classMap.get(boss.class_id);
+    const className = cls?.name ?? '(unknown)';
+    if (boss.is_defeated) {
+      skipped.push({
+        bossId: boss.id,
+        className,
+        subjectId: boss.subject_id,
+        reason: 'defeated',
+      });
+      continue;
+    }
+    if (!cls) continue; // class missing — skip
+    const multiplier = multiplierResolver(cls.id);
+    const newMaxHp = calculateBossHp({
+      studentCount: cls.studentCount,
+      seasonWeeks,
+      multiplierPct: multiplier,
+    });
+    const newCurrentHp = Math.min(boss.current_hp, newMaxHp);
+    if (newMaxHp === boss.max_hp && newCurrentHp === boss.current_hp) continue;
+    changes.push({
+      bossId: boss.id,
+      className,
+      subjectId: boss.subject_id,
+      oldMaxHp: boss.max_hp,
+      newMaxHp,
+      oldCurrentHp: boss.current_hp,
+      newCurrentHp,
+    });
+  }
+
+  const newBosses: NewBossInRecalc[] = [];
+  for (const cls of classes) {
+    if (cls.studentCount < 1) continue;
+    const multiplier = multiplierResolver(cls.id);
+    for (const subject of subjects) {
+      if (existingMap.has(existingKey(cls.id, subject))) continue;
+      const maxHp = calculateBossHp({
+        studentCount: cls.studentCount,
+        seasonWeeks,
+        multiplierPct: multiplier,
+      });
+      newBosses.push({
+        classId: cls.id,
+        className: cls.name,
+        subjectId: subject,
+        maxHp,
+      });
+    }
+  }
+
+  return { changes, newBosses, skipped };
+}
+
 export function collectSchoolSubjects(teachers: readonly TeacherSubjects[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
