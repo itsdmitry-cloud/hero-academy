@@ -34,7 +34,7 @@ describe('collectSchoolSubjects', () => {
 
 describe('buildBossCreationPlan', () => {
   const defaultWeeks = 4;
-  const multiplierResolver = (_classId: string) => 100;
+  const multiplierResolver = () => 100;
 
   it('создаёт боссов для каждой пары (class, subject), если ни одного нет', () => {
     const classes: ClassInfo[] = [
