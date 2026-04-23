@@ -1,10 +1,18 @@
 # Дизайн: создание боссов на активации сезона + ручной пересчёт HP
 
-**Дата:** 2026-04-23
+**Дата:** 2026-04-23 (обновлено после коммитов `24eb4cf`, `e576d85`)
 **Контекст:** подготовка к альфа-тесту 4 мая 2026 (школа Циркуль, 1 класс, математика)
 **Предыдущие связанные артефакты:**
 - `docs/superpowers/specs/2026-04-22-alpha-test-balance-design.md`
+- `docs/superpowers/specs/2026-04-23-boss-hp-multiplier-fix-design.md` — вариант B реализован (multiplier теперь live)
 - Память: `project_alpha_test_decision_pending.md`, `reference_db_schema_reality.md`
+
+**Что изменилось в кодовой базе после первой версии этой спеки:**
+- `boss_hp_multiplier` больше **не dead field** — `calculateBossHp({..., multiplierPct})` применяет его (коммит `24eb4cf`).
+- `AVG_DAMAGE_PER_LESSON` 20 → 80 (коммит `e576d85`). Новая формула: `HP = students × 3 × weeks × 80 × (pct/100)`.
+- `/teacher/boss/new` уже удалён — из этого спека этот пункт исключён.
+- `api/bosses/ensure` и `api/admin/create-user` уже читают `getEconomyConfig({classId})` и передают multiplier.
+- Слайдер в админке `boss_hp_multiplier` расширен до max=600.
 
 ---
 
@@ -18,7 +26,7 @@
 | `POST /api/bosses/ensure` | первый рендер teacher-UI | Лениво, per (class, subject) | Тот же баг: момент создания непредсказуем |
 | `/teacher/boss/new` | ручное действие учителя | HP вводится слайдером | Не залинкован из навигации, не используется |
 
-**Итог:** HP босса зависит от того, **в какой момент был триггер**, а не от реального размера класса на старте сезона. Для альфы это критично: 15 учеников × математика → по формуле 3600 HP, но если учитель зашёл до наполнения — получит 1000 HP → босс падёт за 1-2 дня при xp_multiplier=300%.
+**Итог:** HP босса зависит от того, **в какой момент был триггер**, а не от реального размера класса на старте сезона. Для альфы это критично: 15 учеников × математика × 4 недели × `multiplierPct=420` → по формуле 60 480 HP, но если учитель зашёл до наполнения (0 или 1 ученик) — получит 4 032 HP (или MIN_HP = 1 000) → босс падёт за 1-2 дня при xp_multiplier=300%.
 
 **Side-finding (из ре-проверки):** в `grade-batch/route.ts` (строки 302-340) и `action/route.ts` (строки 237-272) есть обращения к таблицам `season_boss`/`season_boss_class_hp`, которых **в БД не существует**. НО: `maybeSingle()` молча возвращает null, и fallback-логика корректно переключается на реальную таблицу `subject_bosses`. То есть **урон по боссу в production доходит до БД**, но код грязный (каждый graded quest делает два зря-запроса в несуществующие таблицы). Cleanup рекомендуется, но не блокер альфы (см. §7).
 
@@ -37,8 +45,9 @@
 1. Как и раньше: деактивирует другие активные сезоны школы, ставит текущему `status='active'`.
 2. **Новое:** для каждого класса школы с `studentCount ≥ 1`:
    - Собирает список предметов: все уникальные subjects всех teachers школы, после `normalizeSubject` и дедупа (case-insensitive).
+   - Читает `getEconomyConfig({ classId })` → достаёт `boss_hp_multiplier` (с каскадом class → school → global, default 100).
    - Для каждого предмета, если нет `subject_bosses` с `(season_id, class_id, subject_id)` — создаёт:
-     - `max_hp = current_hp = calculateBossHp({ studentCount, seasonWeeks })`
+     - `max_hp = current_hp = calculateBossHp({ studentCount, seasonWeeks, multiplierPct })`
      - `name = "Босс: {subject}"`, `avatar = '🐉'`, `is_defeated = false`
 3. Возвращает `{ success: true, bossesCreated: N, classesSkipped: [...] }` для прозрачности.
 
@@ -56,7 +65,7 @@
   - `SkippedBoss = { bossId, reason }` — например, `reason: 'defeated'`
 - **Поведение:**
   1. Загрузить все `subject_bosses` для `season_id`.
-  2. Для каждого класса с `studentCount ≥ 1` пересчитать `calculateBossHp({ studentCount, seasonWeeks })`.
+  2. Для каждого класса с `studentCount ≥ 1` прочитать `getEconomyConfig({ classId })` и пересчитать `calculateBossHp({ studentCount, seasonWeeks, multiplierPct })`.
   3. Для каждого существующего босса:
      - Если `is_defeated=true` → **пропустить полностью** (не менять ни `max_hp`, ни `current_hp`).
      - Иначе:
@@ -94,11 +103,11 @@
 
 | Компонент | Действие | Причина |
 |---|---|---|
-| `POST /api/admin/create-user` — блок создания боссов (строки 146-195) | **Удалить** | Дублирует новую логику активации, создавал боссов в неправильный момент |
-| `POST /api/bosses/ensure` + `useSubjectBosses` hook | **Оставить** | Fallback: если учитель добавлен ПОСЛЕ активации, он получит боссов при первом заходе в UI |
-| `/teacher/boss/new` page + route | **Удалить** | Не залинкован, не используется, создаёт диссонанс (ручной ввод HP vs формула) |
-| `calculateBossHp()` в `boss-hp.ts` | **Оставить без изменений** | Работает корректно, single source of truth |
-| `boss_hp_multiplier` в `economy_config` | **Не трогать в этой задаче** | Dead field, но его удаление — отдельная задача (см. post-alpha) |
+| `POST /api/admin/create-user` — блок создания боссов (строки ~146-195) | **Удалить** | Дублирует новую логику активации, создавал боссов в неправильный момент. Читает multiplier верно, но момент создания всё равно преждевременный. |
+| `POST /api/bosses/ensure` + `useSubjectBosses` hook | **Оставить** | Fallback: если учитель добавлен ПОСЛЕ активации, он получит боссов при первом заходе в UI. Уже использует multiplier. |
+| `/teacher/boss/new` page + route | **Уже удалён** (коммит `24eb4cf`) | — |
+| `calculateBossHp()` в `boss-hp.ts` | **Оставить без изменений** | После фикса принимает `multiplierPct`, формула уже актуальная. |
+| `boss_hp_multiplier` в `economy_config` | **Активно используется** | Живое поле после `24eb4cf`. |
 
 ---
 
@@ -146,19 +155,19 @@ WHERE school_id = $1 AND role = 'teacher' AND subjects IS NOT NULL;
 2. Добавить учителя математика с `subjects=['Математика']`.
 3. Добавить 15 учеников в класс "6".
 4. Активировать сезон "Майский Квест".
-5. Проверить в БД: `subject_bosses` для (season, class=6, subject='Математика') с `max_hp = 15 × 3 × 4 × 20 = 3600`.
+5. Проверить в БД: `subject_bosses` для (season, class=6, subject='Математика') с `max_hp = 15 × 3 × 4 × 80 × 4.2 = 60 480` (`boss_hp_multiplier=420` в `economy_config` для школы Циркуль).
 6. Добавить ещё 5 учеников.
-7. Нажать "Пересчитать HP" → увидеть diff 3600 → 4800, подтвердить.
+7. Нажать "Пересчитать HP" → увидеть diff 60 480 → 80 640, подтвердить.
 
 ---
 
 ## 7. Scope + out of scope
 
 ### В scope
-- Изменения в `activate-season` route.
-- Новый endpoint `recalculate-boss-hp`.
+- Изменения в `activate-season` route (автосоздание боссов).
+- Новый endpoint `recalculate-boss-hp` (dryRun + apply).
 - UI-кнопка в seasons page + модалка diff.
-- Удаление кода из `create-user`, удаление `/teacher/boss/new`.
+- Удаление кода создания боссов из `create-user` (блок `if role==='teacher'` с subject_bosses insert).
 - Unit + integration тесты.
 
 ### В scope (opportunistic cleanup)
@@ -166,9 +175,8 @@ WHERE school_id = $1 AND role = 'teacher' AND subjects IS NOT NULL;
 
 ### Out of scope (post-alpha)
 - Миграция `class_teachers` и UI назначения teacher↔class↔subject.
-- Удаление dead fields `boss_hp_multiplier` / `hp_regen_rate` из `economy_config`.
-- Переработка `alphaSimulation.ts` под реальную формулу (сейчас использует фиктивный HP=63000).
-- Расширение slider-ов в admin UI (max=400) — dead fields всё равно.
+- Удаление dead field `hp_regen_rate` из `economy_config` (`boss_hp_multiplier` уже live).
+- Починка `scripts/setup-alpha-test.ts` — он всё ещё ссылается на несуществующие `season_boss`/`season_boss_class_hp`. Не используется в боевом flow, только в dev-сетапе. Отдельная задача.
 
 ---
 
