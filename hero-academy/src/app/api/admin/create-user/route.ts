@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { normalizeSubjects, escapeLikePattern } from '@/lib/utils/subjects';
-import { calculateBossHp, weeksBetween } from '@/lib/game/boss-hp';
-import { getEconomyConfig } from '@/lib/game/constants';
+import { normalizeSubjects } from '@/lib/utils/subjects';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -140,63 +138,6 @@ export async function POST(req: Request) {
           total_xp_earned: 0,
           total_gold_earned: 0,
         }, { onConflict: 'hero_id' });
-      }
-    }
-
-    // 4. Create Subject Bosses if teacher has subjects
-    if (role === 'teacher' && normalizedSubjects.length > 0) {
-      // Find all classes in this school
-      const { data: classes } = await admin.from('classes').select('id').eq('school_id', school_id);
-
-      // Find active season for this school
-      const { data: activeSeason } = await admin.from('seasons')
-        .select('id, starts_at, ends_at')
-        .eq('school_id', school_id)
-        .eq('status', 'active')
-        .limit(1)
-        .maybeSingle();
-
-      if (classes && activeSeason) {
-        for (const cls of classes) {
-          for (const subjectName of normalizedSubjects) {
-            // Check if boss already exists (case-insensitive, чтобы не плодить дубликаты)
-            const { data: existingBoss } = await admin.from('subject_bosses')
-              .select('id')
-              .eq('season_id', activeSeason.id)
-              .eq('class_id', cls.id)
-              .ilike('subject_id', escapeLikePattern(subjectName))
-              .maybeSingle();
-
-            if (!existingBoss) {
-              // Calculate Boss HP
-              const { count: studentCount } = await admin.from('users')
-                .select('*', { count: 'exact', head: true })
-                .eq('class_id', cls.id)
-                .eq('role', 'student');
-
-              // Cascade class → school → global. Cache TTL = 30s — цикл по
-              // классам одной школы обращается к одним и тем же ключам.
-              const eco = await getEconomyConfig({ classId: cls.id });
-
-              // Single source of truth — та же формула, что и в /api/bosses/ensure.
-              const calculatedHp = calculateBossHp({
-                studentCount: studentCount ?? null,
-                seasonWeeks: weeksBetween(activeSeason.starts_at, activeSeason.ends_at),
-                multiplierPct: eco.boss_hp_multiplier,
-              });
-
-              await admin.from('subject_bosses').insert({
-                season_id: activeSeason.id,
-                class_id: cls.id,
-                subject_id: subjectName,
-                name: `Босс: ${subjectName}`,
-                avatar: '🐉',
-                max_hp: calculatedHp,
-                current_hp: calculatedHp,
-              });
-            }
-          }
-        }
       }
     }
 
