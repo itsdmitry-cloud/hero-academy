@@ -38,7 +38,9 @@ function makeChain(
     },
     neq: () => builder,
     update: (patch: Record<string, unknown>) => {
-      updateSink.push({ table, patch, id: pendingId ?? '' });
+      // Don't push yet — pendingId is set by .eq('id', bossId) which comes AFTER .update()
+      // We'll capture it in .then() once the chain is awaited
+      builder._pendingPatch = patch;
       return builder;
     },
     insert: (row: Record<string, unknown>) => {
@@ -46,7 +48,15 @@ function makeChain(
       return builder;
     },
     maybeSingle: () => Promise.resolve(resolver()),
-    then: (fn: (v: unknown) => unknown) => Promise.resolve(resolver()).then(fn),
+    then: (fn: (v: unknown) => unknown) => {
+      // If this chain has a pending update patch, flush it to the sink now
+      // (after .eq('id', bossId) has already set pendingId)
+      if (builder._pendingPatch !== undefined) {
+        updateSink.push({ table, patch: builder._pendingPatch as Record<string, unknown>, id: pendingId ?? '' });
+        builder._pendingPatch = undefined;
+      }
+      return Promise.resolve(resolver()).then(fn);
+    },
   };
   return builder;
 }
@@ -250,6 +260,7 @@ describe('POST /api/admin/recalculate-boss-hp', () => {
     expect(updateSink).toHaveLength(1);
     const upd = updateSink[0]!;
     expect(upd.table).toBe('subject_bosses');
+    expect(upd.id).toBe('boss-1'); // guard: id must be captured after .eq('id', bossId)
     expect(upd.patch).toMatchObject({ max_hp: 9600, current_hp: 3000 });
   });
 
