@@ -19,10 +19,12 @@
  *               бонус-поглощение 1 урона/день за счёт щитов, имитирующих покупки)
  */
 
-import { cumulativeXpForLevel } from './math';
+import { cumulativeXpForLevel, MAX_HP } from './math';
+
+// Re-export shared invariant so consumers can import from this module too.
+export { MAX_HP };
 
 // ── Game constants ─────────────────────────────────────────────
-export const MAX_HP = 100;
 export const HP_REGEN_PER_DAY = 5;
 export const SCHOOL_DAYS = 14;
 
@@ -44,12 +46,18 @@ export type Grade = 5 | 4 | 3 | 2 | 1;
 export const GRADE_MULT: Record<Grade, number> = { 5: 1.0, 4: 0.8, 3: 0.5, 2: 0.2, 1: 0.0 };
 export const GRADE_DMG:  Record<Grade, number> = { 5: 0,   4: 0,   3: 10,  2: 20,  1: 30 };
 
-// ── Weighted mix of quest-template base values (spec §4.1) ─────
-//  Домашка 60% (avg 125 XP) — смесь базовой (100) и сложной (200) ДЗ, ~(100+200)/2×bias
-//  Проверочная 25% (150 XP)
-//  Диктант 10% (200 XP)
-//  Контрольная 5% (350 XP × 0.4 coefficient for harder grades)
+// ── Weighted mix of quest-template base values ─────────────────
+//  Квест-шаблоны — spec §5, табл. «Квест-шаблоны»:
+//    Домашка базовая  — 100 XP / 50 Gold
+//    Домашка сложная  — 200 XP / 80 Gold
+//    Проверочная      — 150 XP / 60 Gold
+//    Диктант          — 200 XP / 80 Gold
+//    Контрольная      — 350 XP / 130 Gold (x0.4 для XP — заниженные оценки на контрольных, spec §4.1)
+//  Распределение нагрузки — spec §4.1:
+//    Домашка 60% (биас к лёгкой ДЗ: средняя XP ≈125, средняя Gold = (50+80)/2 = 65)
+//    Проверочная 25%, Диктант 10%, Контрольная 5%
 export const AVG_BASE_XP   = 0.60 * 125 + 0.25 * 150 + 0.10 * 200 + 0.05 * 350 * 0.4;  // ≈ 135
+// AVG_BASE_GOLD: 0.60*65 + 0.25*60 + 0.10*80 + 0.05*130 = 39 + 15 + 8 + 6.5 ≈ 68.5 (см. spec §5)
 export const AVG_BASE_GOLD = 0.60 * 65  + 0.25 * 60  + 0.10 * 80  + 0.05 * 130;        // ≈ 68.5
 
 // Lootbox drop estimate per grade (spec §4.5 ≈ 3.4 drops per student per 14d)

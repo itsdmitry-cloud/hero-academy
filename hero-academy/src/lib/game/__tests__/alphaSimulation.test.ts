@@ -3,6 +3,7 @@ import {
   xpToLevel,
   pickGrade,
   simulateStudent,
+  seededRng,
   ARCHETYPES,
   type Grade,
 } from '../alphaSimulation';
@@ -70,12 +71,8 @@ describe('alphaSimulation — pure functions', () => {
 
   test('simulateStudent: Отличник reaches at least Level 3 with top XP', () => {
     const otlichnik = ARCHETYPES.find(a => a.name === 'Отличник')!;
-    // Seeded rng for reproducibility
-    let state = 42;
-    const rng = () => {
-      state = (state * 1664525 + 1013904223) % 0x100000000;
-      return state / 0x100000000;
-    };
+    // Seeded rng for reproducibility — shared LCG from alphaSimulation
+    const rng = seededRng(42);
     const result = simulateStudent(otlichnik, rng);
     expect(result.level).toBeGreaterThanOrEqual(3);
     expect(result.totalXp).toBeGreaterThan(3500);
@@ -86,19 +83,11 @@ describe('alphaSimulation — pure functions', () => {
     const lentyai = ARCHETYPES.find(a => a.name === 'Лентяй')!;
     const otlichnik = ARCHETYPES.find(a => a.name === 'Отличник')!;
 
-    const mkRng = (seed: number) => {
-      let s = seed;
-      return () => {
-        s = (s * 1664525 + 1013904223) % 0x100000000;
-        return s / 0x100000000;
-      };
-    };
-
     let lentyaiDeaths = 0;
     let otlichnikDeaths = 0;
     for (let seed = 1; seed <= 20; seed++) {
-      lentyaiDeaths += simulateStudent(lentyai, mkRng(seed)).deaths;
-      otlichnikDeaths += simulateStudent(otlichnik, mkRng(seed + 1000)).deaths;
+      lentyaiDeaths += simulateStudent(lentyai, seededRng(seed)).deaths;
+      otlichnikDeaths += simulateStudent(otlichnik, seededRng(seed + 1000)).deaths;
     }
     // Лентяй must die more often than Отличник across a sample of 20 runs
     expect(lentyaiDeaths).toBeGreaterThanOrEqual(otlichnikDeaths);
@@ -106,11 +95,7 @@ describe('alphaSimulation — pure functions', () => {
 
   test('simulateStudent: bossDamageContributed equals totalXp', () => {
     const arch = ARCHETYPES[0];
-    let s = 7;
-    const rng = () => {
-      s = (s * 1664525 + 1013904223) % 0x100000000;
-      return s / 0x100000000;
-    };
+    const rng = seededRng(7);
     const result = simulateStudent(arch, rng);
     expect(result.bossDamageContributed).toBe(result.totalXp);
   });

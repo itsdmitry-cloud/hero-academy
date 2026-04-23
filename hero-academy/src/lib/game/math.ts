@@ -5,6 +5,15 @@
  * Source of truth for all level / XP / avatar calculations.
  */
 
+// ─── Game Invariants ─────────────────────────────────────────
+
+/**
+ * MAX HP = 100 fixed for all levels (see CLAUDE.md «MAX HP = 100»).
+ * Potions do NOT scale with level. Shared invariant for runtime code,
+ * simulations and tests.
+ */
+export const MAX_HP = 100;
+
 // ─── Level / XP ──────────────────────────────────────────────
 
 /** XP cost for ONE level (e.g. level 1→2 costs 1500) */
