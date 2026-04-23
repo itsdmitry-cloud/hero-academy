@@ -59,7 +59,7 @@ export function StreakProgressBar({ currentStreak, bestStreak }: StreakProgressB
           ? '💡 Получи XP от учителя на уроке — и стрик начнётся!'
           : nextMilestone
           ? `💡 Получай XP на каждом уроке. До награды: ${daysToNext} ${daysToNext === 1 ? 'уч. день' : 'уч. дня'}`
-          : '🌟 Максимальный стрик! Ты прошёл весь альфа-тест на стриках!'
+          : '🌟 Максимальный стрик! Ты держал стрик весь альфа-тест!'
         }
         <span style={{ display: 'block', opacity: 0.7, marginTop: '2px' }}>Выходные не считаются — стрик сохраняется в пт→пн</span>
       </div>
