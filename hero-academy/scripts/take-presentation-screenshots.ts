@@ -20,27 +20,34 @@ interface Shot {
 }
 
 const STUDENT_SHOTS: Shot[] = [
-  { slide: 5,  name: 'hero-main',       path: '/hero',           waitForSelector: 'text=/HP/i' },
-  { slide: 8,  name: 'quests',          path: '/quests',         waitForSelector: 'text=/квест/i' },
-  { slide: 9,  name: 'hero-hp-detail',  path: '/hero',           waitForSelector: 'text=/HP/i' },
-  { slide: 10, name: 'artifacts',       path: '/artifacts',      waitForSelector: 'text=/артефакт/i' },
-  { slide: 12, name: 'shop',            path: '/shop',           waitForSelector: 'text=/магазин/i' },
-  { slide: 13, name: 'leaderboard',     path: '/leaderboard',    waitForSelector: 'text=/лидер|топ/i' },
+  { slide: 5,  name: 'hero-main',       path: '/hero',           waitForSelector: 'h1' },
+  { slide: 8,  name: 'quests',          path: '/quests',         waitForSelector: 'h1' },
+  { slide: 9,  name: 'hero-hp-detail',  path: '/hero',           waitForSelector: 'h1' },
+  { slide: 10, name: 'artifacts',       path: '/artifacts',      waitForSelector: 'h1' },
+  { slide: 12, name: 'shop',            path: '/shop',           waitForSelector: 'h1' },
+  { slide: 13, name: 'leaderboard',     path: '/leaderboard',    waitForSelector: 'h1' },
   // Slide 14 boss screenshot taken manually — see Task 5.
   // Route is /boss/[id] (dynamic), and there is no /api/bosses/active
   // endpoint to look up the ID from. seed_boss.js doesn't hardcode an ID either.
 ];
 
 const PARENT_SHOTS: Shot[] = [
-  { slide: 15, name: 'parent-dashboard', path: '/parent', waitForSelector: 'text=/оценк|прогресс/i' },
+  { slide: 15, name: 'parent-dashboard', path: '/parent', waitForSelector: 'h1' },
 ];
 
 async function login(page: Page, email: string, password: string) {
   await page.goto(`${BASE_URL}/auth/login`);
-  await page.getByLabel(/email|почта/i).fill(email);
-  await page.getByLabel(/пароль|password/i).fill(password);
-  await page.getByRole('button', { name: /войти|login/i }).click();
-  await page.waitForLoadState('networkidle', { timeout: 15_000 });
+  // Login page labels are unlinked (no htmlFor); use CSS selectors instead.
+  // Only one form on the page, so input[type=...] is unambiguous.
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill(password);
+  await page.locator('button[type="submit"]').click();
+  // Wait for navigation away from /auth/login (networkidle is flaky here).
+  await page.waitForURL((url) => !url.pathname.includes('/auth/login'), { timeout: 15_000 });
+  // Bypass OnboardingGuard — it redirects to /onboarding until this key is set.
+  await page.evaluate(() => {
+    localStorage.setItem('hero-academy-onboarding', 'done');
+  });
 }
 
 async function captureShot(page: Page, shot: Shot) {
