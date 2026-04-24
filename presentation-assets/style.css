@@ -1,0 +1,622 @@
+/* ============================================
+   Hero Academy — Parent Presentation Theme
+   Custom layer over reveal.js "black" base
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --ha-bg: #1a1a2e;
+  --ha-bg-deep: #0f0f1e;
+  --ha-gold: #fbbf24;
+  --ha-gold-muted: #f59e0b;
+  --ha-purple: #a78bfa;
+  --ha-purple-deep: #7c3aed;
+  --ha-text: #f3f4f6;
+  --ha-text-muted: #c7c9d3;
+  --ha-text-dim: #9ca3af;
+  --ha-border: #2d2d4a;
+  --ha-accent-red: #ef4444;
+  --ha-accent-green: #34d399;
+}
+
+/* ---------- Base ---------- */
+.reveal {
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ha-text);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides > section,
+.reveal .slides > section > section {
+  padding: 20px 40px;
+  line-height: 1.5;
+}
+
+/* Deep indigo background gradient */
+.reveal,
+html, body {
+  background: var(--ha-bg) !important;
+}
+.reveal .backgrounds {
+  background: radial-gradient(ellipse at top, #1f1f3a 0%, var(--ha-bg) 45%, var(--ha-bg-deep) 100%);
+}
+
+/* ---------- Headings ---------- */
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4 {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--ha-text);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  margin-bottom: 0.55em;
+  line-height: 1.15;
+}
+
+.reveal h1 {
+  font-size: 2.4em;
+  color: var(--ha-gold);
+  text-shadow: 0 2px 20px rgba(251, 191, 36, 0.25);
+}
+
+.reveal h2 {
+  font-size: 1.55em;
+  color: var(--ha-gold);
+}
+
+.reveal h3 {
+  font-size: 1.15em;
+  color: var(--ha-purple);
+  font-weight: 600;
+}
+
+/* ---------- Body text ---------- */
+.reveal p {
+  font-size: 0.95em;
+  line-height: 1.55;
+  margin: 0.5em 0;
+}
+
+.reveal strong {
+  color: var(--ha-gold);
+  font-weight: 700;
+}
+
+.reveal em {
+  color: var(--ha-purple);
+  font-style: italic;
+}
+
+/* ---------- Bullets ---------- */
+.reveal ul,
+.reveal ul.bullets {
+  list-style: none;
+  margin: 0.8em 0;
+  padding-left: 0;
+}
+
+.reveal ul li,
+.reveal ul.bullets li {
+  position: relative;
+  padding-left: 1.6em;
+  margin: 0.55em 0;
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+.reveal ul li::before,
+.reveal ul.bullets li::before {
+  content: "◆";
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  color: var(--ha-gold);
+  font-size: 0.85em;
+}
+
+/* numbered steps */
+.reveal ol.steps {
+  list-style: none;
+  padding-left: 0;
+  counter-reset: step;
+  margin: 0.8em 0;
+}
+
+.reveal ol.steps li {
+  position: relative;
+  padding-left: 2.6em;
+  margin: 0.7em 0;
+  font-size: 1.05em;
+}
+
+.reveal ol.steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 50%;
+  background: var(--ha-gold);
+  color: var(--ha-bg-deep);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85em;
+}
+
+/* ---------- Footer quote ---------- */
+.reveal p.footer {
+  margin-top: 1em;
+  font-style: italic;
+  font-size: 0.82em;
+  color: var(--ha-text-muted);
+  opacity: 0.88;
+  border-left: 3px solid var(--ha-purple);
+  padding: 0.4em 0.9em;
+  background: rgba(167, 139, 250, 0.06);
+  border-radius: 0 6px 6px 0;
+}
+
+/* ---------- Subtitle on title slide ---------- */
+.reveal .subtitle {
+  font-size: 1.15em;
+  color: var(--ha-purple);
+  font-weight: 500;
+  font-style: italic;
+  margin: 0.4em 0 1.3em 0;
+}
+
+.reveal .byline {
+  font-size: 0.85em;
+  color: var(--ha-text-muted);
+  line-height: 1.6;
+  margin-top: 1.2em;
+}
+
+.reveal .byline span {
+  display: block;
+}
+
+/* ---------- Comparison table (slide 4) ---------- */
+.reveal table.compare {
+  width: 90%;
+  margin: 1em auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.92em;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+.reveal table.compare thead th {
+  padding: 0.8em 1em;
+  background: var(--ha-bg-deep);
+  font-weight: 700;
+  text-align: left;
+  font-size: 1em;
+  border-bottom: 2px solid var(--ha-border);
+}
+
+.reveal table.compare thead th:first-child {
+  color: var(--ha-text-dim);
+}
+
+.reveal table.compare thead th:last-child {
+  color: var(--ha-gold);
+  background: linear-gradient(135deg, #2a2146 0%, #1a1a2e 100%);
+}
+
+.reveal table.compare tbody td {
+  padding: 0.65em 1em;
+  border-bottom: 1px solid var(--ha-border);
+  vertical-align: middle;
+}
+
+.reveal table.compare tbody td:first-child {
+  color: var(--ha-text-dim);
+  background: rgba(15, 15, 30, 0.5);
+  width: 45%;
+}
+
+.reveal table.compare tbody td:last-child {
+  color: var(--ha-gold);
+  font-weight: 600;
+  background: rgba(251, 191, 36, 0.04);
+}
+
+.reveal table.compare tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ---------- Images ---------- */
+.reveal img {
+  border-radius: 10px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.55);
+  max-height: 460px;
+  width: auto;
+  margin: 0.8em auto;
+  display: block;
+  border: 1px solid var(--ha-border);
+}
+
+.reveal img.small {
+  max-height: 300px;
+}
+
+/* ---------- QR code ---------- */
+.reveal img.qr {
+  background: #fff;
+  padding: 16px;
+  border-radius: 14px;
+  max-height: 420px;
+  box-shadow: 0 10px 40px rgba(251, 191, 36, 0.2), 0 0 0 2px var(--ha-gold);
+  border: none;
+}
+
+.reveal img.qr.small {
+  max-height: 200px;
+  padding: 10px;
+}
+
+/* ---------- Placeholders ---------- */
+.reveal .placeholder {
+  border: 2px dashed var(--ha-purple);
+  color: var(--ha-text-dim);
+  padding: 2em 1.5em;
+  margin: 1em auto;
+  text-align: center;
+  border-radius: 10px;
+  font-style: italic;
+  font-size: 0.9em;
+  max-width: 70%;
+  background: rgba(167, 139, 250, 0.04);
+}
+
+.reveal .placeholder.small {
+  padding: 1em;
+  font-size: 0.8em;
+}
+
+/* ---------- Timeline (slide 6) ---------- */
+.reveal .timeline {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 16px;
+  margin: 1.5em 0;
+  align-items: stretch;
+}
+
+.reveal .timeline .block {
+  padding: 1em 0.9em;
+  border-radius: 10px;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid var(--ha-border);
+  text-align: center;
+}
+
+.reveal .timeline .block.day {
+  background: rgba(251, 191, 36, 0.07);
+  border-color: var(--ha-gold-muted);
+}
+
+.reveal .timeline .block .icon {
+  font-size: 2em;
+  display: block;
+  margin-bottom: 0.3em;
+}
+
+.reveal .timeline .block .label {
+  display: block;
+  color: var(--ha-gold);
+  font-weight: 700;
+  margin-bottom: 0.2em;
+  font-size: 0.92em;
+}
+
+.reveal .timeline .block .body {
+  display: block;
+  font-size: 0.82em;
+  color: var(--ha-text-muted);
+  line-height: 1.4;
+}
+
+/* ---------- Class artifacts grid (slide 11) ---------- */
+.reveal .class-artifacts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin: 1em 0;
+}
+
+.reveal .class-artifacts .card {
+  background: rgba(251, 191, 36, 0.05);
+  border: 1px solid var(--ha-border);
+  border-radius: 10px;
+  padding: 0.8em 0.5em;
+  text-align: center;
+}
+
+.reveal .class-artifacts .card .emoji {
+  font-size: 2.3em;
+  display: block;
+  margin-bottom: 0.2em;
+}
+
+.reveal .class-artifacts .card img {
+  max-height: 120px;
+  width: auto;
+  margin: 0 auto 0.4em;
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.2);
+  border: none;
+}
+
+.reveal .class-artifacts .card .name {
+  color: var(--ha-gold);
+  font-weight: 600;
+  font-size: 0.8em;
+  display: block;
+  line-height: 1.2;
+}
+
+/* ---------- Manifesto slide (19) ---------- */
+.reveal section.manifesto {
+  text-align: center;
+  padding: 20px 60px;
+}
+
+.reveal section.manifesto h2 {
+  font-size: 1.8em;
+  margin-bottom: 1em;
+  color: var(--ha-gold);
+}
+
+.reveal section.manifesto .manifesto-body p {
+  font-size: 1.05em;
+  color: var(--ha-text);
+  line-height: 1.6;
+  margin: 0.7em auto;
+  max-width: 85%;
+  font-weight: 400;
+}
+
+.reveal section.manifesto .closing {
+  margin-top: 1.4em;
+  font-size: 1.25em;
+  font-weight: 700;
+  color: var(--ha-gold);
+  font-style: normal;
+  border: none;
+  background: none;
+  text-align: center;
+}
+
+/* ---------- Q&A slide ---------- */
+.reveal .qa-big {
+  font-size: 3.5em;
+  font-weight: 800;
+  color: var(--ha-gold);
+  text-align: center;
+  letter-spacing: 0.05em;
+  margin: 0.2em 0 0.4em;
+  text-shadow: 0 4px 30px rgba(251, 191, 36, 0.3);
+}
+
+.reveal .qa-list {
+  text-align: center;
+  list-style: none;
+  padding: 0;
+  margin: 1em 0;
+}
+
+.reveal .qa-list li {
+  padding-left: 0;
+  font-size: 1.1em;
+  margin: 0.6em 0;
+}
+
+.reveal .qa-list li::before {
+  display: none;
+}
+
+/* ---------- Contact section (slide 22) ---------- */
+.reveal .contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+  margin-top: 1em;
+}
+
+.reveal .contact-info {
+  font-size: 0.95em;
+  line-height: 1.8;
+}
+
+.reveal .contact-info .row {
+  margin: 0.5em 0;
+  color: var(--ha-text);
+}
+
+.reveal .contact-info .row .label {
+  color: var(--ha-purple);
+  display: inline-block;
+  width: 110px;
+  font-weight: 600;
+}
+
+.reveal .contact-info .dates {
+  margin-top: 1em;
+  padding-top: 0.8em;
+  border-top: 1px solid var(--ha-border);
+  color: var(--ha-gold);
+  font-weight: 600;
+}
+
+/* ---------- Section 1 title slide ---------- */
+.reveal section.title-slide {
+  text-align: center;
+  padding: 40px;
+}
+
+.reveal section.title-slide h1 {
+  font-size: 2.8em;
+  margin-top: 0.3em;
+}
+
+.reveal section.title-slide .subtitle {
+  font-size: 1.25em;
+}
+
+.reveal section.title-slide .hero-logo {
+  font-size: 3.5em;
+  margin-bottom: 0.1em;
+  filter: drop-shadow(0 4px 14px rgba(251, 191, 36, 0.4));
+}
+
+/* ---------- Stat visualization (slide 3) ---------- */
+.reveal .stat-bars {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 1em auto 1.3em;
+  max-width: 60%;
+}
+
+.reveal .stat-bars .bar {
+  flex: 1;
+  text-align: center;
+}
+
+.reveal .stat-bars .bar .fill {
+  background: linear-gradient(to top, var(--ha-purple-deep), var(--ha-purple));
+  margin-bottom: 0.3em;
+  border-radius: 6px 6px 0 0;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.4em 0;
+  font-size: 0.85em;
+}
+
+.reveal .stat-bars .bar.big .fill {
+  height: 160px;
+  background: linear-gradient(to top, #dc2626, #f87171);
+}
+
+.reveal .stat-bars .bar.small .fill {
+  height: 30px;
+  background: linear-gradient(to top, #475569, #64748b);
+}
+
+.reveal .stat-bars .bar .caption {
+  font-size: 0.78em;
+  color: var(--ha-text-muted);
+  line-height: 1.3;
+}
+
+/* ---------- Simulation table (slide 18) ---------- */
+.reveal table.sim {
+  width: 85%;
+  margin: 0.8em auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82em;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.reveal table.sim th,
+.reveal table.sim td {
+  padding: 0.5em 0.7em;
+  border-bottom: 1px solid var(--ha-border);
+  text-align: center;
+}
+
+.reveal table.sim thead th {
+  background: var(--ha-bg-deep);
+  color: var(--ha-gold);
+  font-weight: 700;
+}
+
+.reveal table.sim tbody td:first-child {
+  text-align: left;
+  color: var(--ha-text-muted);
+}
+
+.reveal table.sim tbody td.ok {
+  color: var(--ha-accent-green);
+  font-weight: 700;
+}
+
+/* ---------- Privacy icons ---------- */
+.reveal .privacy-icons {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 0.6em 0 1em;
+  font-size: 3em;
+}
+
+/* ---------- Utility ---------- */
+.reveal .center {
+  text-align: center;
+}
+
+.reveal .small {
+  font-size: 0.85em;
+}
+
+.reveal .large {
+  font-size: 1.2em;
+}
+
+.reveal .gold {
+  color: var(--ha-gold);
+}
+
+.reveal .purple {
+  color: var(--ha-purple);
+}
+
+.reveal .muted {
+  color: var(--ha-text-muted);
+}
+
+/* slide number */
+.reveal .slide-number {
+  background: rgba(26, 26, 46, 0.7);
+  color: var(--ha-text-muted);
+  font-size: 0.7em;
+  padding: 0.3em 0.6em;
+  border-radius: 6px;
+}
+
+/* progress bar */
+.reveal .progress {
+  color: var(--ha-gold);
+  height: 4px;
+}
+
+/* links */
+.reveal a {
+  color: var(--ha-gold);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--ha-gold);
+}
+
+.reveal a:hover {
+  color: #fff;
+  border-bottom-color: #fff;
+}
