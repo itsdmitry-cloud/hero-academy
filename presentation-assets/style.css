@@ -348,12 +348,6 @@ html, body {
   text-align: center;
 }
 
-.reveal .class-artifacts .card .emoji {
-  font-size: 2.3em;
-  display: block;
-  margin-bottom: 0.2em;
-}
-
 .reveal .class-artifacts .card img {
   max-height: 120px;
   width: auto;
