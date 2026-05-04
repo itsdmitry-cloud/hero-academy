@@ -5,6 +5,13 @@
  */
 
 export const ARTIFACT_IMAGES: Record<string, string> = {
+  // === 📦 LOOTBOXES (5) ===
+  'lootbox_common':    '/assets/lootboxes/common.png',
+  'lootbox_rare':      '/assets/lootboxes/rare.png',
+  'lootbox_epic':      '/assets/lootboxes/epic.png',
+  'lootbox_legendary': '/assets/lootboxes/legendary.png',
+  'lootbox_fire':      '/assets/artifacts/chest_v3_fire.png',
+
   // === COMMON (10) ===
   'com_potion':    '/assets/artifacts/com_potion.png',     // Малое Снадобье Памяти
   'com_pen':       '/assets/artifacts/com_pen.png',        // Ученическое Перо
