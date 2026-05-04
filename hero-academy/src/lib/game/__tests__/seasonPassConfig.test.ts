@@ -14,13 +14,13 @@ describe('Alpha-test Battle Pass (15 tiers)', () => {
     expect(MAX_BP_TIER).toBe(15);
   });
 
-  test('total XP is 5000', () => {
-    expect(TOTAL_BP_XP).toBe(5000);
+  test('total XP is 25000 (alpha-test v2 май 2026 — пороги ×5)', () => {
+    expect(TOTAL_BP_XP).toBe(25000);
   });
 
-  test('cumulative XP thresholds match spec (section 6.1)', () => {
+  test('cumulative XP thresholds (alpha-test v2 — base ×5)', () => {
     const tiers = buildSeasonPassTiers('fire');
-    const expected = [200, 400, 600, 800, 1000, 1350, 1700, 2050, 2400, 2750, 3200, 3650, 4100, 4550, 5000];
+    const expected = [1000, 2000, 3000, 4000, 5000, 6750, 8500, 10250, 12000, 13750, 16000, 18250, 20500, 22750, 25000];
     expect(tiers.map(t => t.xpRequired)).toEqual(expected);
   });
 
@@ -58,17 +58,17 @@ describe('Alpha-test Battle Pass (15 tiers)', () => {
     expect(tier15.rewards.find(r => r.type === 'gold')?.amount).toBe(1000);
   });
 
-  test('getCurrentBPTier returns correct tier', () => {
+  test('getCurrentBPTier returns correct tier (alpha v2 thresholds)', () => {
     expect(getCurrentBPTier(0)).toBe(0);
-    expect(getCurrentBPTier(199)).toBe(0);
-    expect(getCurrentBPTier(200)).toBe(1);
-    expect(getCurrentBPTier(1000)).toBe(5);
-    expect(getCurrentBPTier(5000)).toBe(15);
-    expect(getCurrentBPTier(10000)).toBe(15);
+    expect(getCurrentBPTier(999)).toBe(0);
+    expect(getCurrentBPTier(1000)).toBe(1);
+    expect(getCurrentBPTier(5000)).toBe(5);
+    expect(getCurrentBPTier(25000)).toBe(15);
+    expect(getCurrentBPTier(50000)).toBe(15);
   });
 
   test('getBPProgress caps at tier 15', () => {
-    const progress = getBPProgress(10000);
+    const progress = getBPProgress(50000);
     expect(progress.currentTier).toBe(15);
   });
 

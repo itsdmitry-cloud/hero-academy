@@ -1,13 +1,13 @@
 /**
  * Season Pass Configuration — 15 tiers (alpha-test May 2026)
  *
- * XP thresholds match spec section 6.1:
- *   Tiers  1-5:   200 each (cumulative 200→1000)
- *   Tiers  6-10:  350 each (cumulative 1350→2750)
- *   Tiers 11-15:  450 each (cumulative 3200→5000)
+ * XP thresholds (×5 от исходной альфа-спеки — под высокий xp_multiplier):
+ *   Tiers  1-5:   1000 each (cumulative 1000→5000)
+ *   Tiers  6-10:  1750 each (cumulative 6750→13750)
+ *   Tiers 11-15:  2250 each (cumulative 16000→25000)
  *
- * Total BP requirement: 5,000 XP (was 15,000 for 30-tier version).
- * Will be restored to 30 tiers after alpha-test ends.
+ * Total BP requirement: 25,000 XP (alpha-2 калибровка под Lv 15-18).
+ * Будет восстановлено на 30 тиров и/или базовые пороги после альфы.
  *
  * Reward types:
  *   gold        — hero.gold += amount
@@ -47,9 +47,9 @@ export interface BPTier {
 function buildCumulativeXp(): number[] {
   const xpPerTier: number[] = [];
   for (let i = 1; i <= 15; i++) {
-    if (i <= 5)       xpPerTier.push(200);
-    else if (i <= 10) xpPerTier.push(350);
-    else              xpPerTier.push(450);
+    if (i <= 5)       xpPerTier.push(1000);
+    else if (i <= 10) xpPerTier.push(1750);
+    else              xpPerTier.push(2250);
   }
   const cumulative: number[] = [];
   let total = 0;
@@ -156,5 +156,5 @@ export function getBPProgress(seasonXp: number): { currentTier: number; xpInTier
 /** Max BP tier (alpha-test: 15, was 30) */
 export const MAX_BP_TIER = 15;
 
-/** Total XP to complete the Battle Pass (alpha-test: 5000, was 15000) */
+/** Total XP to complete the Battle Pass (alpha-test v2: 25000, было 5000 / 15000) */
 export const TOTAL_BP_XP = CUMULATIVE_XP[CUMULATIVE_XP.length - 1];

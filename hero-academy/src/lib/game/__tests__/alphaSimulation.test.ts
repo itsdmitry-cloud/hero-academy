@@ -13,24 +13,24 @@ describe('alphaSimulation — pure functions', () => {
     expect(xpToLevel(0)).toBe(1);
   });
 
-  test('xpToLevel: exactly 1500 XP → Level 2 (boundary)', () => {
-    // cumulativeXpForLevel(2) = 1 × (1000 + 500) = 1500
-    expect(xpToLevel(1499)).toBe(1);
-    expect(xpToLevel(1500)).toBe(2);
+  test('xpToLevel: exactly 750 XP → Level 2 (alpha v2 — кривая урезана вдвое)', () => {
+    // cumulativeXpForLevel(2) = 1 × (500 + 250) = 750
+    expect(xpToLevel(749)).toBe(1);
+    expect(xpToLevel(750)).toBe(2);
   });
 
-  test('xpToLevel: 3500 XP → Level 3 (1500 + 2000)', () => {
-    expect(xpToLevel(3499)).toBe(2);
-    expect(xpToLevel(3500)).toBe(3);
+  test('xpToLevel: 1750 XP → Level 3 (750 + 1000)', () => {
+    expect(xpToLevel(1749)).toBe(2);
+    expect(xpToLevel(1750)).toBe(3);
   });
 
-  test('xpToLevel: 6000 XP → Level 4 (1500 + 2000 + 2500)', () => {
-    expect(xpToLevel(5999)).toBe(3);
-    expect(xpToLevel(6000)).toBe(4);
+  test('xpToLevel: 3000 XP → Level 4 (750 + 1000 + 1250)', () => {
+    expect(xpToLevel(2999)).toBe(3);
+    expect(xpToLevel(3000)).toBe(4);
   });
 
-  test('xpToLevel: 9000 XP → Level 5', () => {
-    expect(xpToLevel(9000)).toBe(5);
+  test('xpToLevel: 4500 XP → Level 5', () => {
+    expect(xpToLevel(4500)).toBe(5);
   });
 
   test('xpToLevel: caps at reasonable upper bound (huge XP)', () => {
@@ -75,7 +75,7 @@ describe('alphaSimulation — pure functions', () => {
     const rng = seededRng(42);
     const result = simulateStudent(otlichnik, rng);
     expect(result.level).toBeGreaterThanOrEqual(3);
-    expect(result.totalXp).toBeGreaterThan(3500);
+    expect(result.totalXp).toBeGreaterThan(1750); // alpha v2 — Lv 3 порог снижен
     expect(result.gradesReceived).toBeGreaterThan(10);
   });
 

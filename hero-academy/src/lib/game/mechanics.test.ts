@@ -20,24 +20,24 @@ describe('cumulativeXpForLevel', () => {
     expect(cumulativeXpForLevel(1)).toBe(0);
   });
 
-  it('Level 2 требует 1500 XP', () => {
-    // formula: (2-1) * (1000 + 250*2) = 1 * 1500 = 1500
-    expect(cumulativeXpForLevel(2)).toBe(1500);
+  it('Level 2 требует 750 XP (alpha-test май 2026 — кривая урезана вдвое)', () => {
+    // formula: (2-1) * (500 + 125*2) = 1 * 750 = 750
+    expect(cumulativeXpForLevel(2)).toBe(750);
   });
 
-  it('Level 3 требует 3500 XP', () => {
-    // formula: (3-1) * (1000 + 250*3) = 2 * 1750 = 3500
-    expect(cumulativeXpForLevel(3)).toBe(3500);
+  it('Level 3 требует 1750 XP', () => {
+    // formula: (3-1) * (500 + 125*3) = 2 * 875 = 1750
+    expect(cumulativeXpForLevel(3)).toBe(1750);
   });
 
-  it('Level 5 требует 9000 XP', () => {
-    // formula: (5-1) * (1000 + 250*5) = 4 * 2250 = 9000
-    expect(cumulativeXpForLevel(5)).toBe(9000);
+  it('Level 5 требует 4500 XP', () => {
+    // formula: (5-1) * (500 + 125*5) = 4 * 1125 = 4500
+    expect(cumulativeXpForLevel(5)).toBe(4500);
   });
 
-  it('Level 10 требует 29000 XP', () => {
-    // formula: (10-1) * (1000 + 250*10) = 9 * 3500 = 31500
-    expect(cumulativeXpForLevel(10)).toBe(31500);
+  it('Level 10 требует 15750 XP', () => {
+    // formula: (10-1) * (500 + 125*10) = 9 * 1750 = 15750
+    expect(cumulativeXpForLevel(10)).toBe(15750);
   });
 
   it('Порог на каждый следующий уровень растёт (нет плоских участков)', () => {
@@ -51,12 +51,12 @@ describe('cumulativeXpForLevel', () => {
 // 2. XP PER LEVEL COST
 // ─────────────────────────────────────────────────────────────
 describe('xpPerLevel', () => {
-  it('Level 1→2 стоит 1500 XP', () => {
-    expect(xpPerLevel(1)).toBe(1500);
+  it('Level 1→2 стоит 750 XP', () => {
+    expect(xpPerLevel(1)).toBe(750);
   });
 
-  it('Level 2→3 стоит 2000 XP', () => {
-    expect(xpPerLevel(2)).toBe(2000);
+  it('Level 2→3 стоит 1000 XP', () => {
+    expect(xpPerLevel(2)).toBe(1000);
   });
 
   it('Стоимость уровней монотонно растёт', () => {
@@ -90,9 +90,9 @@ describe('xpProgress', () => {
 
   it('Герой с ровно половиной XP до следующего уровня → 50%', () => {
     const lvl = 3;
-    const floor = cumulativeXpForLevel(lvl);     // 3500
-    const ceil  = cumulativeXpForLevel(lvl + 1); // 6000
-    const halfwayXp = floor + (ceil - floor) / 2; // 4750
+    const floor = cumulativeXpForLevel(lvl);     // 1750
+    const ceil  = cumulativeXpForLevel(lvl + 1); // 3000
+    const halfwayXp = floor + (ceil - floor) / 2; // 2375
     const { percent } = xpProgress(halfwayXp, lvl);
     expect(percent).toBe(50);
   });
@@ -121,22 +121,22 @@ describe('applyXpGain', () => {
     expect(levelUps).toHaveLength(0);
   });
 
-  it('Ровно 1500 XP поднимает уровень с 1 до 2', () => {
-    const { level, levelUps } = applyXpGain(0, 1, null, 1500);
+  it('Ровно 750 XP поднимает уровень с 1 до 2', () => {
+    const { level, levelUps } = applyXpGain(0, 1, null, 750);
     expect(level).toBe(2);
     expect(levelUps).toEqual([2]);
   });
 
-  it('3500 XP с нуля → сразу уровень 3 (двойной level-up)', () => {
-    const { level, levelUps } = applyXpGain(0, 1, null, 3500);
+  it('1750 XP с нуля → сразу уровень 3 (двойной level-up)', () => {
+    const { level, levelUps } = applyXpGain(0, 1, null, 1750);
     expect(level).toBe(3);
     expect(levelUps).toEqual([2, 3]);
   });
 
   it('XP суммируется нарастающим итогом (не сбрасывается)', () => {
-    // Начинаем с 1400 XP (почти level 2), добавляем 200 → должны получить level 2
-    const { xp, level } = applyXpGain(1400, 1, null, 200);
-    expect(xp).toBe(1600);
+    // Начинаем с 700 XP (почти level 2 — порог 750), добавляем 100 → 800 → level 2
+    const { xp, level } = applyXpGain(700, 1, null, 100);
+    expect(xp).toBe(800);
     expect(level).toBe(2);
   });
 

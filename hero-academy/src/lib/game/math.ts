@@ -15,17 +15,20 @@
 export const MAX_HP = 100;
 
 // ─── Level / XP ──────────────────────────────────────────────
+// Alpha-test май 2026: кривая урезана вдвое, чтобы за 14 уроков
+// ученики достигали Lv 15-18 (визуальная цель — несколько эволюций
+// аватара, полное закрытие BP). После альфы откатить на 1000 + L×500.
 
-/** XP cost for ONE level (e.g. level 1→2 costs 1500) */
+/** XP cost for ONE level (e.g. level 1→2 costs 750) */
 export function xpPerLevel(level: number): number {
-  return 1000 + level * 500;
+  return 500 + level * 250;
 }
 
 /** Total cumulative XP needed to REACH a given level.
- *  cumulativeXpForLevel(1) = 0, cumulativeXpForLevel(2) = 1500, etc. */
+ *  cumulativeXpForLevel(1) = 0, cumulativeXpForLevel(2) = 750, etc. */
 export function cumulativeXpForLevel(level: number): number {
   if (level <= 1) return 0;
-  return (level - 1) * (1000 + 250 * level);
+  return (level - 1) * (500 + 125 * level);
 }
 
 /** Backward-compat alias: XP threshold to reach level+1 */
