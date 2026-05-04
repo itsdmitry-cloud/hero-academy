@@ -293,9 +293,13 @@ export async function POST(req: Request) {
 
         if (plan.kind !== 'skip') {
           if (plan.kind === 'bridge') {
-            await admin.from('heroes').update({
-              streak_last_date: plan.bridgeDate,
-            }).eq('id', hero_id);
+            // CAS: bridge только если streak_last_date не сдвинулся параллельным запросом
+            const cas = lastDate === null
+              ? admin.from('heroes').update({ streak_last_date: plan.bridgeDate })
+                  .eq('id', hero_id).is('streak_last_date', null).select('id')
+              : admin.from('heroes').update({ streak_last_date: plan.bridgeDate })
+                  .eq('id', hero_id).eq('streak_last_date', lastDate).select('id');
+            try { await cas; } catch { /* ignore CAS write failures */ }
           }
 
           const { data: streakData } = await admin.rpc('update_hero_streak', { p_hero_id: hero_id });

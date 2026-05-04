@@ -30,12 +30,13 @@ INSERT INTO achievements (name, description, icon, condition_type, condition_val
 ('Коллекционер', 'Собери 10 артефактов', '💎', 'artifacts_collected', 10, 300, 75),
 ('Богач', 'Накопи 1000 Gold', '💰', 'gold_total', 1000, 200, 0);
 
--- ===== STREAK REWARDS =====
+-- ===== STREAK REWARDS (Alpha-test 2026-05: 3/6/10/14, math-only calendar) =====
+-- После альфы откатить на стандарт 3/7/14/30.
 INSERT INTO streak_rewards (day_threshold, xp_bonus, gold_bonus, description) VALUES
-(3, 100, 20, '+100 XP, +20 Gold'),
-(7, 250, 50, '+250 XP, +50 Gold'),
-(14, 500, 100, '+500 XP, +100 Gold + артефакт'),
-(30, 1000, 250, '+1000 XP, +250 Gold + легендарный артефакт');
+(3,  150,  50,  '3 дня: «поймал ритм» — Common Lootbox'),
+(6,  300,  150, '6 дней: половина теста — Rare Lootbox'),
+(10, 600,  300, '10 дней: почти весь тест — Epic Lootbox'),
+(14, 1000, 500, '14 дней: идеальная серия — Legendary Lootbox');
 
 -- ===== SHOP ITEMS =====
 INSERT INTO shop_items (name, description, category, price_gold, icon, effect_value, is_available) VALUES

@@ -47,7 +47,14 @@ export async function POST() {
     });
   }
   if (plan.kind === 'bridge') {
-    await admin.from('heroes').update({ streak_last_date: plan.bridgeDate }).eq('id', hero.id);
+    // CAS: bridge только если streak_last_date не сдвинулся параллельным запросом
+    const expected = hero.streak_last_date as string | null;
+    const cas = expected === null
+      ? admin.from('heroes').update({ streak_last_date: plan.bridgeDate })
+          .eq('id', hero.id).is('streak_last_date', null).select('id')
+      : admin.from('heroes').update({ streak_last_date: plan.bridgeDate })
+          .eq('id', hero.id).eq('streak_last_date', expected).select('id');
+    try { await cas; } catch { /* ignore CAS write failures */ }
   }
 
   // Call the PostgreSQL streak update function

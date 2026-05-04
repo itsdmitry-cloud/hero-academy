@@ -232,17 +232,11 @@ async function processHero(
   const streakPlan = planStreakUpdate(getMoscowDate(), streakLastDate);
   const fireStreakRpc = finalXp > 0 && streakPlan.kind !== 'skip';
 
-  // Bridge write must happen before RPC to ensure consecutive days
-  if (fireStreakRpc && streakPlan.kind === 'bridge') {
-    await admin.from('heroes').update({ streak_last_date: streakPlan.bridgeDate }).eq('id', heroId);
-  }
-
-  // Fire streak + hero update + activity_log + quest_attempts in parallel
+  // 1. heroUpdate (xp/gold/hp/...) обязательно ДО RPC, иначе milestone-бонус
+  // от update_hero_streak может быть затёрт устаревшим snapshot'ом xp/gold.
+  // 2. Activity_log и quest_attempts пишутся параллельно с heroUpdate (разные таблицы).
   await Promise.all([
     admin.from('heroes').update(heroUpdate).eq('id', heroId),
-    fireStreakRpc
-      ? Promise.resolve(admin.rpc('update_hero_streak', { p_hero_id: heroId })).catch(() => {})
-      : Promise.resolve(),
     score > 0
       ? Promise.resolve(
           admin.from('activity_log').insert({
@@ -258,7 +252,6 @@ async function processHero(
           })
         ).catch(() => {})
       : Promise.resolve(),
-    // Fix #4: Write grade into quest_attempts for per-student history
     Promise.resolve(
       admin.from('quest_attempts').insert({
         quest_id: questId,
@@ -274,6 +267,21 @@ async function processHero(
       })
     ).catch(() => {}),
   ]);
+
+  // Bridge + RPC последовательно после heroUpdate.
+  // CAS на streak_last_date: если параллельный запрос уже обновил дату,
+  // мост не выполняется и RPC видит актуальное состояние (избегаем double-count).
+  if (fireStreakRpc) {
+    if (streakPlan.kind === 'bridge') {
+      const cas = streakLastDate === null
+        ? admin.from('heroes').update({ streak_last_date: streakPlan.bridgeDate })
+            .eq('id', heroId).is('streak_last_date', null).select('id')
+        : admin.from('heroes').update({ streak_last_date: streakPlan.bridgeDate })
+            .eq('id', heroId).eq('streak_last_date', streakLastDate).select('id');
+      try { await cas; } catch { /* ignore CAS write failures */ }
+    }
+    try { await admin.rpc('update_hero_streak', { p_hero_id: heroId }); } catch { /* non-critical */ }
+  }
 
   // Roll for artifact drop (only on positive scores 4-5, i.e. score >= 4)
   let droppedArtifact: { id: string; name: string; icon: string; rarity: string } | null = null;
