@@ -143,6 +143,10 @@ export default function HeroPage() {
   // Active season name
   const [seasonName, setSeasonName] = useState<string | null>(null);
 
+  // School + class names (under hero name)
+  const [schoolName, setSchoolName] = useState<string | null>(null);
+  const [className, setClassName] = useState<string | null>(null);
+
   // Live News State
   const [studentNews, setStudentNews] = useState<NewsItem[]>([]);
   const [showNews, setShowNews] = useState(false);
@@ -156,6 +160,21 @@ export default function HeroPage() {
       .then(({ data }) => { if (!cancelled && data) setSeasonName(data.name); });
     return () => { cancelled = true; };
   }, [profile?.school_id]);
+
+  useEffect(() => {
+    if (!profile?.school_id && !profile?.class_id) return;
+    let cancelled = false;
+    const supabase = createClient();
+    if (profile.school_id) {
+      supabase.from('schools').select('name').eq('id', profile.school_id).maybeSingle()
+        .then(({ data }) => { if (!cancelled && data) setSchoolName(data.name); });
+    }
+    if (profile.class_id) {
+      supabase.from('classes').select('name').eq('id', profile.class_id).maybeSingle()
+        .then(({ data }) => { if (!cancelled && data) setClassName(data.name); });
+    }
+    return () => { cancelled = true; };
+  }, [profile?.school_id, profile?.class_id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -285,9 +304,14 @@ export default function HeroPage() {
         <div className={styles.statsSide}>
           <div className={styles.heroHeader}>
             <h1 className={`${styles.heroName} text-display`}>{hero.name}</h1>
-            <div className={styles.heroClass}>
-              <span>🏰</span> Класс 5-А · Гильдия «Драконы»
-            </div>
+            {(schoolName || className) && (
+              <div className={styles.heroClass}>
+                <span>🏰</span>
+                {schoolName && <span>Школа «{schoolName}»</span>}
+                {schoolName && className && <span>·</span>}
+                {className && <span>Класс {className}</span>}
+              </div>
+            )}
           </div>
           <div className={styles.statCards}>
             <StatCard icon="⚡" label="XP" value={formatStat(hero.xp)} color="xp" />
