@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { getMoscowDate, planStreakUpdate } from '@/lib/game/streak-calendar';
 
 const admin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,7 +25,7 @@ export async function POST() {
   // Get hero for the current user
   const { data: hero, error: heroErr } = await supabase
     .from('heroes')
-    .select('id, streak_current')
+    .select('id, streak_current, streak_last_date')
     .eq('user_id', session.user.id)
     .single();
 
@@ -33,6 +34,21 @@ export async function POST() {
   }
 
   const oldStreak = hero.streak_current ?? 0;
+
+  // Альфа-календарь: пропускаем нешкольные дни и мостим праздники/выходные
+  const today = getMoscowDate();
+  const plan = planStreakUpdate(today, hero.streak_last_date as string | null);
+  if (plan.kind === 'skip') {
+    return NextResponse.json({
+      streak_current: oldStreak,
+      updated: false,
+      skipped: true,
+      reason: plan.reason,
+    });
+  }
+  if (plan.kind === 'bridge') {
+    await admin.from('heroes').update({ streak_last_date: plan.bridgeDate }).eq('id', hero.id);
+  }
 
   // Call the PostgreSQL streak update function
   const { data, error } = await supabase.rpc('update_hero_streak', {

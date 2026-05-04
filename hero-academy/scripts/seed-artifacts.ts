@@ -28,11 +28,13 @@ const ACHIEVEMENTS = [
   { name: 'Коллекционер',     description: 'Получи 5 артефактов',         icon: '💎', condition_type: 'artifacts_owned',  condition_value: 5,   xp_reward: 150, gold_reward: 50  },
 ];
 
+// Альфа-тест 4–25 мая 2026: пороги 3/6/10/14 (математика только Пн/Ср/Чт/Пт).
+// После альфы откатим к стандартам 3/7/14/30.
 const STREAK_REWARDS = [
-  { day_threshold: 3,  xp_bonus: 30,  gold_bonus: 20,  description: '3-дневный стрик: небольшой бонус' },
-  { day_threshold: 7,  xp_bonus: 100, gold_bonus: 50,  description: '7-дневный стрик: недельный рекорд!' },
-  { day_threshold: 14, xp_bonus: 250, gold_bonus: 100, description: '14 дней: две недели без остановки!' },
-  { day_threshold: 30, xp_bonus: 700, gold_bonus: 300, description: '30 дней: Легенда месяца!' },
+  { day_threshold: 3,  xp_bonus: 150,  gold_bonus: 50,  description: '3 дня: «поймал ритм» — Common Lootbox' },
+  { day_threshold: 6,  xp_bonus: 300,  gold_bonus: 150, description: '6 дней: половина теста — Rare Lootbox' },
+  { day_threshold: 10, xp_bonus: 600,  gold_bonus: 300, description: '10 дней: почти весь тест — Epic Lootbox' },
+  { day_threshold: 14, xp_bonus: 1000, gold_bonus: 500, description: '14 дней: идеальная серия — Legendary Lootbox' },
 ];
 
 async function main() {

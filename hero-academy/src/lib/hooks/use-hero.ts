@@ -103,8 +103,13 @@ export function useHero() {
         await supabase.from('heroes').update(heroUpd).eq('id', heroId);
       }
 
-      // 🎁 Loot box: tier by day_threshold
-      const boxRarity = dayThreshold >= 30 ? 'epic' : dayThreshold >= 14 ? 'rare' : 'common';
+      // 🎁 Loot box tier by day_threshold (alpha thresholds: 3/6/10/14).
+      // Stays compatible with legacy 3/7/14/30 thresholds via the same monotone scale.
+      const boxRarity =
+        dayThreshold >= 14 ? 'legendary'
+        : dayThreshold >= 10 ? 'epic'
+        : dayThreshold >= 6 ? 'rare'
+        : 'common';
       const { data: box } = await supabase
         .from('artifacts')
         .select('id')

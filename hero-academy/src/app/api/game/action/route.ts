@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { rollArtifactDrop, DIFFICULTY_MAP, applyXpGain, getEconomyConfig, distributeBossKillRewards } from '@/lib/game/constants';
 import { decrementCharge, getArtifactModifiers } from '@/lib/game/artifact-engine';
+import { getMoscowDate, planStreakUpdate } from '@/lib/game/streak-calendar';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -279,27 +280,22 @@ export async function POST(req: Request) {
         metadata: { reason, subject, pipeline, base: base_amount, eco_mult: eco.xp_multiplier, art_boost: arts.xp_boost },
       }).then(() => {});
 
-      // ── STREAK UPDATE (Weekend-Aware) ──────────────────────────────────────
-      // Streak only advances on weekdays (Mon–Fri). Weekends are skipped.
-      // Friday→Monday gap is bridged so weekend doesn't break the streak.
+      // ── STREAK UPDATE (Alpha math calendar: Пн/Ср/Чт/Пт + holidays) ─────
+      // Стрик считается только в школьные дни (математика). Вт/Сб/Вс/праздники
+      // не двигают стрик и не сбрасывают его. Перед RPC при необходимости
+      // мостим streak_last_date на «вчера», чтобы Postgres увидел consecutive.
       try {
-        const todayDay = new Date().getDay(); // 0=Sun, 6=Sat
-        const isWeekend = todayDay === 0 || todayDay === 6;
+        const today = getMoscowDate();
+        const { data: streakHero } = await admin.from('heroes')
+          .select('streak_last_date').eq('id', hero_id).single();
+        const lastDate = (streakHero?.streak_last_date as string | null) ?? null;
+        const plan = planStreakUpdate(today, lastDate);
 
-        if (!isWeekend) {
-          // Bridge Friday→Monday gap: make Postgres see it as consecutive
-          if (todayDay === 1) { // Monday
-            const { data: streakHero } = await admin.from('heroes')
-              .select('streak_last_date').eq('id', hero_id).single();
-            const lastDate = streakHero?.streak_last_date
-              ? new Date(streakHero.streak_last_date as string) : null;
-            if (lastDate && lastDate.getDay() === 5) { // last was Friday
-              const yesterday = new Date();
-              yesterday.setDate(yesterday.getDate() - 1);
-              await admin.from('heroes').update({
-                streak_last_date: yesterday.toISOString().split('T')[0],
-              }).eq('id', hero_id);
-            }
+        if (plan.kind !== 'skip') {
+          if (plan.kind === 'bridge') {
+            await admin.from('heroes').update({
+              streak_last_date: plan.bridgeDate,
+            }).eq('id', hero_id);
           }
 
           const { data: streakData } = await admin.rpc('update_hero_streak', { p_hero_id: hero_id });

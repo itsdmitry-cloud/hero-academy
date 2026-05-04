@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { rollArtifactDrop, DIFFICULTY_MAP, getEconomyConfig, ACTIVITY_ACTIONS, applyXpGain, distributeBossKillRewards } from '@/lib/game/constants';
 import { getHeroMods, decrementCharge } from '@/lib/game/artifact-engine';
+import { getMoscowDate, planStreakUpdate } from '@/lib/game/streak-calendar';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,7 +45,7 @@ async function processHero(
 
   // Load hero + artifact mods in parallel
   const [heroRow, mods] = await Promise.all([
-    admin.from('heroes').select('xp, level, xp_to_next, hp, hp_max, gold, status, season_xp').eq('id', heroId).single(),
+    admin.from('heroes').select('xp, level, xp_to_next, hp, hp_max, gold, status, season_xp, streak_last_date').eq('id', heroId).single(),
     getHeroMods(heroId),
   ]);
 
@@ -225,10 +226,21 @@ async function processHero(
     season_xp: (heroWithSeason.season_xp ?? 0) + finalXp,
   };
 
+  // ── STREAK plan (Alpha math calendar): skip / bridge / normal ──────────
+  // Стрик считается только в школьные дни (Пн/Ср/Чт/Пт), праздники не сбрасывают.
+  const streakLastDate = (hero as typeof hero & { streak_last_date?: string | null }).streak_last_date ?? null;
+  const streakPlan = planStreakUpdate(getMoscowDate(), streakLastDate);
+  const fireStreakRpc = finalXp > 0 && streakPlan.kind !== 'skip';
+
+  // Bridge write must happen before RPC to ensure consecutive days
+  if (fireStreakRpc && streakPlan.kind === 'bridge') {
+    await admin.from('heroes').update({ streak_last_date: streakPlan.bridgeDate }).eq('id', heroId);
+  }
+
   // Fire streak + hero update + activity_log + quest_attempts in parallel
   await Promise.all([
     admin.from('heroes').update(heroUpdate).eq('id', heroId),
-    finalXp > 0
+    fireStreakRpc
       ? Promise.resolve(admin.rpc('update_hero_streak', { p_hero_id: heroId })).catch(() => {})
       : Promise.resolve(),
     score > 0
