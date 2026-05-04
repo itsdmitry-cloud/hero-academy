@@ -22,11 +22,23 @@ interface StreakProgressBarProps {
   bestStreak?: number;
 }
 
+function getHintText(currentStreak: number, nextMilestone: StreakMilestone | undefined, daysToNext: number): string {
+  if (currentStreak === 0) {
+    return '💡 Получи XP от учителя на уроке математики — и стрик начнётся!';
+  }
+  if (!nextMilestone) {
+    return '🌟 Максимальный стрик! Ты держал стрик весь альфа-тест!';
+  }
+  const dayLabel = daysToNext === 1 ? 'уч. день' : 'уч. дня';
+  return `💡 Получай XP на каждом уроке. До награды: ${daysToNext} ${dayLabel}`;
+}
+
 export function StreakProgressBar({ currentStreak, bestStreak }: StreakProgressBarProps) {
   const maxDay = MILESTONES[MILESTONES.length - 1].day;
   const progressPct = Math.min((currentStreak / maxDay) * 100, 100);
   const nextMilestone = MILESTONES.find(m => m.day > currentStreak);
   const daysToNext = nextMilestone ? nextMilestone.day - currentStreak : 0;
+  const hintText = getHintText(currentStreak, nextMilestone, daysToNext);
 
   return (
     <div className={styles.streakSection}>
@@ -55,12 +67,7 @@ export function StreakProgressBar({ currentStreak, bestStreak }: StreakProgressB
         borderRadius: '8px',
         border: '1px solid rgba(251,146,60,0.15)',
       }}>
-        {currentStreak === 0
-          ? '💡 Получи XP от учителя на уроке математики — и стрик начнётся!'
-          : nextMilestone
-          ? `💡 Получай XP на каждом уроке. До награды: ${daysToNext} ${daysToNext === 1 ? 'уч. день' : 'уч. дня'}`
-          : '🌟 Максимальный стрик! Ты держал стрик весь альфа-тест!'
-        }
+        {hintText}
         <span style={{ display: 'block', opacity: 0.7, marginTop: '2px' }}>Считаются только дни математики (Пн/Ср/Чт/Пт). Вторник, выходные и праздники стрик не сбрасывают.</span>
       </div>
 
