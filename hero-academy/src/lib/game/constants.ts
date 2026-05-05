@@ -253,7 +253,7 @@ export async function rollArtifactDrop(
     artifact_id: pick.id,
     source: 'drop',
     quantity: 1,
-    charges_remaining: maxCharges > 0 ? maxCharges : 1,
+    charges_remaining: maxCharges,
     expires_at: durationHours > 0
       ? new Date(Date.now() + durationHours * 3_600_000).toISOString()
       : null,

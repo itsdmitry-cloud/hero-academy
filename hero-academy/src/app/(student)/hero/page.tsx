@@ -412,7 +412,7 @@ export default function HeroPage() {
               {artifact.kind === 'equipped' && artifact.name && (
                 <span className={styles.artifactName}>{artifact.name}</span>
               )}
-              {artifact.kind === 'equipped' && artifact.charges > 0 && !String(artifact.artifact.effect ?? artifact.artifact.effect_type ?? '').includes('passive') && (
+              {artifact.kind === 'equipped' && artifact.charges > 0 && (artifact.artifact.max_charges ?? 0) > 0 && (
                 <div className={styles.chargesBadge}>{artifact.charges}</div>
               )}
             </div>
@@ -445,7 +445,7 @@ export default function HeroPage() {
                 <span style={{ color: new Date(selectedShelfObj.expiresAt) < new Date() ? 'var(--accent-hp)' : 'var(--accent-gold)' }}>
                   ⏳ {shelfTimeLeft(selectedShelfObj.expiresAt)}
                 </span>
-              ) : ((selectedShelfObj.charges ?? 0) > 0) && !String(selectedShelfObj.artifact.effect ?? selectedShelfObj.artifact.effect_type ?? '').includes('passive') ? (
+              ) : ((selectedShelfObj.charges ?? 0) > 0) && (selectedShelfObj.artifact.max_charges ?? 0) > 0 ? (
                 <span>⚡ {selectedShelfObj.charges} зар{'.'}</span>
               ) : null}
               {!selectedShelfObj.artifact.effect && !selectedShelfObj.charges && !selectedShelfObj.expiresAt && <span>Ур. {selectedShelfObj.artifact.min_level || 1}</span>}
