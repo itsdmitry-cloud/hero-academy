@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
 import styles from './DebugPanel.module.css';
+
+const HIDDEN_SCHOOL_NAMES = new Set(['Циркуль']);
 
 export default function DebugPanel() {
   // Важно: ВСЕ хуки должны вызываться до любого early return, иначе React
@@ -13,7 +15,8 @@ export default function DebugPanel() {
   const [heroId, setHeroId] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const [schoolCache, setSchoolCache] = useState<{ id: string; name: string | null } | null>(null);
+  const { user, profile } = useAuth();
 
   // Input values
   const [xpVal, setXpVal] = useState('500');
@@ -22,8 +25,33 @@ export default function DebugPanel() {
   const [streakVal, setStreakVal] = useState('7');
   const [lootRarity, setLootRarity] = useState(0); // 0=common,1=rare,2=epic,3=legendary
 
-  // Load heroId on first open
   const supabase = createClient();
+
+  // Скрываем панель ученикам школы из HIDDEN_SCHOOL_NAMES (альфа-тест: Циркуль).
+  // Кэш привязан к school_id, чтобы при смене школы старое значение игнорировалось.
+  useEffect(() => {
+    const sid = profile?.school_id;
+    if (!sid) return;
+    let cancelled = false;
+    supabase
+      .from('schools')
+      .select('name')
+      .eq('id', sid)
+      .maybeSingle()
+      .then(({ data }: { data: { name: string } | null }) => {
+        if (cancelled) return;
+        setSchoolCache({ id: sid, name: data?.name ?? null });
+      });
+    return () => { cancelled = true; };
+  }, [profile?.school_id, supabase]);
+
+  const hiddenForSchool =
+    !!profile?.school_id &&
+    schoolCache?.id === profile.school_id &&
+    !!schoolCache.name &&
+    HIDDEN_SCHOOL_NAMES.has(schoolCache.name);
+
+  // Load heroId on first open
   const loadHero = useCallback(async () => {
     if (heroId || !user) return;
     const { data } = await supabase.from('heroes').select('id').eq('user_id', user.id).single();
@@ -71,6 +99,7 @@ export default function DebugPanel() {
   // Hide debug panel for anonymous/demo users. Early return должен быть ПОСЛЕ
   // всех хуков (см. комментарий в начале функции).
   if (user?.is_anonymous === true) return null;
+  if (hiddenForSchool) return null;
 
   return (
     <>
