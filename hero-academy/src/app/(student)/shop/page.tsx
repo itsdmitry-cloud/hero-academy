@@ -65,11 +65,14 @@ const CATEGORY_ICON: Record<string, string> = {
 /* ── convert Supabase items to view model ── */
 function toView(item: ShopItem): ShopItemView {
   const effectNum = typeof item.effect_value === 'number' ? `+${item.effect_value}` : '';
+  // Prefer artifact icon over shop_items.icon — keeps shop visual identical
+  // to inventory after purchase, even if the two columns drift out of sync.
+  const icon = item.artifact?.icon || item.icon || (CATEGORY_ICON[item.category] ?? '🛒');
   return {
     id: item.id,
     name: item.name,
     description: item.description || '',
-    icon: item.icon || (CATEGORY_ICON[item.category] ?? '🛒'),
+    icon,
     category: item.category,
     price: item.price_gold,
     effect: effectNum || item.description || item.category,

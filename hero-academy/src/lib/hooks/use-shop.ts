@@ -17,7 +17,12 @@ export interface ShopItem {
   is_available: boolean;
   req_level: number;
   stock_limit: number | null;
+  // Joined from artifacts: keeps shop icon in sync with inventory icon
+  // (after-purchase view reads artifacts.icon, so the shop must show the same).
+  artifact?: { icon: string | null } | null;
 }
+
+const SHOP_SELECT = '*, artifact:artifact_id(icon)';
 
 /* ──────────── hook ──────────── */
 export function useShop() {
@@ -29,7 +34,7 @@ export function useShop() {
   const fetchItems = useCallback(async () => {
     const { data } = await supabase
       .from('shop_items')
-      .select('*')
+      .select(SHOP_SELECT)
       .eq('is_available', true)
       .order('price_gold');
 
