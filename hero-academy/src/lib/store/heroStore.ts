@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { 
-  ARTIFACT_CATALOG, 
-  calculateQuestResult, 
-  HeroState as EngineHeroState, 
-  PlayerArtifact, 
-  QuestResult 
+import {
+  ARTIFACT_CATALOG,
+  calculateQuestResult,
+  HeroState as EngineHeroState,
+  PlayerArtifact,
+  QuestResult
 } from '../utils/artifacts';
+import { cumulativeXpForLevel } from '../game/math';
 import { useToastStore } from './toastStore';
 
 export interface ExtendedHeroState extends EngineHeroState {
@@ -55,7 +56,7 @@ const initialHero: ExtendedHeroState = {
   gender: 'male',
   level: 1,
   xp: 0,
-  xp_to_next: 1500, // cumulativeXpForLevel(2) = 1500
+  xp_to_next: cumulativeXpForLevel(2), // overwritten on Supabase hero load
   hp: 100,
   hp_max: 100,
   gold: 0,
@@ -202,7 +203,7 @@ export const useHeroStore = create<HeroStore>()(
           // Cumulative XP: just add, never subtract
           while (newXp >= newXpNext) {
             newLevel++;
-            newXpNext = (newLevel) * (1000 + 250 * (newLevel + 1)); // cumulativeXpForLevel(newLevel+1)
+            newXpNext = cumulativeXpForLevel(newLevel + 1);
             result.messages.push(`🎉 Достигнут уровень ${newLevel}!`);
           }
 

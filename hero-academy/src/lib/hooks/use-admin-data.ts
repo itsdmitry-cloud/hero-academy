@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { cumulativeXpForLevel } from '@/lib/game/math';
 
 const supabase = createClient();
 
@@ -415,11 +416,10 @@ export function useAdminData() {
     // Cumulative XP: just add, check thresholds (never subtract)
     const newXp = hero.xp + amount;
     let newLevel = hero.level;
-    // cumulativeXpForLevel(L+1) = L * (1000 + 250*(L+1))
-    while (newXp >= (newLevel) * (1000 + 250 * (newLevel + 1))) {
+    while (newXp >= cumulativeXpForLevel(newLevel + 1)) {
       newLevel++;
     }
-    const newXpNext = (newLevel) * (1000 + 250 * (newLevel + 1));
+    const newXpNext = cumulativeXpForLevel(newLevel + 1);
 
     const heroWithSeason = hero as typeof hero & { season_xp?: number | null };
     const update: Record<string, unknown> = { xp: newXp, season_xp: (heroWithSeason.season_xp ?? 0) + amount };
