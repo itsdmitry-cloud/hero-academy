@@ -11,6 +11,7 @@ import { useSupabaseSync } from '@/lib/hooks/use-supabase-sync';
 import { useRealtimeHero } from '@/lib/hooks/use-realtime-hero';
 import { useStreak } from '@/lib/hooks/use-streak';
 import { useArtifacts, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
+import { useClassRank } from '@/lib/hooks/use-class-rank';
 import { BattlePassWidget } from '@/components/game/BattlePassWidget';
 import { AchievementsPanel } from '@/components/game/AchievementsPanel';
 import { ClassAuraBanner } from '@/components/game/ClassAuraBanner';
@@ -124,6 +125,7 @@ export default function HeroPage() {
   const { hero, activity, synced } = useHeroStore();
   const { equipArtifact, inventory: dbInventory, refetch: refetchArtifacts } = useArtifacts();
   const { profile } = useAuth();
+  const { rank: classRank, total: classTotal } = useClassRank('class');
   useSupabaseSync();
   useRealtimeHero();
   const { result: streakResult, showMilestone } = useStreak();
@@ -357,7 +359,9 @@ export default function HeroPage() {
             </div>
             <div className={styles.infoTile}>
               <span className={styles.tileLabel}>Ранг в классе</span>
-              <span className={styles.tileValue}>#3</span>
+              <span className={styles.tileValue}>
+                {classRank ? `#${classRank}${classTotal > 0 ? ` / ${classTotal}` : ''}` : '—'}
+              </span>
             </div>
             <div className={styles.infoTile}>
               <span className={styles.tileLabel}>Уровень</span>

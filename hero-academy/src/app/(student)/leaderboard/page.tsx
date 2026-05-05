@@ -53,11 +53,14 @@ function toView(e: LeaderboardEntry): LeaderboardView {
 export default function LeaderboardPage() {
   useAuth();
   const [scope, setScope] = useState<LeaderboardScope>('class');
-  const { entries: classEntries } = useLeaderboard('class');
-  const { entries: schoolEntries } = useLeaderboard('school');
+  const classData   = useLeaderboard('class');
+  const schoolData  = useLeaderboard('school');
 
-  const activeEntries = scope === 'school' ? schoolEntries : classEntries;
-  const displayData: LeaderboardView[] = activeEntries.map(toView);
+  const active = scope === 'school' ? schoolData : classData;
+  const displayData: LeaderboardView[] = active.entries.map(toView);
+  const inTopList = displayData.some((e) => e.isMe);
+  const showSelfFooter =
+    scope !== 'guilds' && !inTopList && active.selfRank !== null;
 
   return (
     <div className={styles.page}>
@@ -107,7 +110,7 @@ export default function LeaderboardPage() {
           <div className={styles.list}>
             {displayData.map((entry) => (
               <div
-                key={entry.rank}
+                key={`${entry.rank}-${entry.name}`}
                 className={`${styles.row} ${entry.isMe ? styles.rowMe : ''}`}
               >
                 <span className={styles.rankNum}>
@@ -132,6 +135,28 @@ export default function LeaderboardPage() {
                 </div>
               </div>
             ))}
+
+            {showSelfFooter && (
+              <>
+                <div style={{ textAlign: 'center', opacity: 0.5, fontSize: '0.8rem', padding: '0.6rem 0' }}>
+                  …
+                </div>
+                <div className={`${styles.row} ${styles.rowMe}`}>
+                  <span className={styles.rankNum}>{`#${active.selfRank}`}</span>
+                  <div className={styles.rowAvatar} />
+                  <div className={styles.rowInfo}>
+                    <span className={styles.rowName}>
+                      Ты
+                      <span className={styles.youBadge}>ты</span>
+                    </span>
+                    <span className={styles.rowLevel}>
+                      из {active.selfTotal}
+                    </span>
+                  </div>
+                  <div className={styles.rowStats} />
+                </div>
+              </>
+            )}
           </div>
         </>
       ) : (

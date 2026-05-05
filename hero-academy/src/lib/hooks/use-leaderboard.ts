@@ -18,49 +18,73 @@ export interface LeaderboardEntry {
   is_self: boolean;
 }
 
+interface RpcLeaderboardRow {
+  rank: number;
+  hero_id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  level: number;
+  xp: number;
+  gold: number;
+  streak_current: number | null;
+  is_self: boolean;
+}
+
+interface RpcRankRow {
+  rank: number;
+  total: number;
+}
+
 /* ──────────── hook ──────────── */
 export function useLeaderboard(scope: 'class' | 'school' = 'class') {
   const supabase = createClient();
   const { profile, user } = useAuth();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [selfRank, setSelfRank] = useState<number | null>(null);
+  const [selfTotal, setSelfTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const fetchLeaderboard = useCallback(async () => {
-    if (!profile) { setLoading(false); return; }
+    if (!profile || !user) { setLoading(false); return; }
 
-    // Get heroes with user info, filtered by class or school
-    let query = supabase
-      .from('heroes')
-      .select('id, user_id, name, level, xp, gold, streak_current, users!inner(display_name, avatar_url, class_id, school_id)')
-      .order('xp', { ascending: false })
-      .limit(50);
+    const [{ data: list }, { data: meRow }] = await Promise.all([
+      supabase.rpc('get_rating_leaderboard', {
+        p_user_id: user.id,
+        p_scope: scope,
+        p_limit: 50,
+      }),
+      supabase.rpc('get_user_rating_rank', {
+        p_user_id: user.id,
+        p_scope: scope,
+      }),
+    ]);
 
-    if (scope === 'class' && profile.class_id) {
-      query = query.eq('users.class_id', profile.class_id);
-    } else if (scope === 'school' && profile.school_id) {
-      query = query.eq('users.school_id', profile.school_id);
+    if (list) {
+      const rows = list as RpcLeaderboardRow[];
+      setEntries(
+        rows.map((h) => ({
+          rank: h.rank,
+          hero_id: h.hero_id,
+          user_id: h.user_id,
+          display_name: h.display_name ?? '',
+          avatar_url: h.avatar_url,
+          level: h.level,
+          xp: h.xp,
+          gold: h.gold,
+          streak: h.streak_current ?? 0,
+          is_self: h.is_self,
+        })),
+      );
     }
 
-    const { data } = await query;
-
-    if (data) {
-      setEntries(
-        data.map((h: Record<string, unknown>, i: number) => {
-          const u = h.users as Record<string, unknown> | null;
-          return {
-            rank: i + 1,
-            hero_id: h.id as string,
-            user_id: h.user_id as string,
-            display_name: (u?.display_name as string) ?? (h.name as string),
-            avatar_url: (u?.avatar_url as string | null) ?? null,
-            level: h.level as number,
-            xp: h.xp as number,
-            gold: h.gold as number,
-            streak: (h.streak_current as number) ?? 0,
-            is_self: h.user_id === user?.id,
-          };
-        })
-      );
+    if (meRow && Array.isArray(meRow) && meRow.length > 0) {
+      const me = meRow[0] as RpcRankRow;
+      setSelfRank(me.rank > 0 ? me.rank : null);
+      setSelfTotal(me.total ?? 0);
+    } else {
+      setSelfRank(null);
+      setSelfTotal(0);
     }
 
     setLoading(false);
@@ -75,5 +99,5 @@ export function useLeaderboard(scope: 'class' | 'school' = 'class') {
     return () => { cancelled = true; };
   }, [fetchLeaderboard]);
 
-  return { entries, loading, refetch: fetchLeaderboard };
+  return { entries, selfRank, selfTotal, loading, refetch: fetchLeaderboard };
 }
