@@ -128,13 +128,13 @@ export function useArtifacts() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Slot limits by hero level ── */
+  /* ── Slot limits by hero level (alpha-test май 2026 — каждые 3 уровня, cap 6) ── */
   const getMaxSlots = (heroLevel: number): number => {
-    if (heroLevel >= 50) return 6;
-    if (heroLevel >= 40) return 5;
-    if (heroLevel >= 30) return 4;
-    if (heroLevel >= 20) return 3;
-    if (heroLevel >= 10) return 2;
+    if (heroLevel >= 15) return 6;
+    if (heroLevel >= 12) return 5;
+    if (heroLevel >= 9)  return 4;
+    if (heroLevel >= 6)  return 3;
+    if (heroLevel >= 3)  return 2;
     return 1;
   };
 

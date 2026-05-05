@@ -98,7 +98,9 @@ export const useHeroStore = create<HeroStore>()(
 
           if (item.is_equipped) return state; // Already equipped
 
-          const maxSlots = state.hero.level >= 50 ? 6 : state.hero.level >= 40 ? 5 : state.hero.level >= 30 ? 4 : state.hero.level >= 20 ? 3 : state.hero.level >= 10 ? 2 : 1;
+          // alpha-test май 2026 — каждые 3 уровня, cap 6 (синхрон с use-artifacts.ts:getMaxSlots)
+          const lvl = state.hero.level;
+          const maxSlots = lvl >= 15 ? 6 : lvl >= 12 ? 5 : lvl >= 9 ? 4 : lvl >= 6 ? 3 : lvl >= 3 ? 2 : 1;
           const newActive = [...state.hero.activeArtifacts];
 
           if (newActive.length >= maxSlots) {
