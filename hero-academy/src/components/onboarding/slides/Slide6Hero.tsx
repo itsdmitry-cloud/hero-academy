@@ -96,7 +96,7 @@ export default function Slide6Hero() {
       <div className={styles.equipBlock}>
         <p className={styles.equipText}>
           6 слотов экипировки — надевай артефакты на героя для постоянных
-          бонусов. Новые слоты открываются на уровнях 10, 20, 30, 40, 50.
+          бонусов. Новые слоты открываются на уровнях 3, 6, 9, 12, 15.
         </p>
       </div>
     </div>

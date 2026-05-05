@@ -137,6 +137,7 @@ export default function HeroPage() {
   // Pin "now" at mount — React Compiler flags raw Date.now() during render as impure.
   const [nowMs] = useState(() => Date.now());
   const [selectedShelfItem, setSelectedShelfItem] = useState<string | null>(null);
+  const [lockedSlotInfo, setLockedSlotInfo] = useState<number | null>(null);
   const [expandedActivity, setExpandedActivity] = useState<Set<string>>(new Set());
   const [activityFilter, setActivityFilter] = useState<'all' | 'quest' | 'boss'>('all');
 
@@ -151,6 +152,12 @@ export default function HeroPage() {
   const [studentNews, setStudentNews] = useState<NewsItem[]>([]);
   const [showNews, setShowNews] = useState(false);
   const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (lockedSlotInfo === null) return;
+    const t = setTimeout(() => setLockedSlotInfo(null), 2800);
+    return () => clearTimeout(t);
+  }, [lockedSlotInfo]);
 
   useEffect(() => {
     if (!profile?.school_id) return;
@@ -228,11 +235,12 @@ export default function HeroPage() {
     );
   }
 
-  const activeSlotsCount = hero.level >= 50 ? 6 : hero.level >= 40 ? 5 : hero.level >= 30 ? 4 : hero.level >= 20 ? 3 : hero.level >= 10 ? 2 : 1;
+  // alpha-test май 2026 — слоты открываются каждые 3 уровня (синхрон с use-artifacts.ts:getMaxSlots)
+  const activeSlotsCount = hero.level >= 15 ? 6 : hero.level >= 12 ? 5 : hero.level >= 9 ? 4 : hero.level >= 6 ? 3 : hero.level >= 3 ? 2 : 1;
   const totalSlots = 6;
   const equippedItems = dbInventory.filter(i => i.is_equipped);
-  
-  const slotUnlockLevels = [1, 10, 20, 30, 40, 50];
+
+  const slotUnlockLevels = [1, 3, 6, 9, 12, 15];
   const shelfSlots: ShelfSlot[] = Array.from({ length: totalSlots }).map((_, i): ShelfSlot => {
     if (i >= activeSlotsCount) {
       return { kind: 'locked', id: `locked_${i}`, name: 'locked', rarity: null, icon: '🔒', equipped: false, defId: null, unlockLevel: slotUnlockLevels[i] };
@@ -278,6 +286,26 @@ export default function HeroPage() {
           <div style={{ fontWeight: 900, fontSize: '1.1rem' }}>{streakResult.bonus.milestone}-дневный стрик!</div>
           <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
             +{streakResult.bonus.xp} XP · +{streakResult.bonus.gold} 💰
+          </div>
+        </div>
+      )}
+
+      {lockedSlotInfo !== null && (
+        <div
+          onClick={() => setLockedSlotInfo(null)}
+          style={{
+            position: 'fixed', top: '1rem', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 9999, background: 'linear-gradient(135deg, #1f2937, #374151)',
+            border: '1px solid rgba(251,191,36,0.4)',
+            borderRadius: 'var(--radius-xl)', padding: '0.75rem 1.25rem',
+            boxShadow: '0 0 24px rgba(251,191,36,0.25)',
+            textAlign: 'center', color: '#fbbf24', minWidth: '260px',
+            fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          <div style={{ fontSize: '1.4rem', marginBottom: '0.15rem' }}>🔒</div>
+          <div style={{ fontSize: '0.95rem' }}>
+            Слот откроется на <strong>{lockedSlotInfo}</strong> уровне героя
           </div>
         </div>
       )}
@@ -364,7 +392,10 @@ export default function HeroPage() {
             <div
               key={artifact.id}
               className={`${styles.artifactSlot} ${artifact.equipped && artifact.rarity ? styles[`rarity_${artifact.rarity}`] : ''} ${artifact.name === 'locked' ? styles.lockedSlot : ''} ${!artifact.name ? styles.emptySlot : ''}`}
-              onClick={() => artifact.equipped && setSelectedShelfItem(artifact.id)}
+              onClick={() => {
+                if (artifact.equipped) setSelectedShelfItem(artifact.id);
+                else if (artifact.kind === 'locked') setLockedSlotInfo(artifact.unlockLevel);
+              }}
             >
               {artifact.icon ? (
                 <span className={styles.artifactIcon}>
