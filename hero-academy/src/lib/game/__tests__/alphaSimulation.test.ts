@@ -13,24 +13,28 @@ describe('alphaSimulation — pure functions', () => {
     expect(xpToLevel(0)).toBe(1);
   });
 
-  test('xpToLevel: exactly 750 XP → Level 2 (alpha v2 — кривая урезана вдвое)', () => {
-    // cumulativeXpForLevel(2) = 1 × (500 + 250) = 750
-    expect(xpToLevel(749)).toBe(1);
-    expect(xpToLevel(750)).toBe(2);
+  test('xpToLevel: 250 XP → Level 2 (alpha 2026-05 — кривая ×0.4 от старой)', () => {
+    // cumulativeXpForLevel(2) = 1 × (150 + 100) = 250
+    expect(xpToLevel(249)).toBe(1);
+    expect(xpToLevel(250)).toBe(2);
   });
 
-  test('xpToLevel: 1750 XP → Level 3 (750 + 1000)', () => {
-    expect(xpToLevel(1749)).toBe(2);
-    expect(xpToLevel(1750)).toBe(3);
+  test('xpToLevel: 600 XP → Level 3', () => {
+    expect(xpToLevel(599)).toBe(2);
+    expect(xpToLevel(600)).toBe(3);
   });
 
-  test('xpToLevel: 3000 XP → Level 4 (750 + 1000 + 1250)', () => {
-    expect(xpToLevel(2999)).toBe(3);
-    expect(xpToLevel(3000)).toBe(4);
+  test('xpToLevel: 2250 XP → Level 6 (3-й слот артефактов)', () => {
+    expect(xpToLevel(2249)).toBe(5);
+    expect(xpToLevel(2250)).toBe(6);
   });
 
-  test('xpToLevel: 4500 XP → Level 5', () => {
-    expect(xpToLevel(4500)).toBe(5);
+  test('xpToLevel: 5850 XP → Level 10 (4-й слот артефактов)', () => {
+    expect(xpToLevel(5850)).toBe(10);
+  });
+
+  test('xpToLevel: 12600 XP → Level 15 (5-й слот артефактов)', () => {
+    expect(xpToLevel(12600)).toBe(15);
   });
 
   test('xpToLevel: caps at reasonable upper bound (huge XP)', () => {
@@ -69,13 +73,16 @@ describe('alphaSimulation — pure functions', () => {
     }
   });
 
-  test('simulateStudent: Отличник reaches at least Level 3 with top XP', () => {
+  test('simulateStudent: Отличник reaches Lv 9+ (3 доп. слота артефактов из чистого grade-XP)', () => {
+    // Alpha 2026-05: Sim моделирует только grade-XP path. Spec-цель «Отличник Lv 15+» учитывает
+    // ещё и убийство босса (pool 25 000 XP / n=3 ≈ 8 000+ XP), которое sim не симулирует.
+    // С чистого grade-пайплайна Отличник стабильно выходит на Lv 11±1 (~7 500 XP), что покрывает
+    // 3 дополнительных слота (Lv 3/6/9). 4-й и 5-й слоты ученики получат уже в проде через boss-kill.
     const otlichnik = ARCHETYPES.find(a => a.name === 'Отличник')!;
-    // Seeded rng for reproducibility — shared LCG from alphaSimulation
     const rng = seededRng(42);
     const result = simulateStudent(otlichnik, rng);
-    expect(result.level).toBeGreaterThanOrEqual(3);
-    expect(result.totalXp).toBeGreaterThan(1750); // alpha v2 — Lv 3 порог снижен
+    expect(result.level).toBeGreaterThanOrEqual(9);
+    expect(result.totalXp).toBeGreaterThan(4800); // Lv 9 порог
     expect(result.gradesReceived).toBeGreaterThan(10);
   });
 

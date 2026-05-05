@@ -8,7 +8,7 @@
  * Conventions:
  *   — MAX HP = 100 fixed (see CLAUDE.md «MAX HP = 100»)
  *   — Boss Damage = Final XP (see CLAUDE.md «Boss Damage = Final XP»)
- *   — xpPerLevel(L) = 1000 + L × 500 (см. src/lib/game/math.ts)
+ *   — xpPerLevel(L) = 150 + L × 100  (alpha 2026-05; см. src/lib/game/math.ts)
  *   — Economy multipliers expressed as absolute fractions (3.0 = 300%).
  *
  * Archetypes (CLAUDE.md):
@@ -117,7 +117,7 @@ export const ARCHETYPES: Archetype[] = [
 // ── Level calculation ──────────────────────────────────────────
 /**
  * Convert total XP to level using the canonical curve.
- * xpPerLevel(L) = 1000 + L × 500  =>  cumulativeXpForLevel(L) = (L-1) × (1000 + 250 × L)
+ * xpPerLevel(L) = 150 + L × 100  =>  cumulativeXpForLevel(L) = (L-1) × (150 + 50 × L)
  */
 export function xpToLevel(totalXp: number): number {
   if (totalXp <= 0) return 1;

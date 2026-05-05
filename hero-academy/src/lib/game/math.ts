@@ -15,20 +15,23 @@
 export const MAX_HP = 100;
 
 // ─── Level / XP ──────────────────────────────────────────────
-// Alpha-test май 2026: кривая урезана вдвое, чтобы за 14 уроков
-// ученики достигали Lv 15-18 (визуальная цель — несколько эволюций
-// аватара, полное закрытие BP). После альфы откатить на 1000 + L×500.
+// Alpha-test май 2026 (вторая итерация — spec 2026-05-05):
+// кривая ×0.4 от старой, чтобы за 14 уроков Лентяй открывал 3-й слот
+// артефактов (Lv 6 = 2 250 XP), Середняк — 4-й (Lv 10 = 5 850 XP),
+// Отличник — 5-й (Lv 15 = 12 600 XP).
+// После альфы (≥ 2026-05-26) откатить на: 500 + L*250 (предыдущая
+// калибровка) или 1000 + L*500 (исходная, до альфы).
 
-/** XP cost for ONE level (e.g. level 1→2 costs 750) */
+/** XP cost for ONE level (e.g. level 1→2 costs 250) */
 export function xpPerLevel(level: number): number {
-  return 500 + level * 250;
+  return 150 + level * 100;
 }
 
 /** Total cumulative XP needed to REACH a given level.
- *  cumulativeXpForLevel(1) = 0, cumulativeXpForLevel(2) = 750, etc. */
+ *  cumulativeXpForLevel(1) = 0, cumulativeXpForLevel(2) = 250, etc. */
 export function cumulativeXpForLevel(level: number): number {
   if (level <= 1) return 0;
-  return (level - 1) * (500 + 125 * level);
+  return (level - 1) * (150 + 50 * level);
 }
 
 /** Backward-compat alias: XP threshold to reach level+1 */
