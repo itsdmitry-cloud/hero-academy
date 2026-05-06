@@ -29,6 +29,13 @@ const RARITY_NAMES: Record<string, string> = {
   legendary: '🟡 Легендарный',
 };
 
+type SortMode = 'date' | 'rarity';
+type SortDir  = 'asc'  | 'desc';
+
+const RARITY_ORDER: Record<string, number> = {
+  common: 0, rare: 1, epic: 2, legendary: 3,
+};
+
 function ArtifactIcon({ icon, name, size = '100%' }: { icon: string; name: string; size?: string }) {
   if (icon && icon.includes('/')) {
     return (
@@ -90,6 +97,8 @@ export default function InventoryPage() {
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [lootboxModal, setLootboxModal] = useState<{ id: string; tier: LootBoxTier; boxRarity: string } | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>('date');
+  const [sortDir, setSortDir]   = useState<SortDir>('desc');
 
   const lootboxItems = inventory.filter(i => i.artifact && isLootbox(i.artifact));
 
@@ -106,6 +115,17 @@ export default function InventoryPage() {
 
   const showLootboxes = activeTab === 'all' || activeTab === 'lootbox';
   const filteredItems = inventory.filter(filterItem);
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    if (sortMode === 'date') {
+      const da = new Date(a.acquired_at).getTime();
+      const db = new Date(b.acquired_at).getTime();
+      return sortDir === 'desc' ? db - da : da - db;
+    }
+    const ra = RARITY_ORDER[a.artifact?.rarity ?? 'common'] ?? 0;
+    const rb = RARITY_ORDER[b.artifact?.rarity ?? 'common'] ?? 0;
+    return sortDir === 'desc' ? rb - ra : ra - rb;
+  });
 
   return (
     <div className={styles.page}>
@@ -179,9 +199,9 @@ export default function InventoryPage() {
           <div className={styles.emptyIcon}>⏳</div>
           <div className={styles.emptyText}>Загружаем инвентарь...</div>
         </div>
-      ) : activeTab !== 'lootbox' && filteredItems.length > 0 ? (
+      ) : activeTab !== 'lootbox' && sortedItems.length > 0 ? (
         <div className={styles.grid}>
-          {filteredItems.map(item => {
+          {sortedItems.map(item => {
             const art = item.artifact;
             if (!art) return null;
             return (
@@ -203,7 +223,7 @@ export default function InventoryPage() {
             );
           })}
         </div>
-      ) : activeTab !== 'lootbox' && !loading && filteredItems.length === 0 ? (
+      ) : activeTab !== 'lootbox' && !loading && sortedItems.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📭</div>
           <div className={styles.emptyText}>Пусто! Выполняй квесты и открывай сундуки.</div>
