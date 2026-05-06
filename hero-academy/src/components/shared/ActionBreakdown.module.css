@@ -1,0 +1,125 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0.7rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.columns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.column {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.columnTitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rowLabel {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.rowValue {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.rowDim {
+  opacity: 0.6;
+}
+
+.divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin: 4px 0;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+.totalLabel,
+.totalValue {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pipelineList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 4px;
+}
+
+.pipelineLine {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.pipelineLineFinal {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  border-left: 2px solid var(--accent-xp);
+  padding-left: 4px;
+}
+
+.miniCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.miniLine {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.rawJson {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.rawJson summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.rawJson pre {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
