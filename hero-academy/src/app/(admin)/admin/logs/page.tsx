@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { ActionBreakdown } from '@/components/shared/ActionBreakdown';
 import styles from './page.module.css';
 
 interface LogEntry {
@@ -53,7 +54,7 @@ export default function LogsPage() {
   const [classFilter, setClassFilter] = useState('all');
   const [studentFilter, setStudentFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(50);
 
   // Undo
   const [undoLoading, setUndoLoading] = useState<string | null>(null);
@@ -260,55 +261,56 @@ export default function LogsPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>⏳ Загрузка...</div>
       ) : (
-        <div className={styles.logsTable}>
-          <div className={styles.logHeader}>
-            <span>Время</span>
-            <span>Ученик</span>
-            <span>Действие</span>
-            <span>XP</span>
-            <span>HP</span>
-            <span>Gold</span>
-            <span>Детали</span>
-            <span>↩️</span>
-          </div>
+        <div className={styles.cardList}>
           {logs.length === 0 && (
-            <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5, gridColumn: '1/-1' }}>Нет записей</div>
+            <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Нет записей</div>
           )}
           {logs.map(log => {
             const info = ACTION_LABELS[log.action] ?? { icon: '❓', label: log.action, color: '#64748b' };
-            const reason = (log.metadata as Record<string, unknown>)?.reason as string | undefined;
-            const pipeline = (log.metadata as Record<string, unknown>)?.pipeline as string[] | undefined;
             return (
-              <div key={log.id} className={styles.logRow}>
-                <span className={styles.logTime}>{formatDate(log.created_at)}</span>
-                <span className={styles.logStudent}>{log.student_name}</span>
-                <span className={styles.logAction} style={{ color: info.color }}>
-                  {info.icon} {info.label}
-                </span>
-                <span className={styles.logChange} style={{ color: log.xp_change && log.xp_change > 0 ? '#eab308' : log.xp_change && log.xp_change < 0 ? '#ef4444' : 'inherit' }}>
-                  {log.xp_change ? (log.xp_change > 0 ? `+${log.xp_change}` : log.xp_change) : '—'}
-                </span>
-                <span className={styles.logChange} style={{ color: log.hp_change && log.hp_change > 0 ? '#22c55e' : log.hp_change && log.hp_change < 0 ? '#ef4444' : 'inherit' }}>
-                  {log.hp_change ? (log.hp_change > 0 ? `+${log.hp_change}` : log.hp_change) : '—'}
-                </span>
-                <span className={styles.logChange} style={{ color: log.gold_change && log.gold_change > 0 ? '#f59e0b' : 'inherit' }}>
-                  {log.gold_change ? (log.gold_change > 0 ? `+${log.gold_change}` : log.gold_change) : '—'}
-                </span>
-                <span className={styles.logDetail} title={pipeline?.join(' → ') ?? reason ?? ''}>
-                  {reason ?? (pipeline ? pipeline[pipeline.length - 1] : '—')}
-                </span>
-                <span>
-                  {log.action !== 'admin_undo' && (log.xp_change || log.hp_change || log.gold_change) && (
+              <div key={log.id} className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.cardTime}>{formatDate(log.created_at)}</span>
+                  <span className={styles.cardStudent}>{log.student_name}</span>
+                  <span className={styles.cardAction} style={{ color: info.color }}>
+                    {info.icon} {info.label}
+                  </span>
+                  <div className={styles.cardDeltas}>
+                    {log.xp_change !== null && log.xp_change !== 0 && (
+                      <span className={log.xp_change > 0 ? styles.deltaXp : styles.deltaXpNeg}>
+                        {log.xp_change > 0 ? `+${log.xp_change}` : log.xp_change} XP
+                      </span>
+                    )}
+                    {log.hp_change !== null && log.hp_change !== 0 && (
+                      <span className={log.hp_change > 0 ? styles.deltaHpPos : styles.deltaHpNeg}>
+                        {log.hp_change > 0 ? `+${log.hp_change}` : log.hp_change} HP
+                      </span>
+                    )}
+                    {log.gold_change !== null && log.gold_change !== 0 && (
+                      <span className={styles.deltaGold}>
+                        {log.gold_change > 0 ? `+${log.gold_change}` : log.gold_change} 💰
+                      </span>
+                    )}
+                  </div>
+                  {log.action !== 'admin_undo' && (log.xp_change || log.hp_change || log.gold_change) ? (
                     <button
                       className={styles.undoBtn}
                       onClick={() => handleUndo(log)}
                       disabled={undoLoading === log.id}
                       title="Отменить действие"
                     >
-                      {undoLoading === log.id ? '⏳' : '↩️'}
+                      {undoLoading === log.id ? '⏳' : '↩️ Отменить'}
                     </button>
-                  )}
-                </span>
+                  ) : null}
+                </div>
+                <ActionBreakdown
+                  action={log.action}
+                  metadata={log.metadata}
+                  xpChange={log.xp_change}
+                  hpChange={log.hp_change}
+                  goldChange={log.gold_change}
+                  showRawJson
+                />
               </div>
             );
           })}
