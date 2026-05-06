@@ -16,6 +16,10 @@ const RARITY_EMOJI: Record<string, string> = {
   common: '⚪', rare: '🔵', epic: '🟣', legendary: '🟡',
 };
 
+const RARITY_LABEL: Record<string, string> = {
+  common: 'Обычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный',
+};
+
 function Row({ label, value, dim }: { label: string; value: string | number; dim?: boolean }) {
   return (
     <div className={`${styles.row} ${dim ? styles.rowDim : ''}`}>
@@ -167,7 +171,7 @@ function renderActionSpecific(
   if (action === 'artifact_drop') {
     const rar = String(meta.rarity ?? 'common');
     const src = meta.source === 'boss_kill' ? 'убийства босса' : 'задания';
-    return [`🎁 ${meta.artifact ?? 'Артефакт'} (${RARITY_EMOJI[rar] ?? '⚪'} ${rar})`, `Источник: ${src}`];
+    return [`🎁 ${meta.artifact ?? 'Артефакт'} (${RARITY_EMOJI[rar] ?? '⚪'} ${RARITY_LABEL[rar] ?? rar})`, `Источник: ${src}`];
   }
   if (action === 'lootbox_opened' || action === 'seasonal_lootbox_opened') {
     const lines = [`📦 ${meta.box_name ?? 'Лутбокс'}`];
@@ -223,7 +227,7 @@ function renderActionSpecific(
     return [`💚 +${hpChange ?? 0} HP (пассивная регенерация)`];
   }
   if (action === 'bp_reward_claimed') {
-    return [`🎫 Battle Pass tier ${String(meta.tier ?? '?')}`, `Награда: ${String(meta.reward ?? '?')}`];
+    return [`🎫 Боевой пропуск — ур. ${String(meta.tier ?? '?')}`, `Награда: ${String(meta.reward ?? '?')}`];
   }
   if (action === 'admin_undo') {
     return [`↩️ Отменено действие: ${String(meta.original_action ?? '?')}`];

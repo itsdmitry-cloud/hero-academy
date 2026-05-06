@@ -48,13 +48,14 @@ export function useSupabaseSync() {
         const meta = typeof log.metadata === 'object' ? log.metadata : {} as Record<string, unknown>;
 
         // Skip these entirely – no value for student to see
-        if (['lootbox_opened', 'shop_purchase', 'teacher_gold_grant', 'bp_reward_claimed'].includes(log.action)) return null;
+        if (['lootbox_opened', 'seasonal_lootbox_opened', 'shop_purchase', 'teacher_gold_grant', 'bp_reward_claimed'].includes(log.action)) return null;
 
         let category: 'quest' | 'boss' | 'event' = 'event';
 
         const rarityEmoji: Record<string, string> = { common: '⚪', rare: '🔵', epic: '🟣', legendary: '🟡' };
-        let questName = log.action;
-        let resultMsg  = log.action;
+        const rarityLabel: Record<string, string> = { common: 'Обычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
+        let questName = '⚙️ Событие';
+        let resultMsg  = '⚙️ Событие';
         const msgs: string[] = [];
 
         // ── QUEST / DUNGEON / BOSS XP grant ──────────────────────────────────
@@ -118,7 +119,7 @@ export function useSupabaseSync() {
         } else if (log.action === 'artifact_drop') {
           const rar = String(meta.rarity ?? 'common');
           questName = `🎁 ${meta.artifact ?? 'Артефакт'}`;
-          resultMsg  = `${rarityEmoji[rar] ?? '⚪'} ${rar.charAt(0).toUpperCase() + rar.slice(1)}`;
+          resultMsg  = `${rarityEmoji[rar] ?? '⚪'} ${rarityLabel[rar] ?? rar}`;
           const srcLabel = meta.source === 'boss_kill' ? 'убийства босса' : 'задания';
           msgs.push(`Выпал из ${srcLabel}`);
 

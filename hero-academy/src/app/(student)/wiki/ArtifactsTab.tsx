@@ -45,12 +45,12 @@ const EFFECT_DESCRIPTIONS: Record<string, string> = {
   'GOLD_BOOST_100':     '+100% к золоту',
   'GOLD_MULTIPLIER_3X': 'Умножает добытое золото в ×3',
   // Combos
-  'XP_GOLD_5':       '+5% XP и +5% Gold',
-  'XP_GOLD_15':      '+15% XP и +15% Gold',
-  'XP_GOLD_50':      '+50% XP и +50% Gold',
-  'XP_GOLD_MASSIVE': '+100% XP и +50% Gold',
+  'XP_GOLD_5':       '+5% XP и +5% к золоту',
+  'XP_GOLD_15':      '+15% XP и +15% к золоту',
+  'XP_GOLD_50':      '+50% XP и +50% к золоту',
+  'XP_GOLD_MASSIVE': '+100% XP и +50% к золоту',
   // Flat XP/Gold
-  'FLAT_GOLD_5': '+5 фиксированного Gold за квест',
+  'FLAT_GOLD_5': '+5 золота за квест',
   'FLAT_XP_100': 'Мгновенно даёт +100 XP',
   // Damage reduction
   'DMG_REDUCE_10':     'Снижает урон от ошибки на 10%',
