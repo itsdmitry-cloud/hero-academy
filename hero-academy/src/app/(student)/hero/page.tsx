@@ -7,6 +7,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StreakProgressBar } from '@/components/ui/StreakProgressBar';
 import { useHeroStore } from '@/lib/store/heroStore';
 import { xpProgress } from '@/lib/game/math';
+import { useSupabaseSync } from '@/lib/hooks/use-supabase-sync';
 import { useRealtimeHero } from '@/lib/hooks/use-realtime-hero';
 import { useStreak } from '@/lib/hooks/use-streak';
 import { useArtifacts, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
@@ -132,6 +133,7 @@ export default function HeroPage() {
   const { equipArtifact, inventory: dbInventory, refetch: refetchArtifacts } = useArtifacts();
   const { profile } = useAuth();
   const { rank: classRank, total: classTotal } = useClassRank('class');
+  useSupabaseSync();
   useRealtimeHero();
   const { result: streakResult, showMilestone } = useStreak();
 

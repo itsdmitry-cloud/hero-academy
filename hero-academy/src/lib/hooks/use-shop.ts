@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useCachedFetch, invalidateCached } from './use-cached-fetch';
 
 /* ──────────── types ──────────── */
 export interface ShopItem {
@@ -24,24 +23,39 @@ export interface ShopItem {
 }
 
 const SHOP_SELECT = '*, artifact:artifact_id(icon)';
-const SHOP_CACHE_KEY = 'shop:items';
 
 /* ──────────── hook ──────────── */
 export function useShop() {
   const supabase = createClient();
   const { user } = useAuth();
+  const [items, setItems] = useState<ShopItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetcher = useCallback(async () => {
+  const fetchItems = useCallback(async () => {
     const { data } = await supabase
       .from('shop_items')
       .select(SHOP_SELECT)
       .eq('is_available', true)
       .order('price_gold');
-    return (data as ShopItem[] | null) ?? [];
+
+    if (data) setItems(data as ShopItem[]);
+    setLoading(false);
   }, [supabase]);
 
-  const { data, loading, refetch } = useCachedFetch<ShopItem[]>(SHOP_CACHE_KEY, fetcher);
-  const items = useMemo(() => data ?? [], [data]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('shop_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('price_gold');
+      if (cancelled) return;
+      if (data) setItems(data as ShopItem[]);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [supabase]);
 
   /* ── buy item ── */
   const buyItem = useCallback(async (itemId: string) => {
@@ -143,9 +157,8 @@ export function useShop() {
       gold_change: -item.price_gold,
     });
 
-    invalidateCached(SHOP_CACHE_KEY);
     return { error: null };
   }, [user, items, supabase]);
 
-  return { items, loading, buyItem, refetch };
+  return { items, loading, buyItem, refetch: fetchItems };
 }

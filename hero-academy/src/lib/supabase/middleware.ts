@@ -23,10 +23,8 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getSession() читает cookie без round-trip к Supabase Auth — это критично для UX
-  // переходов между вкладками. Безопасность не страдает: RLS на стороне БД всё равно
-  // валидирует JWT на каждом запросе, а просроченный токен ловится в onAuthStateChange.
-  const { data: { session } } = await supabase.auth.getSession();
+  // Refresh session if expired — getUser() validates with the server
+  const { data: { user } } = await supabase.auth.getUser();
 
-  return { response: supabaseResponse, user: session?.user ?? null };
+  return { response: supabaseResponse, user };
 }
