@@ -310,6 +310,7 @@ export default function LogsPage() {
                   hpChange={log.hp_change}
                   goldChange={log.gold_change}
                   showRawJson
+                  borderColor={info.color}
                 />
               </div>
             );

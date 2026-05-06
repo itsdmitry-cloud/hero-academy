@@ -9,6 +9,7 @@ export interface ActionBreakdownProps {
   hpChange: number | null;
   goldChange: number | null;
   showRawJson?: boolean;
+  borderColor?: string;
 }
 
 const RARITY_EMOJI: Record<string, string> = {
@@ -231,7 +232,7 @@ function renderActionSpecific(
 }
 
 export function ActionBreakdown({
-  action, metadata, xpChange, hpChange, goldChange, showRawJson = false,
+  action, metadata, xpChange, hpChange, goldChange, showRawJson = false, borderColor,
 }: ActionBreakdownProps) {
   const meta = metadata ?? {};
 
@@ -253,7 +254,10 @@ export function ActionBreakdown({
   }
 
   return (
-    <div className={styles.container}>
+    <div
+      className={styles.container}
+      style={borderColor ? { borderTopColor: borderColor } : undefined}
+    >
       {body}
       {showRawJson && (
         <details className={styles.rawJson}>

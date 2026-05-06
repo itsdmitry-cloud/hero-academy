@@ -517,7 +517,7 @@ export default function HeroPage() {
           )}
           {filteredActivity.map((item) => {
             const isOpen = expandedActivity.has(item.id);
-            const hasPipeline = item.messages && item.messages.length > 0;
+            const hasPipeline = Boolean(item.action) || (item.messages && item.messages.length > 0);
             const isBoss = item.result?.includes('⚔️') || item.quest?.includes('🐉');
             const isDamage = item.result?.includes('⚠️');
             const isArtifact = item.quest?.includes('🎁');
@@ -531,43 +531,15 @@ export default function HeroPage() {
                   <span style={{ fontSize: '0.8rem', color: 'var(--accent-xp)', fontWeight: 700, minWidth: '40px', textAlign: 'right' }}>{item.xp !== '-' ? item.xp : ''}</span>
                   {hasPipeline && <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', paddingLeft: '4px' }}>{isOpen ? '▲' : '▼'}</span>}
                 </div>
-                {isOpen && hasPipeline && (
-                  item.action ? (
-                    <ActionBreakdown
-                      action={item.action}
-                      metadata={item.metadata ?? null}
-                      xpChange={item.xpChangeRaw ?? null}
-                      hpChange={item.hpChangeRaw ?? null}
-                      goldChange={item.goldChangeRaw ?? null}
-                    />
-                  ) : (
-                    /* Legacy fallback: messages list for entries without raw fields */
-                    (() => {
-                      const statEmojis = ['⭐', '💰', '⚔️', '👑', '🗡️', '🆙', '🔥', '🏅', '✨', '⚗️', '🎁'];
-                      const statLines = item.messages!.filter(m => statEmojis.some(e => m.startsWith(e)));
-                      const pipeLines = item.messages!.filter(m => !statEmojis.some(e => m.startsWith(e)));
-                      return (
-                        <div style={{ borderTop: `1px solid ${accentColor}44`, padding: '0.6rem 0.75rem 0.7rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {statLines.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                              {statLines.map((m, i) => <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: `${accentColor}18`, border: `1px solid ${accentColor}44`, borderRadius: '10px', padding: '3px 10px', fontSize: '0.78rem', fontWeight: 700, color: accentColor }}>{m}</span>)}
-                            </div>
-                          )}
-                          {pipeLines.length > 0 && (
-                            <>
-                              {statLines.length > 0 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />}
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                {pipeLines.map((m, i) => {
-                                  const isTotal = i === pipeLines.length - 1;
-                                  return <span key={i} style={{ fontSize: isTotal ? '0.78rem' : '0.72rem', color: isTotal ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: isTotal ? 700 : 400, lineHeight: 1.6, paddingLeft: '4px', borderLeft: isTotal ? `2px solid ${accentColor}` : '2px solid transparent' }}>{m}</span>;
-                                })}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })()
-                  )
+                {isOpen && hasPipeline && item.action && (
+                  <ActionBreakdown
+                    action={item.action}
+                    metadata={item.metadata ?? null}
+                    xpChange={item.xpChangeRaw ?? null}
+                    hpChange={item.hpChangeRaw ?? null}
+                    goldChange={item.goldChangeRaw ?? null}
+                    borderColor={accentColor}
+                  />
                 )}
               </div>
             );
