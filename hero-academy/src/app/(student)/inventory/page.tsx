@@ -195,10 +195,11 @@ export default function InventoryPage() {
 
       {/* Sort toggle — only for non-lootbox tabs */}
       {activeTab !== 'lootbox' && (
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <div className={styles.tabs} style={{ marginBottom: '0.75rem' }}>
           <button
             className={`${styles.tab} ${sortMode === 'date' ? styles.tabActive : ''}`}
             style={{ fontSize: '0.72rem', padding: '0.3rem 0.7rem', minWidth: 0 }}
+            aria-pressed={sortMode === 'date'}
             onClick={() => {
               if (sortMode === 'date') setSortDir(d => d === 'desc' ? 'asc' : 'desc');
               else { setSortMode('date'); setSortDir('desc'); }
@@ -209,6 +210,7 @@ export default function InventoryPage() {
           <button
             className={`${styles.tab} ${sortMode === 'rarity' ? styles.tabActive : ''}`}
             style={{ fontSize: '0.72rem', padding: '0.3rem 0.7rem', minWidth: 0 }}
+            aria-pressed={sortMode === 'rarity'}
             onClick={() => {
               if (sortMode === 'rarity') setSortDir(d => d === 'desc' ? 'asc' : 'desc');
               else { setSortMode('rarity'); setSortDir('desc'); }
