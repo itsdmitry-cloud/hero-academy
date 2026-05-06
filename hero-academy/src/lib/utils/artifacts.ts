@@ -17,9 +17,10 @@ export interface ArtifactDef {
   rarity: Rarity;
   type: 'passive' | 'consumable';
   req_level: number;
-  max_charges?: number; 
-  duration_hours?: number; 
-  effect_code: string; 
+  max_charges?: number;
+  duration_hours?: number;
+  effect_code: string;
+  season_tag?: string;
 }
 
 export interface PlayerArtifact {
@@ -68,6 +69,7 @@ function registryToArtifactDef(e: ArtifactEntry): ArtifactDef {
     max_charges: e.max_charges || undefined,
     duration_hours: e.duration_hours || undefined,
     effect_code: e.effect_code,
+    season_tag: e.season_tag || undefined,
   };
 }
 

@@ -92,10 +92,12 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
   const [isExiting, setIsExiting] = useState(false);
 
   const buildStrip = useCallback((): ArtifactDef[] => {
+    const seasonTag = boxRarity.startsWith('seasonal_') ? boxRarity.replace('seasonal_', '') : null;
     const allItems = Object.values(ARTIFACT_CATALOG).filter(a =>
       a.rarity !== 'royal' &&
       !a.id.startsWith('lootbox') &&
-      !!ARTIFACT_IMAGES[a.id as keyof typeof ARTIFACT_IMAGES]
+      !!ARTIFACT_IMAGES[a.id as keyof typeof ARTIFACT_IMAGES] &&
+      (seasonTag ? a.season_tag === seasonTag : !a.season_tag)
     );
     const strip: ArtifactDef[] = [];
     for (let i = 0; i < 30; i++) {
@@ -105,7 +107,7 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
       strip.push(src[Math.floor(Math.random() * src.length)]);
     }
     return strip;
-  }, [config.rarityPool]);
+  }, [config.rarityPool, boxRarity]);
 
   const handleOpen = () => {
     setIsExiting(true);
