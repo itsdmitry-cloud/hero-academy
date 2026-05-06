@@ -4,6 +4,7 @@ import { ToastContainer } from '@/components/ui/ToastContainer';
 import DebugPanel from '@/components/debug/DebugPanel';
 import OnboardingGuard from '@/components/onboarding/OnboardingGuard';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { HeroSyncProvider } from '@/components/auth/HeroSyncProvider';
 import styles from './layout.module.css';
 
 export default function StudentLayout({
@@ -15,14 +16,16 @@ export default function StudentLayout({
     <AuthProvider>
       <AuthGuard>
         <OnboardingGuard>
-          <div className={styles.layout}>
-            <ToastContainer />
-            <DebugPanel />
-            <main className={styles.content}>
-              {children}
-            </main>
-            <BottomTabBar />
-          </div>
+          <HeroSyncProvider>
+            <div className={styles.layout}>
+              <ToastContainer />
+              <DebugPanel />
+              <main className={styles.content}>
+                {children}
+              </main>
+              <BottomTabBar />
+            </div>
+          </HeroSyncProvider>
         </OnboardingGuard>
       </AuthGuard>
     </AuthProvider>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { useCachedFetch } from './use-cached-fetch';
 
 /* ──────────── types ──────────── */
 export interface QuestData {
@@ -30,13 +31,11 @@ export interface QuestData {
 export function useQuests() {
   const supabase = createClient();
   const { profile } = useAuth();
-  const [quests, setQuests] = useState<QuestData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = profile?.class_id ? `quests:${profile.class_id}:${profile.id}` : null;
 
-  const fetchQuests = useCallback(async () => {
-    if (!profile?.class_id) { setLoading(false); return; }
+  const fetcher = useCallback(async () => {
+    if (!profile?.class_id) return [];
 
-    // Fetch quests for this class
     const { data: questsData } = await supabase
       .from('quests')
       .select('*')
@@ -44,22 +43,16 @@ export function useQuests() {
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
-    if (!questsData) { setLoading(false); return; }
+    if (!questsData) return [];
 
-    // Fetch hero id
     const { data: hero } = await supabase
       .from('heroes')
       .select('id')
       .eq('user_id', profile.id)
       .single();
 
-    if (!hero) {
-      setQuests(questsData as QuestData[]);
-      setLoading(false);
-      return;
-    }
+    if (!hero) return questsData as QuestData[];
 
-    // Fetch attempts for these quests
     const questIds = questsData.map((q: { id: string }) => q.id);
     const { data: attempts } = await supabase
       .from('quest_attempts')
@@ -71,30 +64,19 @@ export function useQuests() {
       (attempts || []).map((a: { quest_id: string; status: string; current_stage: number; grade: number; teacher_comment: string }) => [a.quest_id, a])
     );
 
-    setQuests(
-      questsData.map((q: { id: string }) => {
-        const attempt = attemptMap.get(q.id) as { status?: string; current_stage?: number; grade?: number; teacher_comment?: string } | undefined;
-        return {
-          ...q,
-          attempt_status: attempt?.status,
-          attempt_progress: attempt?.current_stage,
-          attempt_grade: attempt?.grade,
-          attempt_comment: attempt?.teacher_comment,
-        };
-      }) as QuestData[]
-    );
+    return questsData.map((q: { id: string }) => {
+      const attempt = attemptMap.get(q.id) as { status?: string; current_stage?: number; grade?: number; teacher_comment?: string } | undefined;
+      return {
+        ...q,
+        attempt_status: attempt?.status,
+        attempt_progress: attempt?.current_stage,
+        attempt_grade: attempt?.grade,
+        attempt_comment: attempt?.teacher_comment,
+      };
+    }) as QuestData[];
+  }, [supabase, profile]);
 
-    setLoading(false);
-  }, [profile, supabase]);
+  const { data, loading, refetch } = useCachedFetch<QuestData[]>(cacheKey, fetcher);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (cancelled) return;
-      await fetchQuests();
-    })();
-    return () => { cancelled = true; };
-  }, [fetchQuests]);
-
-  return { quests, loading, refetch: fetchQuests };
+  return { quests: data ?? [], loading, refetch };
 }

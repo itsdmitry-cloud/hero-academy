@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { useCachedFetch } from './use-cached-fetch';
 
 /* ──────────── types ──────────── */
 export interface LeaderboardEntry {
@@ -36,34 +37,33 @@ interface RpcRankRow {
   total: number;
 }
 
+interface LeaderboardCached {
+  entries: LeaderboardEntry[];
+  selfRank: number | null;
+  selfTotal: number;
+}
+
 /* ──────────── hook ──────────── */
 export function useLeaderboard(scope: 'class' | 'school' = 'class') {
   const supabase = createClient();
   const { profile, user } = useAuth();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [selfRank, setSelfRank] = useState<number | null>(null);
-  const [selfTotal, setSelfTotal] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = profile && user ? `leaderboard:${scope}:${user.id}` : null;
 
-  const fetchLeaderboard = useCallback(async () => {
-    if (!profile || !user) { setLoading(false); return; }
-
+  const fetcher = useCallback(async () => {
     const [{ data: list }, { data: meRow }] = await Promise.all([
       supabase.rpc('get_rating_leaderboard', {
-        p_user_id: user.id,
+        p_user_id: user!.id,
         p_scope: scope,
         p_limit: 50,
       }),
       supabase.rpc('get_user_rating_rank', {
-        p_user_id: user.id,
+        p_user_id: user!.id,
         p_scope: scope,
       }),
     ]);
 
-    if (list) {
-      const rows = list as RpcLeaderboardRow[];
-      setEntries(
-        rows.map((h) => ({
+    const entries: LeaderboardEntry[] = list
+      ? (list as RpcLeaderboardRow[]).map((h) => ({
           rank: h.rank,
           hero_id: h.hero_id,
           user_id: h.user_id,
@@ -74,30 +74,27 @@ export function useLeaderboard(scope: 'class' | 'school' = 'class') {
           gold: h.gold,
           streak: h.streak_current ?? 0,
           is_self: h.is_self,
-        })),
-      );
-    }
+        }))
+      : [];
 
+    let selfRank: number | null = null;
+    let selfTotal = 0;
     if (meRow && Array.isArray(meRow) && meRow.length > 0) {
       const me = meRow[0] as RpcRankRow;
-      setSelfRank(me.rank > 0 ? me.rank : null);
-      setSelfTotal(me.total ?? 0);
-    } else {
-      setSelfRank(null);
-      setSelfTotal(0);
+      selfRank = me.rank > 0 ? me.rank : null;
+      selfTotal = me.total ?? 0;
     }
 
-    setLoading(false);
-  }, [profile, user, scope, supabase]);
+    return { entries, selfRank, selfTotal };
+  }, [supabase, user, scope]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (cancelled) return;
-      await fetchLeaderboard();
-    })();
-    return () => { cancelled = true; };
-  }, [fetchLeaderboard]);
+  const { data, loading, refetch } = useCachedFetch<LeaderboardCached>(cacheKey, fetcher);
 
-  return { entries, selfRank, selfTotal, loading, refetch: fetchLeaderboard };
+  return {
+    entries: data?.entries ?? [],
+    selfRank: data?.selfRank ?? null,
+    selfTotal: data?.selfTotal ?? 0,
+    loading,
+    refetch,
+  };
 }
