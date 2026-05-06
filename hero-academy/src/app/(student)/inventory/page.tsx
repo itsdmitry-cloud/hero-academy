@@ -53,14 +53,6 @@ function isLootbox(art: ArtifactCatalog) {
   return art.name?.startsWith('📦') || art.effect === 'lootbox' || (art as ArtifactCatalogExt).effect_type === 'lootbox';
 }
 
-/** Maps seasonal chest names to boxRarity param for the API */
-const SEASONAL_CHEST_MAP: Record<string, string> = {
-  '🔥 Огненный Сундук': 'seasonal_fire',
-  '❄️ Ледяной Сундук':  'seasonal_ice',
-  '🌿 Земляной Сундук': 'seasonal_earth',
-  '💧 Водяной Сундук':  'seasonal_water',
-};
-
 const SEASON_COLORS: Record<string, string> = {
   seasonal_fire:  '#f97316',
   seasonal_ice:   '#38bdf8',
@@ -69,7 +61,8 @@ const SEASON_COLORS: Record<string, string> = {
 };
 
 function getSeasonalTag(art: ArtifactCatalog): string | null {
-  return SEASONAL_CHEST_MAP[art.name] ?? null;
+  const pool = (art as ArtifactCatalogExt).season_pool;
+  return pool ? `seasonal_${pool}` : null;
 }
 
 function isConsumable(art: ArtifactCatalog) {
@@ -84,6 +77,7 @@ function rarityToTier(boxRarity: string): LootBoxTier {
   if (boxRarity === 'legendary') return 'legendary';
   if (boxRarity === 'epic') return 'gold';
   if (boxRarity === 'rare') return 'silver';
+  if (boxRarity.startsWith('seasonal_')) return 'seasonal';
   return 'bronze';
 }
 

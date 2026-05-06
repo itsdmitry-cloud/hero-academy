@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ARTIFACT_CATALOG, ArtifactDef, Rarity } from '@/lib/utils/artifacts';
 import styles from './LootBoxModal.module.css';
 
-export type LootBoxTier = 'bronze' | 'silver' | 'gold' | 'legendary';
+export type LootBoxTier = 'bronze' | 'silver' | 'gold' | 'legendary' | 'seasonal';
 
 export type LootBoxApiArtifact = { id: string; name: string; icon: string; rarity: string; description?: string };
 
@@ -22,7 +22,20 @@ interface LootBoxModalProps {
   onClaim: (artifact: LootBoxApiArtifact | null) => void;
 }
 
+const SEASONAL_OVERRIDE: Record<string, { name: string; emoji: string; color: string }> = {
+  seasonal_fire:  { name: 'Огненный Сундук', emoji: '🔥', color: '#f97316' },
+  seasonal_ice:   { name: 'Ледяной Сундук',  emoji: '❄️', color: '#38bdf8' },
+  seasonal_earth: { name: 'Земляной Сундук', emoji: '🌿', color: '#84cc16' },
+  seasonal_water: { name: 'Водяной Сундук',  emoji: '💧', color: '#06b6d4' },
+};
+
 const TIER_CONFIG: Record<LootBoxTier, { name: string; icon: React.ReactNode; rarityPool: Rarity[]; color: string }> = {
+  seasonal: {
+    name: 'Сезонный Сундук',
+    icon: <span style={{ fontSize: '64px' }}>📦</span>,
+    rarityPool: ['common', 'common', 'common', 'common', 'common'],
+    color: '#f97316',
+  },
   bronze: {
     name: 'Обычный Сундук',
     icon: <Image src="/assets/lootboxes/common.png" alt="Common" width={80} height={80} style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
@@ -82,7 +95,14 @@ function ApiIcon({ icon, name }: { icon: string; name: string }) {
 }
 
 export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onClose, onClaim }: LootBoxModalProps) {
-  const config = TIER_CONFIG[tier];
+  const baseConfig = TIER_CONFIG[tier];
+  const seasonalOverride = tier === 'seasonal' ? SEASONAL_OVERRIDE[boxRarity] : null;
+  const config = seasonalOverride ? {
+    ...baseConfig,
+    name: seasonalOverride.name,
+    icon: <span style={{ fontSize: '64px' }}>{seasonalOverride.emoji}</span>,
+    color: seasonalOverride.color,
+  } : baseConfig;
 
   const [phase, setPhase] = useState<'intro' | 'spinning' | 'reveal'>('intro');
   const [rouletteItems, setRouletteItems] = useState<ArtifactDef[]>([]);
