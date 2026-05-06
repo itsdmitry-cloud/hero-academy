@@ -86,14 +86,18 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
   const [isExiting, setIsExiting] = useState(false);
 
   const buildStrip = useCallback((): ArtifactDef[] => {
-    const allItems = Object.values(ARTIFACT_CATALOG).filter(a => a.rarity !== 'royal');
+    const allItems = Object.values(ARTIFACT_CATALOG).filter(a =>
+      a.rarity !== 'royal' &&
+      !a.id.startsWith('lootbox') &&
+      !!ARTIFACT_IMAGES[a.id as keyof typeof ARTIFACT_IMAGES]
+    );
     const strip: ArtifactDef[] = [];
     for (let i = 0; i < 30; i++) {
       const randomRarity = config.rarityPool[Math.floor(Math.random() * config.rarityPool.length)];
       const pool = allItems.filter(a => a.rarity === randomRarity);
-      strip.push(pool[Math.floor(Math.random() * pool.length)]);
+      const src = pool.length > 0 ? pool : allItems;
+      strip.push(src[Math.floor(Math.random() * src.length)]);
     }
-    strip[24] = allItems[Math.floor(Math.random() * allItems.length)];
     return strip;
   }, [config.rarityPool]);
 
@@ -111,18 +115,10 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
       setPhase('spinning');
       setIsExiting(false);
 
-      // When API resolves, update winner at position 24 if found in catalog
+      // When API resolves, store the winner — position 24 renders it directly
       apiPromise.then(result => {
         if (result.success && result.artifact) {
           setApiResult(result.artifact);
-          const catalogItem = ARTIFACT_CATALOG[result.artifact.id];
-          if (catalogItem) {
-            setRouletteItems(prev => {
-              const updated = [...prev];
-              updated[24] = catalogItem;
-              return updated;
-            });
-          }
         }
       });
 
@@ -175,16 +171,28 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
                 className={styles.rouletteStrip}
                 style={{ '--spin-target': `${spinOffset}px` } as React.CSSProperties}
               >
-                {rouletteItems.map((item, i) => (
-                  <div
-                    key={i}
-                    className={`${styles.rouletteItem}${winnerHighlight && i === 24 ? ` ${styles.rouletteItemWinner}` : ''}`}
-                    style={{ borderColor: RARITY_COLORS[item.rarity], color: RARITY_COLORS[item.rarity] }}
-                  >
-                    <span className={styles.rouletteIcon}>{getItemIcon(item.id)}</span>
-                    <span className={styles.rouletteName}>{item.name.split(' ')[0]}</span>
-                  </div>
-                ))}
+                {rouletteItems.map((item, i) => {
+                  const isWinner = i === 24 && apiResult;
+                  const rarity = isWinner ? apiResult.rarity : item.rarity;
+                  return (
+                    <div
+                      key={i}
+                      className={`${styles.rouletteItem}${winnerHighlight && i === 24 ? ` ${styles.rouletteItemWinner}` : ''}`}
+                      style={{ borderColor: RARITY_COLORS[rarity], color: RARITY_COLORS[rarity] }}
+                    >
+                      <span className={styles.rouletteIcon}>
+                        {isWinner
+                          ? (apiResult.icon && (apiResult.icon.startsWith('/') || apiResult.icon.startsWith('http'))
+                              ? <Image src={apiResult.icon} alt={apiResult.name} width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                              : <span style={{ fontSize: '32px' }}>{apiResult.icon || '✨'}</span>)
+                          : getItemIcon(item.id)}
+                      </span>
+                      <span className={styles.rouletteName}>
+                        {isWinner ? apiResult.name.split(' ')[0] : item.name.split(' ')[0]}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <p className={styles.spinText}>Вращаем...</p>
