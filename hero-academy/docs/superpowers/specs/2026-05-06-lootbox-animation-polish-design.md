@@ -13,7 +13,7 @@
 Пользователь сообщил три симптома:
 
 1. **Рулетка не крутится** — артефакты "телепортируются" в финальную позицию, движения нет.
-2. **Свечение в reveal стрёмное** — почти невидимое, безжизненное.
+2. **Свечение в reveal стрёмное** — почти невидимое, безжизненное. Решение: убрать свечение полностью.
 3. **Резкие переходы между фазами** — содержимое модалки переключается мгновенно.
 
 Решение остаётся в рамках CS:GO-style рулетки (вариант A из брейнсторма) — без переделки концепции, только полировка.
@@ -52,16 +52,15 @@
 - Подсветка winner: после окончания spin (5000ms от mount) добавить класс `rouletteItemWinner` на центральную карточку (index 24) и удерживать 200ms — класс рисует пульсирующий border цветом редкости. После этих 200ms — переход в фазу `reveal`.
 - Итоговый таймлайн фазы spinning: 5000ms animation + 200ms подсветки = 5200ms до `setPhase('reveal')` (раньше было 4200ms).
 
-### Изменение 2: многослойное свечение в reveal
+### Изменение 2: убрать свечение в reveal
 
-**Цель:** ощущение энергии вокруг артефакта, заметное на любом фоне.
+**Цель:** убрать тусклое, безжизненное свечение — оно не добавляет визуальной ценности.
 
-- Заменить одиночный `revealGlow` на три слоя:
-  1. **Базовое свечение:** radial-gradient, opacity 0.5, цвет редкости в центре, transparent с 60%. Pulse scale 1 → 1.15, opacity 0.5 → 0.8 за 2s.
-  2. **Внешний halo:** radial-gradient большего радиуса (450px), opacity 0.3, размытие до краёв.
-  3. **Conic-gradient лучи:** 8 секторов цвета редкости, `rotate 12s linear infinite`. Появляются через `animation-delay: 0.6s` с `fadeIn 0.4s` — чтобы первое внимание пошло на карточку артефакта, а не на лучи.
-- Все три слоя рендерятся как абсолютно позиционированные `<div>` внутри `revealPhase`, под `revealCard` (`z-index` карточки = 2, слои = 0/1).
-- Цвет редкости передаётся через CSS-переменную `--glow-color` (как сейчас).
+- Удалить `<div className={styles.revealGlow}>` из `LootBoxModal.tsx` (строка 188).
+- Удалить класс `.revealGlow` и keyframes `revealPulse` из `LootBoxModal.module.css`.
+- Удалить CSS-переменную `--glow-color` (больше не нужна).
+- `revealCard` остаётся как есть: border цветом редкости + `revealBounce` animation.
+- Иконка артефакта сохраняет `iconFloat` и `drop-shadow`.
 
 ### Изменение 3: плавные переходы между фазами
 
@@ -72,15 +71,15 @@
   1. `setIsExiting(true)` → CSS-класс добавляет `phaseFadeOut 250ms ease-in` (opacity 1→0, scale 1→0.96).
   2. Через `setTimeout(250)` — `setPhase(next)` и `setIsExiting(false)`.
 - Между spinning → reveal:
-  - Лента **не делает** fade-out. Вместо этого reveal-карточка появляется поверх с эффектом "взрыва": scale 0 → 1.05 → 1 + короткая вспышка glow (300ms) цветом редкости.
-  - Это сохраняет преемственность: winner-карточка из ленты "превращается" в reveal-карточку.
+  - Лента делает короткий fade-out (250ms), reveal-фаза появляется через стандартный `phaseFadeIn` 350ms.
+  - Сохраняется существующий `revealBounce` на карточке (scale 0 → 1.1 → 1 за 600ms) — это и есть акцент появления.
 
 ## Архитектура
 
 Все три изменения изолированы в двух файлах:
 
-- `LootBoxModal.tsx` — упрощается логика `handleOpen` (убираются два rAF), добавляется state `isExiting`, передача CSS-переменной `--spin-target`.
-- `LootBoxModal.module.css` — заменяется `.rouletteStrip` transition на animation, добавляются keyframes `rouletteSpin`, `phaseFadeIn`, `phaseFadeOut`, переписывается `.revealGlow` (становится контейнером трёх слоёв), добавляются классы `.glowBase`, `.glowHalo`, `.glowRays`, `.rouletteItemWinner`.
+- `LootBoxModal.tsx` — упрощается логика `handleOpen` (убираются два rAF), добавляется state `isExiting`, передача CSS-переменной `--spin-target`, удаляется `<div className={styles.revealGlow}>`.
+- `LootBoxModal.module.css` — заменяется `.rouletteStrip` transition на animation, добавляются keyframes `rouletteSpin`, `phaseFadeIn`, `phaseFadeOut` и класс `.rouletteItemWinner`. Удаляются `.revealGlow` и keyframes `revealPulse`.
 
 Никаких новых зависимостей (Framer Motion и т.п.) — всё на нативном CSS.
 
@@ -99,13 +98,13 @@
 - [ ] Открыть `silver`, `gold`, `legendary` лутбокс — лента должна плавно крутиться все 5 секунд.
 - [ ] Easing: мягкий разгон, плавное замедление, лёгкий overshoot в конце.
 - [ ] Winner-карточка пульсирует борд перед reveal.
-- [ ] В reveal видно яркое свечение цветом редкости + вращающиеся лучи.
+- [ ] В reveal **нет** свечения вокруг карточки (проверить, что фон чистый).
 - [ ] Переход intro → spinning плавный (fade-out + fade-in за ~600ms суммарно).
-- [ ] Переход spinning → reveal: лента остаётся, поверх появляется карточка с "взрывом".
+- [ ] Переход spinning → reveal: лента fade-out, карточка появляется через `revealBounce`.
 - [ ] Все три tier'а визуально читаются (silver/gold/legendary цвета редкости).
 - [ ] Performance: 30 предметов в ленте не лагают на мобиле (smoke test в DevTools throttling).
 
 ## Риски
 
-- **Перфоманс на старых девайсах:** conic-gradient + rotate + 30 next/image в ленте. Если в DevTools на CPU 4× throttle лагает — отключить rotate на лучах и/или сократить число предметов в ленте до 20.
+- **Перфоманс на старых девайсах:** 30 `next/image` в ленте. Если на CPU 4× throttle лагает — сократить число предметов в ленте до 20.
 - **CSS-переменная в keyframes:** `var(--spin-target)` внутри keyframes поддерживается всеми современными браузерами (Chrome 49+, Safari 9.1+). Для PWA на мобильных — ОК.
