@@ -135,7 +135,7 @@ function PipelineList({ pipeline }: { pipeline: string[] }) {
   return (
     <div className={styles.pipelineList}>
       {pipeline.map((line, i) => {
-        const isFinal = line.startsWith('Итого') || line.includes('Финальный') || line.includes('Рандом');
+        const isFinal = i === pipeline.length - 1;
         return (
           <span key={i} className={isFinal ? styles.pipelineLineFinal : styles.pipelineLine}>
             {line}
