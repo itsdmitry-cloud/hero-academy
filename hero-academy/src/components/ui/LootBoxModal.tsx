@@ -90,6 +90,7 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
   const [spinOffset, setSpinOffset] = useState(0);
   const [winnerHighlight, setWinnerHighlight] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const buildStrip = useCallback((): ArtifactDef[] => {
     const seasonTag = boxRarity.startsWith('seasonal_') ? boxRarity.replace('seasonal_', '') : null;
@@ -109,33 +110,36 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
     return strip;
   }, [config.rarityPool, boxRarity]);
 
-  const handleOpen = () => {
-    setIsExiting(true);
+  const handleOpen = async () => {
+    setIsLoading(true);
 
-    // Fire API immediately so it resolves during the 5s spin
-    const apiPromise = openLootbox(heroArtifactId, boxRarity);
+    // Resolve API before animation — winner is known before roulette starts
+    const result = await openLootbox(heroArtifactId, boxRarity);
+
+    if (!result.success || !result.artifact) {
+      setIsLoading(false);
+      setPhase('reveal'); // shows error state (apiResult stays null)
+      return;
+    }
+
+    setApiResult(result.artifact);
+    setIsLoading(false);
+    setIsExiting(true);
 
     setTimeout(() => {
       const strip = buildStrip();
       setRouletteItems(strip);
-      const targetOffset = (24 * 112) - 150 + Math.random() * 40;
+      // Center pointer on slot 24: strip_center(24) - viewport_center
+      // strip_center(24) = 150 (pad) + 24×112 + 50 (half) = 2888
+      // viewport_center  = (420 - 2×24) / 2 = 186
+      const targetOffset = 2702 + (Math.random() * 40 - 20);
       setSpinOffset(targetOffset);
       setPhase('spinning');
       setIsExiting(false);
 
-      // When API resolves, store the winner — position 24 renders it directly
-      apiPromise.then(result => {
-        if (result.success && result.artifact) {
-          setApiResult(result.artifact);
-        }
-      });
-
       setTimeout(() => setWinnerHighlight(true), 5000);
       setTimeout(() => setIsExiting(true), 5200);
-      setTimeout(() => {
-        setPhase('reveal');
-        setIsExiting(false);
-      }, 5450);
+      setTimeout(() => { setPhase('reveal'); setIsExiting(false); }, 5450);
     }, 250);
   };
 
@@ -164,8 +168,13 @@ export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onC
                 </span>
               ))}
             </p>
-            <button className={styles.openBtn} style={{ '--btn-color': config.color } as React.CSSProperties} onClick={handleOpen}>
-              Открыть сундук
+            <button
+              className={styles.openBtn}
+              style={{ '--btn-color': config.color } as React.CSSProperties}
+              onClick={handleOpen}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Открываем...' : 'Открыть сундук'}
             </button>
           </div>
         )}
