@@ -20,29 +20,26 @@ export function useSupabaseSync() {
     async function syncHeroData() {
       if (!user) return;
 
-      const { data: hero } = await supabase
-        .from('heroes')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!hero) return;
-
-      const [statsRes, logsRes] = await Promise.all([
+      // Fetch hero+stats (JOIN) and activity_log in parallel — saves 1 network RTT vs sequential
+      const [heroRes, logsRes] = await Promise.all([
         supabase
-          .from('hero_stats')
-          .select('strength, knowledge, endurance, luck, wisdom')
-          .eq('hero_id', hero.id)
+          .from('heroes')
+          .select('*, hero_stats(strength, knowledge, endurance, luck, wisdom)')
+          .eq('user_id', user.id)
           .single(),
         supabase
           .from('activity_log')
           .select('*')
-          .eq('hero_id', hero.id)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(20)
       ]);
 
-      const stats = statsRes.data;
+      const hero = heroRes.data;
+      if (!hero) return;
+
+      const statsArr = hero.hero_stats as { strength: number; knowledge: number; endurance: number; luck: number; wisdom: number }[] | null;
+      const stats = Array.isArray(statsArr) ? statsArr[0] ?? null : null;
       const logs = logsRes.data;
 
       const store = useHeroStore.getState();
