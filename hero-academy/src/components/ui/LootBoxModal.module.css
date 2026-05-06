@@ -314,3 +314,23 @@
     transform: translateX(calc(-1 * var(--spin-target, 2538px)));
   }
 }
+
+.rouletteItemWinner {
+  animation: winnerPulse 200ms ease-out;
+  z-index: 5;
+}
+
+@keyframes winnerPulse {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 24px 4px currentColor;
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow: 0 0 12px 2px currentColor;
+    transform: scale(1.04);
+  }
+}

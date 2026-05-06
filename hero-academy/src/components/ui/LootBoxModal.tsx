@@ -69,6 +69,7 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
   const [rouletteItems, setRouletteItems] = useState<ArtifactDef[]>([]);
   const [winnerItem, setWinnerItem] = useState<ArtifactDef | null>(null);
   const [spinOffset, setSpinOffset] = useState(0);
+  const [winnerHighlight, setWinnerHighlight] = useState(false);
 
   // Build a roulette strip of ~30 items, with the winner at a known position
   const buildRoulette = useCallback(() => {
@@ -99,6 +100,8 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
     const targetOffset = (24 * 112) - 150 + Math.random() * 40;
     setSpinOffset(targetOffset);
     setPhase('spinning');
+
+    setTimeout(() => setWinnerHighlight(true), 5000);
 
     setTimeout(() => {
       setPhase('reveal');
@@ -157,8 +160,8 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
                 {rouletteItems.map((item, i) => (
                   <div
                     key={i}
-                    className={styles.rouletteItem}
-                    style={{ borderColor: RARITY_COLORS[item.rarity] }}
+                    className={`${styles.rouletteItem}${winnerHighlight && i === 24 ? ` ${styles.rouletteItemWinner}` : ''}`}
+                    style={{ borderColor: RARITY_COLORS[item.rarity], color: RARITY_COLORS[item.rarity] }}
                   >
                     <span className={styles.rouletteIcon}>{getItemIcon(item.id)}</span>
                     <span className={styles.rouletteName}>{item.name.split(' ')[0]}</span>
