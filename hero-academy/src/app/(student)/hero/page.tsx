@@ -15,6 +15,7 @@ import { useClassRank } from '@/lib/hooks/use-class-rank';
 import { BattlePassWidget } from '@/components/game/BattlePassWidget';
 import { AchievementsPanel } from '@/components/game/AchievementsPanel';
 import { ClassAuraBanner } from '@/components/game/ClassAuraBanner';
+import { ActionBreakdown } from '@/components/shared/ActionBreakdown';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
@@ -48,6 +49,12 @@ type ActivityItemView = {
   gold: string;
   messages?: string[];
   category?: 'quest' | 'boss' | string;
+  // raw fields for ActionBreakdown rendering
+  action?: string;
+  metadata?: Record<string, unknown> | null;
+  xpChangeRaw?: number | null;
+  hpChangeRaw?: number | null;
+  goldChangeRaw?: number | null;
 };
 
 // Discriminated union describing one slot on the artifact shelf.
@@ -524,133 +531,44 @@ export default function HeroPage() {
                   <span style={{ fontSize: '0.8rem', color: 'var(--accent-xp)', fontWeight: 700, minWidth: '40px', textAlign: 'right' }}>{item.xp !== '-' ? item.xp : ''}</span>
                   {hasPipeline && <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', paddingLeft: '4px' }}>{isOpen ? '▲' : '▼'}</span>}
                 </div>
-                {isOpen && hasPipeline && (() => {
-                  // Check for structured breakdown (quest_graded from grade-batch)
-                  const bdMsg = item.messages!.find(m => m.startsWith('__breakdown:'));
-                  if (bdMsg) {
-                    let bd: Record<string, unknown>;
-                    try { bd = JSON.parse(bdMsg.slice('__breakdown:'.length)); } catch { bd = {}; }
-                    const xp   = bd.xp   as Record<string, unknown> | null;
-                    const hp   = bd.hp   as Record<string, unknown> | null;
-                    const gold = bd.gold as Record<string, unknown> | null;
-
-                    const Row = ({ label, value, dim }: { label: string; value: string | number; dim?: boolean }) => (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', opacity: dim ? 0.6 : 1 }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{label}</span>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{value}</span>
-                      </div>
-                    );
-                    const Divider = () => <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '4px 0' }} />;
-                    const colStyle: React.CSSProperties = {
-                      flex: 1, display: 'flex', flexDirection: 'column', gap: '3px',
-                      background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '8px 10px',
-                    };
-
-                    return (
-                      <div style={{ borderTop: `1px solid ${accentColor}44`, padding: '0.7rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {/* Row 1: XP | HP */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {/* XP Column */}
-                          {xp && (
-                            <div style={colStyle}>
-                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-xp)', marginBottom: '2px' }}>⭐ Опыт</span>
-                              <Row label="Базовое" value={Number(xp.base)} />
-                              <Row label={`Баланс ×${xp.balancePct}%`} value={`→ ${xp.afterBalance}`} dim />
-                              {Boolean(xp.artBoost) && <Row label={`Арт. +${String(xp.artBoost)}%${Array.isArray(xp.artNames) && xp.artNames.length > 0 ? ` (${xp.artNames.map((n: string) => n.split(' (')[0]).join(', ')})` : ''}`} value={`→ ${String(xp.afterArt)}`} dim />}
-                              <Row label={`Рандом ${Number(xp.randomPct) >= 0 ? '+' : ''}${xp.randomPct}%`} value={`→ ${xp.final}`} dim />
-                              <Divider />
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-xp)' }}>Итого</span>
-                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-xp)' }}>+{String(xp.final)} XP = ⚔️ Урон</span>
-                              </div>
+                {isOpen && hasPipeline && (
+                  item.action ? (
+                    <ActionBreakdown
+                      action={item.action}
+                      metadata={item.metadata ?? null}
+                      xpChange={item.xpChangeRaw ?? null}
+                      hpChange={item.hpChangeRaw ?? null}
+                      goldChange={item.goldChangeRaw ?? null}
+                    />
+                  ) : (
+                    /* Legacy fallback: messages list for entries without raw fields */
+                    (() => {
+                      const statEmojis = ['⭐', '💰', '⚔️', '👑', '🗡️', '🆙', '🔥', '🏅', '✨', '⚗️', '🎁'];
+                      const statLines = item.messages!.filter(m => statEmojis.some(e => m.startsWith(e)));
+                      const pipeLines = item.messages!.filter(m => !statEmojis.some(e => m.startsWith(e)));
+                      return (
+                        <div style={{ borderTop: `1px solid ${accentColor}44`, padding: '0.6rem 0.75rem 0.7rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {statLines.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {statLines.map((m, i) => <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: `${accentColor}18`, border: `1px solid ${accentColor}44`, borderRadius: '10px', padding: '3px 10px', fontSize: '0.78rem', fontWeight: 700, color: accentColor }}>{m}</span>)}
                             </div>
                           )}
-
-                          {/* HP Column */}
-                          {hp && (
-                            <div style={colStyle}>
-                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f87171', marginBottom: '2px' }}>❤️ Урон</span>
-                              {Number(hp.base) === 0 ? (
-                                <>
-                                  <Row label="Базовое" value={0} />
-                                  <Divider />
-                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#4ade80' }}>Итого</span>
-                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#4ade80' }}>-0 HP</span>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <Row label="Базовое" value={Number(hp.base)} />
-                                  <Row label={`Баланс ×${hp.balancePct}%`} value={`→ ${hp.afterBalance}`} dim />
-                                  {hp.shield
-                                    ? <><Row label="🛡️ Щит" value={String(hp.shield)} /><Row label="Заряд -1" value="Заблокировано" /></>
-                                    : hp.passivePct
-                                      ? <Row label={`Защита -${hp.passivePct}%`} value={`→ ${Math.round(Number(hp.afterBalance) * (1 - Number(hp.passivePct)/100))}`} dim />
-                                      : null
-                                  }
-                                  {!hp.shield && <Row label={`Рандом ${Number(hp.randomPct) >= 0 ? '+' : ''}${hp.randomPct}%`} value={`→ ${hp.final}`} dim />}
-                                  {Boolean(hp.undoCrit) && <><Row label="⏪ Отмена смерти" value={String(hp.undoCrit)} /><Row label="Заряд -1" value="Обнулён" /></>}
-                                  {Boolean(hp.deathSaved) && <><Row label="🔥 Выживание" value={String(hp.deathSaved)} /><Row label="Заряд -1" value="Спасён" /></>}
-                                  <Divider />
-                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f87171' }}>Итого</span>
-                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: hp.shield || hp.undoCrit ? '#4ade80' : (hp.deathSaved ? '#fbbf24' : '#f87171') }}>
-                                      {hp.shield ? '0 HP 🛡️' : (hp.undoCrit ? '0 HP ⏪' : (hp.deathSaved ? `Спасён 🔥` : `-${hp.final} HP`))}
-                                    </span>
-                                  </div>
-                                </>
-                              )}
-                            </div>
+                          {pipeLines.length > 0 && (
+                            <>
+                              {statLines.length > 0 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                {pipeLines.map((m, i) => {
+                                  const isTotal = i === pipeLines.length - 1;
+                                  return <span key={i} style={{ fontSize: isTotal ? '0.78rem' : '0.72rem', color: isTotal ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: isTotal ? 700 : 400, lineHeight: 1.6, paddingLeft: '4px', borderLeft: isTotal ? `2px solid ${accentColor}` : '2px solid transparent' }}>{m}</span>;
+                                })}
+                              </div>
+                            </>
                           )}
                         </div>
-
-                        {/* Row 2: Gold */}
-                        {gold && (
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            {/* Gold Column */}
-                            <div style={colStyle}>
-                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-gold)', marginBottom: '2px' }}>💰 Золото</span>
-                              <Row label="Базовое" value={Number(gold.base)} />
-                              <Row label={`Баланс ×${gold.balancePct}%`} value={`→ ${gold.afterBalance}`} dim />
-                              {Boolean(gold.artBoost) && <Row label={`Арт. +${String(gold.artBoost)}%${Array.isArray(gold.artNames) && gold.artNames.length > 0 ? ` (${gold.artNames.map((n: string) => n.split(' (')[0]).join(', ')})` : ''}`} value={`→ ${String(gold.final)}`} dim />}
-                              <Divider />
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-gold)' }}>Итого</span>
-                                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-gold)' }}>+{String(gold.final)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  // Fallback: plain messages list (for old logs / other action types)
-                  const statEmojis = ['⭐', '💰', '⚔️', '👑', '🗡️', '🆙', '🔥', '🏅', '✨', '⚗️', '🎁'];
-                  const statLines = item.messages!.filter(m => statEmojis.some(e => m.startsWith(e)));
-                  const pipeLines = item.messages!.filter(m => !statEmojis.some(e => m.startsWith(e)));
-                  return (
-                    <div style={{ borderTop: `1px solid ${accentColor}44`, padding: '0.6rem 0.75rem 0.7rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {statLines.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                          {statLines.map((m, i) => <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: `${accentColor}18`, border: `1px solid ${accentColor}44`, borderRadius: '10px', padding: '3px 10px', fontSize: '0.78rem', fontWeight: 700, color: accentColor }}>{m}</span>)}
-                        </div>
-                      )}
-                      {pipeLines.length > 0 && (
-                        <>
-                          {statLines.length > 0 && <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            {pipeLines.map((m, i) => {
-                              const isTotal = m.startsWith('Итого') || m.includes('Финальный') || m.includes('Рандом');
-                              return <span key={i} style={{ fontSize: isTotal ? '0.78rem' : '0.72rem', color: isTotal ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: isTotal ? 700 : 400, lineHeight: 1.6, paddingLeft: '4px', borderLeft: isTotal ? `2px solid ${accentColor}` : '2px solid transparent' }}>{m}</span>;
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
+                      );
+                    })()
+                  )
+                )}
               </div>
             );
           })}

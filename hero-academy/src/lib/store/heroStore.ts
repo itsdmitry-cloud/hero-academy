@@ -29,6 +29,13 @@ export interface ActivityEntry {
   xp: string;
   gold: string;
   messages?: string[];
+  // raw fields for ActionBreakdown rendering (added 2026-05)
+  action?: string;
+  metadata?: Record<string, unknown> | null;
+  xpChangeRaw?: number | null;
+  hpChangeRaw?: number | null;
+  goldChangeRaw?: number | null;
+  category?: 'quest' | 'boss' | 'event';
 }
 
 interface HeroStore {

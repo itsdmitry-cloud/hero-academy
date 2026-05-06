@@ -187,16 +187,6 @@ export function useSupabaseSync() {
           const score = Number(meta.score ?? 0);
           questName  = subj ? `📝 ${subj}: оценка ${score}` : `📝 Проверено: оценка ${score}`;
           resultMsg  = score >= 4 ? '✅ Хорошо' : score === 3 ? '⚠️ Удовл.' : '❌ Плохо';
-          if (meta.breakdown && typeof meta.breakdown === 'object') {
-            // Rich structured data — hero page renders as two-column layout
-            msgs.push(`__breakdown:${JSON.stringify(meta.breakdown)}`);
-          } else if (Array.isArray(meta.pipeline)) {
-            msgs.push(...meta.pipeline as string[]);
-          } else {
-            if (log.xp_change   > 0) msgs.push(`⭐ +${log.xp_change} XP`);
-            if (log.gold_change > 0) msgs.push(`💰 +${log.gold_change} Золота`);
-            if (log.hp_change   < 0) msgs.push(`❤️ ${log.hp_change} HP`);
-          }
 
         // ── LEVEL UP ──────────────────────────────────────────────────────────
         } else if (log.action === 'level_up') {
@@ -213,6 +203,12 @@ export function useSupabaseSync() {
           xp:       log.xp_change > 0 ? `+${log.xp_change}` : log.xp_change < 0 ? `${log.xp_change}` : '-',
           gold:     log.gold_change > 0 ? `+${log.gold_change}` : log.gold_change < 0 ? `${log.gold_change}` : '-',
           messages: msgs,
+          // raw fields for ActionBreakdown
+          action:        log.action,
+          metadata:      meta as Record<string, unknown>,
+          xpChangeRaw:   log.xp_change,
+          hpChangeRaw:   log.hp_change,
+          goldChangeRaw: log.gold_change,
         };
       }).filter((x): x is NonNullable<typeof x> => x !== null);
 
