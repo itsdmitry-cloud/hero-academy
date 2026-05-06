@@ -176,7 +176,6 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
         {/* === REVEAL PHASE === */}
         {phase === 'reveal' && winnerItem && (
           <div className={styles.revealPhase}>
-            <div className={styles.revealGlow} style={{ '--glow-color': RARITY_COLORS[winnerItem.rarity] } as React.CSSProperties} />
             <div className={styles.revealCard} style={{ borderColor: RARITY_COLORS[winnerItem.rarity] }}>
               <div className={styles.revealRarity} style={{ color: RARITY_COLORS[winnerItem.rarity] }}>
                 {winnerItem.rarity === 'common' ? '🟢 Обычный' : winnerItem.rarity === 'rare' ? '🔵 Редкий' : winnerItem.rarity === 'epic' ? '🟣 Эпический' : '🟡 Легендарный'}
