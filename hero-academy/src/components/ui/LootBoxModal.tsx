@@ -70,6 +70,7 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
   const [winnerItem, setWinnerItem] = useState<ArtifactDef | null>(null);
   const [spinOffset, setSpinOffset] = useState(0);
   const [winnerHighlight, setWinnerHighlight] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   // Build a roulette strip of ~30 items, with the winner at a known position
   const buildRoulette = useCallback(() => {
@@ -96,16 +97,23 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
   }, [config.rarityPool]);
 
   const handleOpen = () => {
-    buildRoulette();
-    const targetOffset = (24 * 112) - 150 + Math.random() * 40;
-    setSpinOffset(targetOffset);
-    setPhase('spinning');
-
-    setTimeout(() => setWinnerHighlight(true), 5000);
+    setIsExiting(true);
 
     setTimeout(() => {
-      setPhase('reveal');
-    }, 5200);
+      buildRoulette();
+      const targetOffset = (24 * 112) - 150 + Math.random() * 40;
+      setSpinOffset(targetOffset);
+      setPhase('spinning');
+      setIsExiting(false);
+
+      setTimeout(() => setWinnerHighlight(true), 5000);
+      setTimeout(() => setIsExiting(true), 5200);
+
+      setTimeout(() => {
+        setPhase('reveal');
+        setIsExiting(false);
+      }, 5450);
+    }, 250);
   };
 
   const handleClaim = () => {
@@ -128,7 +136,7 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
 
         {/* === INTRO PHASE === */}
         {phase === 'intro' && (
-          <div className={styles.introPhase}>
+          <div className={`${styles.introPhase} ${isExiting ? styles.phaseExit : styles.phaseEnter}`}>
             <div className={styles.boxIcon} style={{ '--box-color': config.color } as React.CSSProperties}>
               <span className={styles.boxEmoji}>{config.icon}</span>
             </div>
@@ -150,7 +158,7 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
 
         {/* === SPINNING PHASE === */}
         {phase === 'spinning' && (
-          <div className={styles.spinPhase}>
+          <div className={`${styles.spinPhase} ${isExiting ? styles.phaseExit : styles.phaseEnter}`}>
             <div className={styles.rouletteViewport}>
               <div className={styles.pointer} />
               <div
@@ -175,7 +183,7 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
 
         {/* === REVEAL PHASE === */}
         {phase === 'reveal' && winnerItem && (
-          <div className={styles.revealPhase}>
+          <div className={`${styles.revealPhase} ${styles.phaseEnter}`}>
             <div className={styles.revealCard} style={{ borderColor: RARITY_COLORS[winnerItem.rarity] }}>
               <div className={styles.revealRarity} style={{ color: RARITY_COLORS[winnerItem.rarity] }}>
                 {winnerItem.rarity === 'common' ? '🟢 Обычный' : winnerItem.rarity === 'rare' ? '🔵 Редкий' : winnerItem.rarity === 'epic' ? '🟣 Эпический' : '🟡 Легендарный'}

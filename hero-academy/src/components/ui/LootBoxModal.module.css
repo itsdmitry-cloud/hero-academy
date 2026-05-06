@@ -316,3 +316,33 @@
     transform: scale(1.04);
   }
 }
+
+.phaseEnter {
+  animation: phaseFadeIn 350ms ease-out;
+}
+
+.phaseExit {
+  animation: phaseFadeOut 250ms ease-in forwards;
+}
+
+@keyframes phaseFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes phaseFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
