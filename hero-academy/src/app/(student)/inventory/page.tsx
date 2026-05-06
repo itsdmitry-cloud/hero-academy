@@ -83,7 +83,8 @@ function isConsumable(art: ArtifactCatalog) {
 function rarityToTier(boxRarity: string): LootBoxTier {
   if (boxRarity === 'legendary') return 'legendary';
   if (boxRarity === 'epic') return 'gold';
-  return 'silver';
+  if (boxRarity === 'rare') return 'silver';
+  return 'bronze';
 }
 
 export default function InventoryPage() {

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ARTIFACT_CATALOG, ArtifactDef, Rarity } from '@/lib/utils/artifacts';
 import styles from './LootBoxModal.module.css';
 
-export type LootBoxTier = 'silver' | 'gold' | 'legendary';
+export type LootBoxTier = 'bronze' | 'silver' | 'gold' | 'legendary';
 
 export type LootBoxApiArtifact = { id: string; name: string; icon: string; rarity: string; description?: string };
 
@@ -23,6 +23,12 @@ interface LootBoxModalProps {
 }
 
 const TIER_CONFIG: Record<LootBoxTier, { name: string; icon: React.ReactNode; rarityPool: Rarity[]; color: string }> = {
+  bronze: {
+    name: 'Обычный Сундук',
+    icon: <Image src="/assets/lootboxes/common.png" alt="Common" width={80} height={80} style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
+    rarityPool: ['common', 'common', 'common', 'common', 'rare'],
+    color: '#a8a29e',
+  },
   silver: {
     name: 'Редкий Сундук',
     icon: <Image src="/assets/lootboxes/rare.png" alt="Silver" width={80} height={80} style={{width:'100%', height:'100%', objectFit:'contain'}}/>,
