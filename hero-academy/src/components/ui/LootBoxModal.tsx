@@ -96,25 +96,13 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
 
   const handleOpen = () => {
     buildRoulette();
+    const targetOffset = (24 * 112) - 150 + Math.random() * 40;
+    setSpinOffset(targetOffset);
     setPhase('spinning');
 
-    // Item width = 100px + 12px gap = 112px per item
-    // We want to land on item 24, center of the viewport
-    // Viewport ~350px wide, so center = 175px
-    // Target offset = (24 * 112) - 175 + random jitter
-    const targetOffset = (24 * 112) - 150 + Math.random() * 40;
-    
-    // Small delay to let the DOM paint the strip first
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setSpinOffset(targetOffset);
-      });
-    });
-
-    // After the spin animation (~4s), reveal
     setTimeout(() => {
       setPhase('reveal');
-    }, 4200);
+    }, 5200);
   };
 
   const handleClaim = () => {
@@ -164,7 +152,7 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
               <div className={styles.pointer} />
               <div
                 className={styles.rouletteStrip}
-                style={{ transform: `translateX(-${spinOffset}px)` }}
+                style={{ '--spin-target': `${spinOffset}px` } as React.CSSProperties}
               >
                 {rouletteItems.map((item, i) => (
                   <div

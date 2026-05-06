@@ -137,7 +137,7 @@
   display: flex;
   gap: 12px;
   padding: 10px 150px;
-  transition: transform 4s cubic-bezier(0.15, 0.85, 0.25, 1);
+  animation: rouletteSpin 5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform;
 }
 
@@ -301,4 +301,16 @@
 @keyframes iconFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+
+@keyframes rouletteSpin {
+  0% {
+    transform: translateX(0);
+  }
+  95% {
+    transform: translateX(calc(-1 * var(--spin-target, 2538px) - 8px));
+  }
+  100% {
+    transform: translateX(calc(-1 * var(--spin-target, 2538px)));
+  }
 }
