@@ -193,6 +193,32 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {/* Sort toggle — only for non-lootbox tabs */}
+      {activeTab !== 'lootbox' && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <button
+            className={`${styles.tab} ${sortMode === 'date' ? styles.tabActive : ''}`}
+            style={{ fontSize: '0.72rem', padding: '0.3rem 0.7rem', minWidth: 0 }}
+            onClick={() => {
+              if (sortMode === 'date') setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+              else { setSortMode('date'); setSortDir('desc'); }
+            }}
+          >
+            🕐 Новые {sortMode === 'date' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
+          </button>
+          <button
+            className={`${styles.tab} ${sortMode === 'rarity' ? styles.tabActive : ''}`}
+            style={{ fontSize: '0.72rem', padding: '0.3rem 0.7rem', minWidth: 0 }}
+            onClick={() => {
+              if (sortMode === 'rarity') setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+              else { setSortMode('rarity'); setSortDir('desc'); }
+            }}
+          >
+            💎 Редкость {sortMode === 'rarity' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
+          </button>
+        </div>
+      )}
+
       {/* Regular items grid */}
       {loading ? (
         <div className={styles.emptyState}>
