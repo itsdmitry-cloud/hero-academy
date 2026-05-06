@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { useArtifacts, type HeroArtifact, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
 import { useHero } from '@/lib/hooks/use-hero';
+import { LootBoxModal, type LootBoxTier } from '@/components/ui/LootBoxModal';
 import styles from './page.module.css';
-
-const ROULETTE_ICONS = ['💎', '💰', '🛡️', '💊', '📜', '✨', '🔥', '❄️', '🐉', '🔮', '🌿', '💧'];
 
 type TabId = 'all' | 'artifacts' | 'potions' | 'lootbox';
 
@@ -82,16 +80,21 @@ function isConsumable(art: ArtifactCatalog) {
   );
 }
 
+function rarityToTier(boxRarity: string): LootBoxTier {
+  if (boxRarity === 'legendary') return 'legendary';
+  if (boxRarity === 'epic') return 'gold';
+  return 'silver';
+}
+
 export default function InventoryPage() {
-  const { catalog, inventory, loading, equipArtifact, consumeArtifact, refetch } = useArtifacts();
+  const { inventory, loading, equipArtifact, consumeArtifact, refetch } = useArtifacts();
   const { hero, openLootbox } = useHero();
   const [activeTab, setActiveTab] = useState<TabId>('all');
   const [selectedItem, setSelectedItem] = useState<HeroArtifact | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [lootResult, setLootResult] = useState<{ won: boolean; seasonal?: boolean; artifact?: { name: string; icon: string; rarity: string; description?: string } | null } | null>(null);
-  const [rouletteItem, setRouletteItem] = useState('✨');
+  const [lootboxModal, setLootboxModal] = useState<{ id: string; tier: LootBoxTier; boxRarity: string } | null>(null);
 
   const lootboxItems = inventory.filter(i => i.artifact && isLootbox(i.artifact));
 
@@ -144,7 +147,7 @@ export default function InventoryPage() {
               return (
                 <div
                   key={item.id}
-                  onClick={() => { setSelectedItem(item); setActionMsg(null); setActionError(null); setLootResult(null); }}
+                  onClick={() => { setSelectedItem(item); setActionMsg(null); setActionError(null); }}
                   style={{
                     background: seasonal
                       ? `linear-gradient(135deg, ${boxColor}33, ${boxColor}11)`
@@ -219,40 +222,9 @@ export default function InventoryPage() {
           onClick={(e) => e.target === e.currentTarget && setSelectedItem(null)}
         >
           <div className={styles.detailSheet}>
-            {lootResult && lootResult.won && lootResult.artifact ? (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '4rem', marginBottom: '0.5rem', width: 80, height: 80, margin: '0 auto' }}>
-                 {lootResult.artifact.icon?.includes('/') ? (
-                   <Image src={lootResult.artifact.icon} alt={lootResult.artifact.name} width={80} height={80} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }} />
-                 ) : (
-                   <span style={{ fontSize: '4rem' }}>{lootResult.artifact.icon || '💎'}</span>
-                 )}
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: lootResult.seasonal ? '#f97316' : RARITY_COLORS[lootResult.artifact.rarity], marginBottom: '0.25rem', marginTop: '0.5rem' }}>🎉 Выпал артефакт!</div>
-                <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{lootResult.artifact.name}</div>
-                {lootResult.seasonal ? (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, padding: '0 0.5rem', maxWidth: 300, margin: '0 auto' }}>
-                    {lootResult.artifact.description || '🔥 Сезонный артефакт Огня'}
-                  </div>
-                ) : (
-                  <div className={styles.detailRarity} style={{ color: RARITY_COLORS[lootResult.artifact.rarity], justifyContent: 'center' }}>
-                    {RARITY_NAMES[lootResult.artifact.rarity]}
-                  </div>
-                )}
-                <button className={styles.btnEquip} onClick={() => { setLootResult(null); setSelectedItem(null); }} style={{ marginTop: '1.5rem', background: 'var(--bg-glass-border)' }}>Забрать в инвентарь</button>
-              </div>
-            ) : (
-              <>
-                <div className={styles.detailIcon} style={actionLoading && isLootbox(selectedItem.artifact) ? { transform: 'scale(1.7)', filter: 'drop-shadow(0 0 25px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 10px var(--accent-xp))', transition: 'all 0.1s ease', zIndex: 10 } : { transition: 'all 0.3s ease' }}>
-                  {actionLoading && isLootbox(selectedItem.artifact) ? (
-                    rouletteItem?.includes('/') ? (
-                      <Image src={rouletteItem} alt="spin" width={72} height={72} style={{ width: '4.5rem', height: '4.5rem', objectFit: 'contain' }} />
-                    ) : (
-                      <span style={{ fontSize: '4.5rem', filter: 'none', display: 'inline-block' }}>{rouletteItem}</span>
-                    )
-                  ) : (
-                    <ArtifactIcon icon={selectedItem.artifact.icon} name={selectedItem.artifact.name} />
-                  )}
+            <>
+                <div className={styles.detailIcon} style={{ transition: 'all 0.3s ease' }}>
+                  <ArtifactIcon icon={selectedItem.artifact.icon} name={selectedItem.artifact.name} />
                 </div>
                 <div className={styles.detailName}>{selectedItem.artifact.name}</div>
                 {(() => {
@@ -297,55 +269,18 @@ export default function InventoryPage() {
 
                 <div className={styles.detailActions}>
                   {isLootbox(selectedItem.artifact) ? (
-                    /* Lootbox: only open button */
                     <button
                       className={styles.btnEquip}
                       style={{ background: `linear-gradient(135deg, ${RARITY_COLORS[selectedItem.artifact.rarity]}cc, ${RARITY_COLORS[selectedItem.artifact.rarity]}66)`, fontSize: '1rem', fontWeight: 900 }}
-                      disabled={actionLoading}
-                      onClick={async () => {
-                        setActionLoading(true);
-                        
+                      onClick={() => {
                         const seasonalTag = getSeasonalTag(selectedItem.artifact!);
                         const boxRarity = seasonalTag ?? selectedItem.artifact!.rarity;
-                        
-                        let possible: string[] = [];
-                        if (seasonalTag) {
-                          const element = seasonalTag.replace('seasonal_', '');
-                          possible = (catalog as ArtifactCatalogExt[]).filter((a) => a.season_pool === element).map(a => a.icon);
-                        } else {
-                          const validRarities = boxRarity === 'common' ? ['common', 'rare']
-                            : boxRarity === 'rare' ? ['common', 'rare', 'epic']
-                            : boxRarity === 'epic' ? ['rare', 'epic', 'legendary']
-                            : ['epic', 'legendary'];
-                          possible = (catalog as ArtifactCatalogExt[])
-                            .filter(a => validRarities.includes(a.rarity) && !a.season_pool)
-                            .map(a => a.icon);
-                        }
-                        if (possible.length === 0) possible = ROULETTE_ICONS;
-                        
-                        // Roulette effect
-                        let tick = 0;
-                        const interval = setInterval(() => {
-                          setRouletteItem(possible[tick % possible.length]);
-                          tick++;
-                        }, 130);
-                        
-                        await new Promise(r => setTimeout(r, 1800));
-                        
-                        const result = await openLootbox(selectedItem.id, boxRarity);
-                        
-                        clearInterval(interval);
-                        setActionLoading(false);
-                        
-                        if (result.success && result.artifact) {
-                          setRouletteItem(result.artifact.icon || '🎁');
-                        }
-                        
-                        setLootResult({ won: result.success, seasonal: !!seasonalTag, artifact: result.artifact });
-                        await refetch();
+                        const tier = rarityToTier(boxRarity);
+                        setSelectedItem(null);
+                        setLootboxModal({ id: selectedItem.id, tier, boxRarity });
                       }}
                     >
-                      {actionLoading ? '✨ Открываем...' : '🎁 Открыть сундук'}
+                      🎁 Открыть сундук
                     </button>
                   ) : isConsumable(selectedItem.artifact) ? (
                     <button
@@ -409,9 +344,19 @@ export default function InventoryPage() {
                   <button className={styles.btnClose} onClick={() => setSelectedItem(null)}>Закрыть</button>
                 </div>
               </>
-            )}
           </div>
         </div>
+      )}
+
+      {lootboxModal && (
+        <LootBoxModal
+          tier={lootboxModal.tier}
+          heroArtifactId={lootboxModal.id}
+          boxRarity={lootboxModal.boxRarity}
+          openLootbox={openLootbox}
+          onClose={() => setLootboxModal(null)}
+          onClaim={() => { refetch(); }}
+        />
       )}
     </div>
   );

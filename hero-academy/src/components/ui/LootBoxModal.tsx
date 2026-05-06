@@ -3,15 +3,23 @@
 import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { ARTIFACT_CATALOG, ArtifactDef, Rarity } from '@/lib/utils/artifacts';
-import { useHeroStore } from '@/lib/store/heroStore';
-import { useToastStore } from '@/lib/store/toastStore';
 import styles from './LootBoxModal.module.css';
 
 export type LootBoxTier = 'silver' | 'gold' | 'legendary';
 
+export type LootBoxApiArtifact = { id: string; name: string; icon: string; rarity: string; description?: string };
+
 interface LootBoxModalProps {
   tier: LootBoxTier;
+  heroArtifactId: string;
+  boxRarity: string;
+  openLootbox: (heroArtifactId: string, boxRarity: string) => Promise<{
+    success: boolean;
+    artifact?: LootBoxApiArtifact | null;
+    error?: string;
+  }>;
   onClose: () => void;
+  onClaim: (artifact: LootBoxApiArtifact | null) => void;
 }
 
 const TIER_CONFIG: Record<LootBoxTier, { name: string; icon: React.ReactNode; rarityPool: Rarity[]; color: string }> = {
@@ -60,55 +68,66 @@ function getItemIcon(id: string) {
   );
 }
 
-export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
+function ApiIcon({ icon, name }: { icon: string; name: string }) {
+  if (icon && (icon.startsWith('/') || icon.startsWith('http'))) {
+    return <Image src={icon} alt={name} width={128} height={128} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
+  }
+  return <span style={{ fontSize: '72px' }}>{icon || '✨'}</span>;
+}
+
+export function LootBoxModal({ tier, heroArtifactId, boxRarity, openLootbox, onClose, onClaim }: LootBoxModalProps) {
   const config = TIER_CONFIG[tier];
-  const addArtifact = useHeroStore((s) => s.addArtifact);
-  const addToast = useToastStore((s) => s.addToast);
 
   const [phase, setPhase] = useState<'intro' | 'spinning' | 'reveal'>('intro');
   const [rouletteItems, setRouletteItems] = useState<ArtifactDef[]>([]);
-  const [winnerItem, setWinnerItem] = useState<ArtifactDef | null>(null);
+  const [apiResult, setApiResult] = useState<LootBoxApiArtifact | null>(null);
   const [spinOffset, setSpinOffset] = useState(0);
   const [winnerHighlight, setWinnerHighlight] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
-  // Build a roulette strip of ~30 items, with the winner at a known position
-  const buildRoulette = useCallback(() => {
+  const buildStrip = useCallback((): ArtifactDef[] => {
     const allItems = Object.values(ARTIFACT_CATALOG).filter(a => a.rarity !== 'royal');
-    
-    // Pick the winning rarity from the pool
-    const winningRarity = config.rarityPool[Math.floor(Math.random() * config.rarityPool.length)];
-    const candidates = allItems.filter(a => a.rarity === winningRarity);
-    const winner = candidates[Math.floor(Math.random() * candidates.length)];
-
-    // Build 30 random items for the strip
     const strip: ArtifactDef[] = [];
     for (let i = 0; i < 30; i++) {
       const randomRarity = config.rarityPool[Math.floor(Math.random() * config.rarityPool.length)];
       const pool = allItems.filter(a => a.rarity === randomRarity);
       strip.push(pool[Math.floor(Math.random() * pool.length)]);
     }
-
-    // Place winner at position 24 (near the end, so the spin feels long)
-    strip[24] = winner;
-
-    setRouletteItems(strip);
-    setWinnerItem(winner);
+    strip[24] = allItems[Math.floor(Math.random() * allItems.length)];
+    return strip;
   }, [config.rarityPool]);
 
   const handleOpen = () => {
     setIsExiting(true);
 
+    // Fire API immediately so it resolves during the 5s spin
+    const apiPromise = openLootbox(heroArtifactId, boxRarity);
+
     setTimeout(() => {
-      buildRoulette();
+      const strip = buildStrip();
+      setRouletteItems(strip);
       const targetOffset = (24 * 112) - 150 + Math.random() * 40;
       setSpinOffset(targetOffset);
       setPhase('spinning');
       setIsExiting(false);
 
+      // When API resolves, update winner at position 24 if found in catalog
+      apiPromise.then(result => {
+        if (result.success && result.artifact) {
+          setApiResult(result.artifact);
+          const catalogItem = ARTIFACT_CATALOG[result.artifact.id];
+          if (catalogItem) {
+            setRouletteItems(prev => {
+              const updated = [...prev];
+              updated[24] = catalogItem;
+              return updated;
+            });
+          }
+        }
+      });
+
       setTimeout(() => setWinnerHighlight(true), 5000);
       setTimeout(() => setIsExiting(true), 5200);
-
       setTimeout(() => {
         setPhase('reveal');
         setIsExiting(false);
@@ -117,16 +136,7 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
   };
 
   const handleClaim = () => {
-    if (winnerItem) {
-      addArtifact(winnerItem.id);
-      addToast({
-        type: 'artifact',
-        title: `${winnerItem.name}!`,
-        message: `Новый артефакт добавлен в инвентарь!`,
-        icon: getItemIcon(winnerItem.id),
-        duration: 5000,
-      });
-    }
+    onClaim(apiResult);
     onClose();
   };
 
@@ -182,23 +192,29 @@ export function LootBoxModal({ tier, onClose }: LootBoxModalProps) {
         )}
 
         {/* === REVEAL PHASE === */}
-        {phase === 'reveal' && winnerItem && (
+        {phase === 'reveal' && apiResult && (
           <div className={`${styles.revealPhase} ${styles.phaseEnter}`}>
-            <div className={styles.revealCard} style={{ borderColor: RARITY_COLORS[winnerItem.rarity] }}>
-              <div className={styles.revealRarity} style={{ color: RARITY_COLORS[winnerItem.rarity] }}>
-                {winnerItem.rarity === 'common' ? '🟢 Обычный' : winnerItem.rarity === 'rare' ? '🔵 Редкий' : winnerItem.rarity === 'epic' ? '🟣 Эпический' : '🟡 Легендарный'}
+            <div className={styles.revealCard} style={{ borderColor: RARITY_COLORS[apiResult.rarity] }}>
+              <div className={styles.revealRarity} style={{ color: RARITY_COLORS[apiResult.rarity] }}>
+                {apiResult.rarity === 'common' ? '🟢 Обычный' : apiResult.rarity === 'rare' ? '🔵 Редкий' : apiResult.rarity === 'epic' ? '🟣 Эпический' : '🟡 Легендарный'}
               </div>
-              <div className={styles.revealIcon}>{getItemIcon(winnerItem.id)}</div>
-              <h2 className={styles.revealName}>{winnerItem.name}</h2>
-              <p className={styles.revealType}>
-                {winnerItem.type === 'consumable' ? 'Расходник' : 'Пассивный'} · Ур. {winnerItem.req_level}
-                {winnerItem.max_charges ? ` · ${winnerItem.max_charges} зар.` : ''}
-                {winnerItem.duration_hours ? ` · ${winnerItem.duration_hours}ч` : ''}
-              </p>
+              <div className={styles.revealIcon}>
+                <ApiIcon icon={apiResult.icon} name={apiResult.name} />
+              </div>
+              <h2 className={styles.revealName}>{apiResult.name}</h2>
+              {apiResult.description && (
+                <p className={styles.revealType}>{apiResult.description}</p>
+              )}
             </div>
             <button className={styles.claimBtn} onClick={handleClaim}>
               Забрать в инвентарь →
             </button>
+          </div>
+        )}
+        {phase === 'reveal' && !apiResult && (
+          <div className={`${styles.revealPhase} ${styles.phaseEnter}`}>
+            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>Что-то пошло не так 😞</p>
+            <button className={styles.claimBtn} onClick={() => { onClaim(null); onClose(); }}>Закрыть</button>
           </div>
         )}
       </div>
