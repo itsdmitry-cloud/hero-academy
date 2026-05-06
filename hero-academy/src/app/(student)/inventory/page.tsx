@@ -118,8 +118,8 @@ export default function InventoryPage() {
 
   const sortedItems = [...filteredItems].sort((a, b) => {
     if (sortMode === 'date') {
-      const da = new Date(a.acquired_at).getTime();
-      const db = new Date(b.acquired_at).getTime();
+      const da = new Date(a.acquired_at ?? 0).getTime();
+      const db = new Date(b.acquired_at ?? 0).getTime();
       return sortDir === 'desc' ? db - da : da - db;
     }
     const ra = RARITY_ORDER[a.artifact?.rarity ?? 'common'] ?? 0;
