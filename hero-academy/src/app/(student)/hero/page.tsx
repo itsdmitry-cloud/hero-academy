@@ -1,11 +1,21 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getHeroPageData } from '@/lib/hero/fetchers';
 import HeroPageClient from './HeroPageClient';
+import HeroSkeleton from './HeroSkeleton';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HeroPage() {
+export default function HeroPage() {
+  return (
+    <Suspense fallback={<HeroSkeleton />}>
+      <HeroData />
+    </Suspense>
+  );
+}
+
+async function HeroData() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,8 +26,6 @@ export default async function HeroPage() {
   const initialData = await getHeroPageData(supabase, user.id);
 
   if (!initialData.hero) {
-    // Non-students don't have heroes — send them to their dashboard
-    // instead of looping through /onboarding forever.
     const { data: profile } = await supabase
       .from('users')
       .select('role')
