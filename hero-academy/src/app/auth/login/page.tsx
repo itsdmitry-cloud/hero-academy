@@ -21,50 +21,11 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'undefined';
-    setError('DBG URL: ' + supabaseUrl);
-    await new Promise(r => setTimeout(r, 800));
-
-    const t0 = Date.now();
-    setError('DBG GET start...');
-    try {
-      const r = await fetch(supabaseUrl + '/auth/v1/health');
-      setError('DBG GET ok: status=' + r.status + ' ms=' + (Date.now() - t0));
-      await new Promise(r => setTimeout(r, 800));
-    } catch (e) {
-      const dt = Date.now() - t0;
-      const name = e instanceof Error ? e.name : 'unknown';
-      const msg = e instanceof Error ? e.message : String(e);
-      setError('DBG GET threw ms=' + dt + ' name=' + name + ' msg=' + msg);
-      setLoading(false);
-      return;
-    }
-
-    setError('DBG raw fetch POST token...');
-    try {
-      const res = await fetch(supabaseUrl + '/auth/v1/token?grant_type=password', {
-        method: 'POST',
-        headers: {
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      setError('DBG POST status=' + res.status);
-      await new Promise(r => setTimeout(r, 1500));
-    } catch (e) {
-      setError('DBG POST threw: ' + (e instanceof Error ? e.message : String(e)));
-      setLoading(false);
-      return;
-    }
-
-    setError('DBG signIn via supabase-js...');
     const { error: err } = await signIn(email, password);
     if (err) {
-      setError('DBG signIn err: ' + err);
+      setError(err);
       setLoading(false);
     } else {
-      setError('DBG signIn ok, push /hero');
       router.push('/hero');
     }
   }
