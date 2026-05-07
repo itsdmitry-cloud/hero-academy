@@ -164,7 +164,10 @@ export default function HeroPageClient({ initialData }: HeroPageClientProps) {
     initialInventory: heroArtifactsForHook,
   });
   const { profile } = useAuth();
-  const { rank: classRank, total: classTotal } = useClassRank('class');
+  const { rank: classRank, total: classTotal } = useClassRank('class', {
+    initialRank: initialData.classRank?.rank ?? null,
+    initialTotal: initialData.classRank?.total ?? 0,
+  });
   useSupabaseSync();
   useRealtimeHero();
   const { result: streakResult, showMilestone } = useStreak();

@@ -9,20 +9,29 @@ interface RpcRankRow {
   total: number;
 }
 
+interface UseClassRankOptions {
+  initialRank?: number | null;
+  initialTotal?: number;
+}
+
 /**
  * Lightweight hook for the home page tile "Ранг в классе".
  * Returns the current student's rank (1-based) and total student count
  * within the requested scope. `rank` is null when the student has no peers
  * (no class assigned, or class has zero heroes).
  */
-export function useClassRank(scope: 'class' | 'school' = 'class') {
+export function useClassRank(
+  scope: 'class' | 'school' = 'class',
+  opts: UseClassRankOptions = {},
+) {
   const supabase = createClient();
   const { user } = useAuth();
-  const [rank, setRank] = useState<number | null>(null);
-  const [total, setTotal] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const [rank, setRank] = useState<number | null>(opts.initialRank ?? null);
+  const [total, setTotal] = useState<number>(opts.initialTotal ?? 0);
+  const [loading, setLoading] = useState(opts.initialRank === undefined);
 
   useEffect(() => {
+    if (opts.initialRank !== undefined) return;
     let cancelled = false;
     (async () => {
       if (!user) {
