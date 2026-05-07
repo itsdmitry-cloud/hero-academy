@@ -1,0 +1,84 @@
+.heroCard {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  align-items: center;
+}
+
+.avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.line {
+  height: 14px;
+  border-radius: 6px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.lineLg {
+  height: 24px;
+  width: 60%;
+}
+
+.lineSm {
+  height: 12px;
+  width: 40%;
+}
+
+.bars {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.tilesRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.tile {
+  height: 72px;
+  border-radius: 12px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.block {
+  height: 120px;
+  border-radius: 16px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar, .line, .bar, .tile, .block {
+    animation: none;
+  }
+}
