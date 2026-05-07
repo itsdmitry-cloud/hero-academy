@@ -1,11 +1,33 @@
 // src/lib/hero/fetchers.ts
 // Server-only Supabase fetchers. Not callable from browser bundle.
 import 'server-only';
+import { unstable_cache } from 'next/cache';
+import { createClient as createAnonClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   HeroPageInitialData, HeroRow, HeroStatsRow, ActivityLogRow,
   ArtifactRow, HeroArtifactRow, ClassRank,
 } from './types';
+
+// Catalog rarely mutates (только админ через /api/admin/seed-artifacts и
+// родственные эндпоинты). Кеш живёт час, бастится через revalidateTag('artifacts').
+// Anon-клиент достаточен — на artifacts стоит RLS `FOR SELECT USING (true)`.
+const getArtifactCatalog = unstable_cache(
+  async (): Promise<ArtifactRow[]> => {
+    const sb = createAnonClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data, error } = await sb.from('artifacts').select('*').order('rarity');
+    if (error) {
+      console.error('[hero/fetchers] cached artifact catalog:', error);
+      return [];
+    }
+    return (data ?? []) as ArtifactRow[];
+  },
+  ['artifact-catalog-v1'],
+  { revalidate: 3600, tags: ['artifacts'] }
+);
 
 async function safe<T>(p: PromiseLike<{ data: T | null; error: unknown }>, fallback: T): Promise<T> {
   try {
@@ -74,13 +96,7 @@ export async function getHeroPageData(
         .limit(20) as PromiseLike<{ data: ActivityLogRow[] | null; error: unknown }>,
       [] as ActivityLogRow[],
     ),
-    safe(
-      supabase
-        .from('artifacts')
-        .select('*')
-        .order('rarity') as PromiseLike<{ data: ArtifactRow[] | null; error: unknown }>,
-      [] as ArtifactRow[],
-    ),
+    getArtifactCatalog(),
     heroId
       ? safe(
           supabase

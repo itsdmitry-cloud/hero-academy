@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { ARTIFACT_REGISTRY, toDbRow } from '@/lib/game/artifact-registry';
 
@@ -44,6 +45,8 @@ export async function POST() {
         else inserted++;
       }
     }
+
+    revalidateTag('artifacts', 'max');
 
     return NextResponse.json({
       success: true,

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 
 const admin = createClient(
@@ -83,6 +84,8 @@ export async function POST() {
 
   const updated = results.filter(r => r.updated > 0).length;
   const missed  = results.filter(r => r.updated === 0 && !r.error).length;
+
+  if (updated > 0) revalidateTag('artifacts', 'max');
 
   return NextResponse.json({
     success: true,

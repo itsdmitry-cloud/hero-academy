@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 
 const admin = createClient(
@@ -39,6 +40,9 @@ export async function POST() {
       error: artErr?.message || shopErr?.message || null,
     });
   }
+
+  const totalArtifacts = results.reduce((sum, r) => sum + r.artifacts_updated, 0);
+  if (totalArtifacts > 0) revalidateTag('artifacts', 'max');
 
   return NextResponse.json({ success: true, results });
 }
