@@ -1,7 +1,7 @@
 // src/lib/hero/__tests__/mappers.test.ts
 import { describe, it, expect } from 'vitest';
-import { mapHero, mapStats } from '../mappers';
-import type { HeroRow } from '../types';
+import { mapHero, mapStats, mapActivity } from '../mappers';
+import type { HeroRow, ActivityLogRow } from '../types';
 
 describe('hero mappers', () => {
   describe('mapHero', () => {
@@ -58,6 +58,73 @@ describe('hero mappers', () => {
     });
   });
 
-  it.todo('mapActivity');
+  describe('mapActivity', () => {
+    const base: Omit<ActivityLogRow, 'action' | 'metadata'> = {
+      id: 'log-1', user_id: 'u-1', hero_id: 'h-1',
+      xp_change: 0, gold_change: 0, hp_change: 0,
+      created_at: '2026-05-07T10:00:00Z',
+    };
+
+    it('returns empty array for empty input', () => {
+      expect(mapActivity([])).toEqual([]);
+    });
+
+    it('skips ignored actions (lootbox_opened, shop_purchase, etc.)', () => {
+      const rows: ActivityLogRow[] = [
+        { ...base, action: 'lootbox_opened', metadata: {} },
+        { ...base, action: 'shop_purchase', metadata: {} },
+        { ...base, action: 'teacher_gold_grant', metadata: {} },
+        { ...base, action: 'bp_reward_claimed', metadata: {} },
+        { ...base, action: 'seasonal_lootbox_opened', metadata: {} },
+      ];
+      expect(mapActivity(rows)).toEqual([]);
+    });
+
+    it('maps quest_completed with quest name from metadata', () => {
+      const result = mapActivity([
+        { ...base, action: 'quest_completed', metadata: { quest: 'Параграф 5' }, xp_change: 100 },
+      ]);
+      expect(result).toHaveLength(1);
+      expect(result[0].quest).toBe('Параграф 5');
+      expect(result[0].result).toBe('✅ Успех');
+      expect(result[0].xp).toBe('+100');
+      expect(result[0].category).toBe('quest');
+    });
+
+    it('maps boss_kill_reward with damage % and MVP flag', () => {
+      const result = mapActivity([
+        {
+          ...base,
+          action: 'boss_kill_reward',
+          metadata: { reason: '15% урона Боссу (Алгебра) — MVP' },
+          xp_change: 500,
+        },
+      ]);
+      expect(result[0].quest).toContain('Алгебра');
+      expect(result[0].result).toContain('15%');
+      expect(result[0].result).toContain('👑');
+      expect(result[0].category).toBe('boss');
+    });
+
+    it('formats xp/gold changes with sign', () => {
+      const result = mapActivity([
+        { ...base, action: 'grant_xp', xp_change: 50, gold_change: 0, metadata: { reason: 'Бонус' } },
+        { ...base, action: 'damage', xp_change: 0, hp_change: -10, metadata: { reason: 'Ошибка' } },
+      ]);
+      expect(result[0].xp).toBe('+50');
+      expect(result[1].xp).toBe('-');
+    });
+
+    it('exposes raw fields for ActionBreakdown', () => {
+      const result = mapActivity([
+        { ...base, action: 'quest_completed', xp_change: 50, gold_change: 10, hp_change: -5, metadata: { quest: 'X' } },
+      ]);
+      expect(result[0].xpChangeRaw).toBe(50);
+      expect(result[0].goldChangeRaw).toBe(10);
+      expect(result[0].hpChangeRaw).toBe(-5);
+      expect(result[0].action).toBe('quest_completed');
+    });
+  });
+
   it.todo('mapInventory');
 });
