@@ -21,26 +21,47 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'undefined';
+    setError('DBG URL: ' + supabaseUrl);
+    await new Promise(r => setTimeout(r, 800));
+
+    setError('DBG raw fetch GET ' + supabaseUrl + '/auth/v1/health');
+    try {
+      const r = await fetch(supabaseUrl + '/auth/v1/health');
+      setError('DBG GET ok: status=' + r.status);
+      await new Promise(r => setTimeout(r, 800));
+    } catch (e) {
+      setError('DBG GET threw: ' + (e instanceof Error ? e.message : String(e)));
+      setLoading(false);
+      return;
+    }
+
+    setError('DBG raw fetch POST token...');
+    try {
+      const res = await fetch(supabaseUrl + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      setError('DBG POST status=' + res.status);
+      await new Promise(r => setTimeout(r, 1500));
+    } catch (e) {
+      setError('DBG POST threw: ' + (e instanceof Error ? e.message : String(e)));
+      setLoading(false);
+      return;
+    }
+
+    setError('DBG signIn via supabase-js...');
     const { error: err } = await signIn(email, password);
     if (err) {
-      setError(err);
+      setError('DBG signIn err: ' + err);
       setLoading(false);
     } else {
-      // Fetch role to redirect properly
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const { data: profile } = await supabase
-          .from('users').select('role').eq('id', authUser.id).single();
-        const role = profile?.role;
-        if (role === 'teacher') router.push('/teacher');
-        else if (role === 'admin') router.push('/admin');
-        else if (role === 'parent') router.push('/parent');
-        else router.push('/hero');
-      } else {
-        router.push('/hero');
-      }
+      setError('DBG signIn ok, push /hero');
+      router.push('/hero');
     }
   }
 
