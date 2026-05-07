@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { useHeroStore } from '@/lib/store/heroStore';
 
 /* ──────────── types ──────────── */
 export interface UserProfile {
@@ -147,6 +148,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* ── sign out ── */
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
+    // Reset hero store so the next signed-in user re-fetches via useSupabaseSync.
+    useHeroStore.setState({ synced: false });
     setUser(null);
     setProfile(null);
     setSession(null);

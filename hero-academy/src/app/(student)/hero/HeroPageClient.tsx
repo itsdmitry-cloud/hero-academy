@@ -137,7 +137,7 @@ export default function HeroPageClient({ initialData }: HeroPageClientProps) {
   // SSR hydration — выставляем store ДО первого рендера, синхронно.
   // useEffect здесь дал бы flash из persisted localStorage.
   const hydrated = useRef(false);
-  if (!hydrated.current) {
+  if (!hydrated.current && typeof window !== 'undefined') {
     if (initialData.hero) {
       const persistedHeroId = useHeroStore.getState().hero.heroId;
       // Защита: если в persist-кеше остались данные другого юзера — чистим.
