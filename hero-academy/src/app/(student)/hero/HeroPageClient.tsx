@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import { StatCard } from '@/components/ui/StatCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StreakProgressBar } from '@/components/ui/StreakProgressBar';
 import { useHeroStore } from '@/lib/store/heroStore';
+import { mapHero, mapStats, mapInventory, mapActivity } from '@/lib/hero/mappers';
 import { xpProgress } from '@/lib/game/math';
 import { useSupabaseSync } from '@/lib/hooks/use-supabase-sync';
 import { useRealtimeHero } from '@/lib/hooks/use-realtime-hero';
@@ -133,7 +134,29 @@ export interface HeroPageClientProps {
   initialData: HeroPageInitialData;
 }
 
-export default function HeroPageClient({ initialData: _initialData }: HeroPageClientProps) {
+export default function HeroPageClient({ initialData }: HeroPageClientProps) {
+  // SSR hydration — выставляем store ДО первого рендера, синхронно.
+  // useEffect здесь дал бы flash из persisted localStorage.
+  const hydrated = useRef(false);
+  if (!hydrated.current) {
+    if (initialData.hero) {
+      const persistedHeroId = useHeroStore.getState().hero.heroId;
+      // Защита: если в persist-кеше остались данные другого юзера — чистим.
+      if (persistedHeroId && persistedHeroId !== initialData.hero.id) {
+        useHeroStore.persist.clearStorage();
+      }
+      const mappedStats = mapStats(initialData.stats);
+      useHeroStore.setState({
+        hero: mapHero(initialData.hero, initialData.stats),
+        inventory: mapInventory(initialData.heroArtifacts),
+        activity: mapActivity(initialData.activityLog),
+        ...(mappedStats ? { stats: mappedStats } : {}),
+        synced: true,
+      });
+    }
+    hydrated.current = true;
+  }
+
   const { hero, activity, synced } = useHeroStore();
   const { equipArtifact, inventory: dbInventory, refetch: refetchArtifacts } = useArtifacts();
   const { profile } = useAuth();
