@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useAdminData } from '@/lib/hooks/use-admin-data';
 import type { EconomyConfig } from '@/lib/hooks/use-admin-data';
 import styles from './page.module.css';
@@ -67,6 +68,10 @@ export default function EconomyPage() {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  // Sticky-подсказка: новый множитель HP боссов сохранён, но к существующим
+  // боссам применится только после "🔄 Пересчитать HP" в /admin/seasons
+  // (max_hp в subject_bosses — снимок, не derive-поле).
+  const [bossHpHint, setBossHpHint] = useState<{ from: number; to: number } | null>(null);
 
   interface AuditEntry {
     id: string;
@@ -170,11 +175,15 @@ export default function EconomyPage() {
   const handleSave = async () => {
     setSaving(true);
     const scopeId = scope === 'global' ? null : scope === 'school' ? selectedSchool || null : selectedClass || null;
+    const prevBossHp = savedBalance.boss_hp_multiplier;
     const { error } = await saveEconomy(balance, scope, scopeId, getScopeLabel());
     setSaving(false);
     if (error) { setFeedback(`Ошибка: ${error}`); return; }
     setSavedBalance(balance);
     setFeedback('✅ Настройки сохранены в БД!');
+    if (balance.boss_hp_multiplier !== prevBossHp) {
+      setBossHpHint({ from: prevBossHp, to: balance.boss_hp_multiplier });
+    }
     loadAudit(); // refresh history
     setTimeout(() => setFeedback(null), 3000);
   };
@@ -206,6 +215,64 @@ export default function EconomyPage() {
       {feedback && (
         <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--accent-xp)', borderRadius: 'var(--radius-lg)', padding: '0.75rem 1rem', marginBottom: '1rem', fontWeight: 700 }}>
           {feedback}
+        </div>
+      )}
+
+      {bossHpHint && (
+        <div
+          style={{
+            background: 'rgba(244,63,94,0.08)',
+            border: '1px solid rgba(244,63,94,0.45)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '0.75rem 1rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+          }}
+          role="status"
+        >
+          <span style={{ fontSize: '1.25rem', lineHeight: 1.2 }}>🐉</span>
+          <div style={{ flex: 1, minWidth: '240px', fontSize: '0.85rem', lineHeight: 1.45 }}>
+            <div style={{ fontWeight: 700, color: '#f43f5e', marginBottom: '0.2rem' }}>
+              Множитель HP Боссов: {bossHpHint.from}% → {bossHpHint.to}%
+            </div>
+            <div style={{ color: 'var(--text-secondary)' }}>
+              К <b>уже существующим</b> боссам новый множитель применится только после пересчёта.
+              Перейдите в Сезоны и нажмите «🔄 Пересчитать HP» в нужном активном сезоне.
+            </div>
+          </div>
+          <Link
+            href="/admin/seasons"
+            style={{
+              padding: '0.5rem 0.9rem',
+              borderRadius: 'var(--radius-lg)',
+              background: 'rgba(244,63,94,0.2)',
+              border: '1px solid rgba(244,63,94,0.55)',
+              color: '#fda4af',
+              fontWeight: 700,
+              textDecoration: 'none',
+              fontSize: '0.85rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            → В сезоны
+          </Link>
+          <button
+            onClick={() => setBossHpHint(null)}
+            aria-label="Скрыть подсказку"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: '1.1rem',
+              cursor: 'pointer',
+              padding: '0 0.25rem',
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
