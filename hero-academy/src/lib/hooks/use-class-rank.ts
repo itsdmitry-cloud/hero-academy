@@ -54,6 +54,7 @@ export function useClassRank(
       setLoading(false);
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, scope, supabase]);
 
   return { rank, total, loading };

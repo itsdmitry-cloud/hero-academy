@@ -6,7 +6,7 @@ import type { ExtendedHeroState, ActivityEntry } from '@/lib/store/heroStore';
 import type { PlayerArtifact } from '@/lib/utils/artifacts';
 import type { HeroRow, HeroStatsRow, ActivityLogRow, HeroArtifactRow } from './types';
 
-export function mapHero(row: HeroRow, _stats: HeroStatsRow | null): ExtendedHeroState {
+export function mapHero(row: HeroRow): ExtendedHeroState {
   return {
     heroId: row.id,
     name: row.name,

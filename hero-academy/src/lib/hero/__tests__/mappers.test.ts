@@ -12,7 +12,7 @@ describe('hero mappers', () => {
     };
 
     it('maps full row to ExtendedHeroState', () => {
-      const result = mapHero(baseRow, null);
+      const result = mapHero(baseRow);
       expect(result.heroId).toBe('hero-1');
       expect(result.name).toBe('Алиса');
       expect(result.gender).toBe('female');
@@ -28,20 +28,20 @@ describe('hero mappers', () => {
     });
 
     it('treats null streak_current/streak_best/season_xp as 0', () => {
-      const result = mapHero({ ...baseRow, streak_current: null, streak_best: null, season_xp: null }, null);
+      const result = mapHero({ ...baseRow, streak_current: null, streak_best: null, season_xp: null });
       expect(result.streak).toBe(0);
       expect(result.streak_best).toBe(0);
       expect(result.season_xp).toBe(0);
     });
 
     it('preserves activeArtifacts as empty array (filled by mapInventory separately)', () => {
-      const result = mapHero(baseRow, null);
+      const result = mapHero(baseRow);
       expect(result.activeArtifacts).toEqual([]);
     });
 
     it('preserves avatar default emoji', () => {
-      const male = mapHero({ ...baseRow, gender: 'male' }, null);
-      const female = mapHero({ ...baseRow, gender: 'female' }, null);
+      const male = mapHero({ ...baseRow, gender: 'male' });
+      const female = mapHero({ ...baseRow, gender: 'female' });
       expect(typeof male.avatar).toBe('string');
       expect(typeof female.avatar).toBe('string');
     });

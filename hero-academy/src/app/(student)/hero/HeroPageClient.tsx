@@ -146,7 +146,7 @@ export default function HeroPageClient({ initialData }: HeroPageClientProps) {
       }
       const mappedStats = mapStats(initialData.stats);
       useHeroStore.setState({
-        hero: mapHero(initialData.hero, initialData.stats),
+        hero: mapHero(initialData.hero),
         inventory: mapInventory(initialData.heroArtifacts),
         activity: mapActivity(initialData.activityLog),
         ...(mappedStats ? { stats: mappedStats } : {}),
