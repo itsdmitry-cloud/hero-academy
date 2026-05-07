@@ -25,13 +25,17 @@ export default function LoginPage() {
     setError('DBG URL: ' + supabaseUrl);
     await new Promise(r => setTimeout(r, 800));
 
-    setError('DBG raw fetch GET ' + supabaseUrl + '/auth/v1/health');
+    const t0 = Date.now();
+    setError('DBG GET start...');
     try {
       const r = await fetch(supabaseUrl + '/auth/v1/health');
-      setError('DBG GET ok: status=' + r.status);
+      setError('DBG GET ok: status=' + r.status + ' ms=' + (Date.now() - t0));
       await new Promise(r => setTimeout(r, 800));
     } catch (e) {
-      setError('DBG GET threw: ' + (e instanceof Error ? e.message : String(e)));
+      const dt = Date.now() - t0;
+      const name = e instanceof Error ? e.name : 'unknown';
+      const msg = e instanceof Error ? e.message : String(e);
+      setError('DBG GET threw ms=' + dt + ' name=' + name + ' msg=' + msg);
       setLoading(false);
       return;
     }
