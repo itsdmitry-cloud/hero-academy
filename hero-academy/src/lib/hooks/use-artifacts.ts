@@ -39,12 +39,17 @@ export interface HeroArtifact {
   artifact?: ArtifactCatalog;
 }
 
+export interface UseArtifactsOptions {
+  initialCatalog?: ArtifactCatalog[];
+  initialInventory?: HeroArtifact[];
+}
+
 /* ──────────── hook ──────────── */
-export function useArtifacts() {
+export function useArtifacts(opts: UseArtifactsOptions = {}) {
   const supabase = createClient();
-  const [catalog, setCatalog] = useState<ArtifactCatalog[]>([]);
-  const [inventory, setInventory] = useState<HeroArtifact[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [catalog, setCatalog] = useState<ArtifactCatalog[]>(opts.initialCatalog ?? []);
+  const [inventory, setInventory] = useState<HeroArtifact[]>(opts.initialInventory ?? []);
+  const [loading, setLoading] = useState(!(opts.initialCatalog && opts.initialInventory));
   // Cache the hero id so we don't refetch it every time
   const heroIdRef = useRef<string | null>(null);
 
@@ -122,10 +127,11 @@ export function useArtifacts() {
     }
   }, [supabase]);
 
-  // Fetch on mount — only once
+  // Fetch on mount — only once, skip if initial values were provided via SSR
   useEffect(() => {
+    if (opts.initialCatalog && opts.initialInventory) return;
     fetchArtifacts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ── Slot limits by hero level (alpha-test май 2026 — каждые 3 уровня, cap 6) ── */

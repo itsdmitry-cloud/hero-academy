@@ -11,7 +11,7 @@ import { xpProgress } from '@/lib/game/math';
 import { useSupabaseSync } from '@/lib/hooks/use-supabase-sync';
 import { useRealtimeHero } from '@/lib/hooks/use-realtime-hero';
 import { useStreak } from '@/lib/hooks/use-streak';
-import { useArtifacts, type ArtifactCatalog } from '@/lib/hooks/use-artifacts';
+import { useArtifacts, type ArtifactCatalog, type HeroArtifact } from '@/lib/hooks/use-artifacts';
 import { useClassRank } from '@/lib/hooks/use-class-rank';
 import { BattlePassWidget } from '@/components/game/BattlePassWidget';
 import { AchievementsPanel } from '@/components/game/AchievementsPanel';
@@ -158,7 +158,11 @@ export default function HeroPageClient({ initialData }: HeroPageClientProps) {
   }
 
   const { hero, activity, synced } = useHeroStore();
-  const { equipArtifact, inventory: dbInventory, refetch: refetchArtifacts } = useArtifacts();
+  const heroArtifactsForHook = initialData.heroArtifacts as unknown as HeroArtifact[];
+  const { equipArtifact, inventory: dbInventory, refetch: refetchArtifacts } = useArtifacts({
+    initialCatalog: initialData.artifactCatalog,
+    initialInventory: heroArtifactsForHook,
+  });
   const { profile } = useAuth();
   const { rank: classRank, total: classTotal } = useClassRank('class');
   useSupabaseSync();
