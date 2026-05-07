@@ -44,8 +44,8 @@ export function validateEquip(input: ValidateEquipInput): ValidateEquipResult {
     return { ok: false, code: 'expired', message: 'Срок действия артефакта истёк.' };
   }
 
-  if (artifact.artifact_type === 'consumable' && isInstantConsumableEffect(effect)) {
-    return { ok: false, code: 'not_equippable', message: 'Мгновенные зелья нельзя экипировать. Используйте «Применить».' };
+  if (artifact.artifact_type === 'consumable') {
+    return { ok: false, code: 'not_equippable', message: 'Расходники нельзя экипировать. Используйте «Применить».' };
   }
 
   const minLevel = artifact.min_level ?? 1;

@@ -74,6 +74,26 @@ describe('validateEquip', () => {
     if (!r.ok) expect(r.code).toBe('not_equippable');
   });
 
+  it('rejects complex consumable (consumable_*, gold_bonus) — also must be drunk', () => {
+    const r1 = validateEquip({
+      heroLevel: 5,
+      artifact: { ...baseArt, artifact_type: 'consumable', effect: 'consumable_class_xp' },
+      currentlyEquippedExclSelf: 0,
+      isExpired: false,
+    });
+    expect(r1.ok).toBe(false);
+    if (!r1.ok) expect(r1.code).toBe('not_equippable');
+
+    const r2 = validateEquip({
+      heroLevel: 5,
+      artifact: { ...baseArt, artifact_type: 'consumable', effect: 'gold_bonus' },
+      currentlyEquippedExclSelf: 0,
+      isExpired: false,
+    });
+    expect(r2.ok).toBe(false);
+    if (!r2.ok) expect(r2.code).toBe('not_equippable');
+  });
+
   it('accepts valid equip', () => {
     const r = validateEquip({
       heroLevel: 5,
