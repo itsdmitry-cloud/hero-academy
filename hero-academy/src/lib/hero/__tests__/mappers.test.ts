@@ -1,6 +1,6 @@
 // src/lib/hero/__tests__/mappers.test.ts
 import { describe, it, expect } from 'vitest';
-import { mapHero } from '../mappers';
+import { mapHero, mapStats } from '../mappers';
 import type { HeroRow } from '../types';
 
 describe('hero mappers', () => {
@@ -44,6 +44,17 @@ describe('hero mappers', () => {
       const female = mapHero({ ...baseRow, gender: 'female' }, null);
       expect(typeof male.avatar).toBe('string');
       expect(typeof female.avatar).toBe('string');
+    });
+  });
+
+  describe('mapStats', () => {
+    it('returns null when stats is null', () => {
+      expect(mapStats(null)).toBeNull();
+    });
+
+    it('maps stats row to store shape', () => {
+      expect(mapStats({ strength: 1, knowledge: 2, endurance: 3, luck: 4, wisdom: 5 }))
+        .toEqual({ strength: 1, knowledge: 2, endurance: 3, luck: 4, wisdom: 5 });
     });
   });
 
