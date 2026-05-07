@@ -1,0 +1,30 @@
+# Reverse proxy on VPS (194.67.116.143) для обхода блокировки Supabase РКН.
+# Браузер ходит на db2.hero-academy.ru → Caddy → gjezmurskhjngbostltn.supabase.co.
+# Server-side (Vercel middleware/SSR/api) ходит напрямую — не использует этот прокси.
+#
+# HTTP/3 off: на мобильных сетях UDP теряется → Safari зависает в "Load failed".
+# upstream HTTP/1.1: Caddy + h2 upstream иногда зависал на context cancel.
+# CORS: mirror Origin + allow-credentials, чтобы supabase-js fetch с cookies прошёл.
+
+{
+    servers {
+        protocols h1 h2
+    }
+}
+
+db2.hero-academy.ru {
+    log {
+        output file /var/log/caddy/access.log
+    }
+    reverse_proxy https://gjezmurskhjngbostltn.supabase.co {
+        transport http {
+            versions 1.1
+            keepalive 30s
+            keepalive_idle_conns 16
+        }
+        header_down Access-Control-Allow-Origin "{http.request.header.Origin}"
+        header_down Access-Control-Allow-Credentials "true"
+        header_down +Vary "Origin"
+        header_down -Alt-Svc
+    }
+}
