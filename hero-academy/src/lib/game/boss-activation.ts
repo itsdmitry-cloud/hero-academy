@@ -148,7 +148,11 @@ export function buildRecalcPlan(input: BuildRecalcPlanInput): RecalcPlan {
       seasonWeeks,
       multiplierPct: multiplier,
     });
-    const newCurrentHp = Math.min(boss.current_hp, newMaxHp);
+    // Сохраняем уже нанесённый урон, а не остаток HP. Иначе при росте класса
+    // боссу не добавилось бы HP за новых учеников (баг 2026-05-07: 2→8 учеников
+    // оставляли current_hp=1319 при newMax=6912 — босс выглядел почти мёртвым).
+    const damageDealt = Math.max(0, boss.max_hp - boss.current_hp);
+    const newCurrentHp = Math.max(0, newMaxHp - damageDealt);
     if (newMaxHp === boss.max_hp && newCurrentHp === boss.current_hp) continue;
     changes.push({
       bossId: boss.id,

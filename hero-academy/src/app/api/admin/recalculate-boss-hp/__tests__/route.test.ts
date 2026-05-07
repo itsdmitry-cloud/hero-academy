@@ -213,7 +213,8 @@ describe('POST /api/admin/recalculate-boss-hp', () => {
     expect(change.oldMaxHp).toBe(5000);
     expect(change.newMaxHp).toBe(9600); // 10×3×4×80
     expect(change.oldCurrentHp).toBe(3000);
-    expect(change.newCurrentHp).toBe(3000); // min(3000, 9600) = 3000
+    // damageDealt = 5000−3000 = 2000; newCurrent = 9600−2000 = 7600
+    expect(change.newCurrentHp).toBe(7600);
 
     // No mutations
     expect(updateSink).toHaveLength(0);
@@ -261,7 +262,7 @@ describe('POST /api/admin/recalculate-boss-hp', () => {
     const upd = updateSink[0]!;
     expect(upd.table).toBe('subject_bosses');
     expect(upd.id).toBe('boss-1'); // guard: id must be captured after .eq('id', bossId)
-    expect(upd.patch).toMatchObject({ max_hp: 9600, current_hp: 3000 });
+    expect(upd.patch).toMatchObject({ max_hp: 9600, current_hp: 7600 });
   });
 
   /**
@@ -311,15 +312,18 @@ describe('POST /api/admin/recalculate-boss-hp', () => {
   });
 
   /**
-   * Test 4: Clamp behavior
+   * Test 4: damage-preserving recalc.
    *
-   * Case A (shrink): old max=20000, current=18000 → 5 students → new max=4800.
-   *   newCurrentHp = min(18000, 4800) = 4800 (clamped down).
+   * Идея: при пересчёте сохраняется уже нанесённый урон (newMax − damageDealt),
+   * а не остаток HP. Это корректно работает в обе стороны — рост и сжатие класса.
    *
-   * Case B (grow): old max=9600, current=5000 → 15 students → new max=14400.
-   *   newCurrentHp = min(5000, 14400) = 5000 (preserved).
+   * Case A (shrink): max=20000, current=18000 (damage=2000) → 5 students → newMax=4800.
+   *   newCurrent = max(0, 4800−2000) = 2800.
+   *
+   * Case B (grow): max=9600, current=5000 (damage=4600) → 15 students → newMax=14400.
+   *   newCurrent = max(0, 14400−4600) = 9800 (новые ученики получают свою долю HP).
    */
-  it('clamp: shrinks current to new_max when class shrinks, preserves when class grows', async () => {
+  it('preserves damage dealt across recalc (shrink and grow)', async () => {
     mockData.season = {
       id: 'season-1',
       school_id: 'school-1',
@@ -365,13 +369,13 @@ describe('POST /api/admin/recalculate-boss-hp', () => {
       (c: Record<string, unknown>) => c.bossId === 'boss-shrink',
     );
     expect(shrinkChange.newMaxHp).toBe(4800);
-    expect(shrinkChange.newCurrentHp).toBe(4800); // clamped from 18000
+    expect(shrinkChange.newCurrentHp).toBe(2800); // 4800 − 2000 урона
 
     const growChange = body.changes.find(
       (c: Record<string, unknown>) => c.bossId === 'boss-grow',
     );
     expect(growChange.newMaxHp).toBe(14400);
-    expect(growChange.newCurrentHp).toBe(5000); // preserved, not inflated
+    expect(growChange.newCurrentHp).toBe(9800); // 14400 − 4600 урона
   });
 
   /**

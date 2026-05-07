@@ -125,14 +125,14 @@ describe('buildRecalcPlan', () => {
   ];
   const multiplierResolver = () => 100;
 
-  it('возвращает diff для existing боссов с новым studentCount', () => {
+  it('при росте класса сохраняет уже нанесённый урон (newCurrent = newMax − damageDealt)', () => {
     const existing: ExistingBoss[] = [
       {
         id: 'b1',
         class_id: 'c1',
         subject_id: 'Математика',
         max_hp: 9600, // 10 students × 3 × 4 × 80
-        current_hp: 5000,
+        current_hp: 5000, // нанесено 4600 урона
         is_defeated: false,
       },
     ];
@@ -148,17 +148,17 @@ describe('buildRecalcPlan', () => {
     expect(change?.oldMaxHp).toBe(9600);
     expect(change?.newMaxHp).toBe(14400); // 15 × 3 × 4 × 80
     expect(change?.oldCurrentHp).toBe(5000);
-    expect(change?.newCurrentHp).toBe(5000); // clamp: min(5000, 14400)
+    expect(change?.newCurrentHp).toBe(9800); // 14400 − 4600 урона
   });
 
-  it('clamp уменьшает current_hp если new_max < old_current', () => {
+  it('при сжатии класса урон сохраняется (newCurrent = newMax − damageDealt)', () => {
     const existing: ExistingBoss[] = [
       {
         id: 'b1',
         class_id: 'c1',
         subject_id: 'Математика',
         max_hp: 20000,
-        current_hp: 18000,
+        current_hp: 18000, // нанесено 2000 урона
         is_defeated: false,
       },
     ];
@@ -171,7 +171,57 @@ describe('buildRecalcPlan', () => {
     });
     // 5 × 3 × 4 × 80 = 4800
     expect(plan.changes[0]?.newMaxHp).toBe(4800);
-    expect(plan.changes[0]?.newCurrentHp).toBe(4800); // clamp
+    expect(plan.changes[0]?.newCurrentHp).toBe(2800); // 4800 − 2000 урона
+  });
+
+  it('если уже нанесённый урон ≥ нового max, current_hp = 0 (босс на грани смерти)', () => {
+    const existing: ExistingBoss[] = [
+      {
+        id: 'b1',
+        class_id: 'c1',
+        subject_id: 'Математика',
+        max_hp: 10000,
+        current_hp: 1000, // нанесено 9000 урона
+        is_defeated: false,
+      },
+    ];
+    const plan = buildRecalcPlan({
+      classes: [{ id: 'c1', name: '6А', studentCount: 1 }],
+      subjects: ['Математика'],
+      existing,
+      seasonWeeks: 4,
+      multiplierResolver,
+    });
+    // 1 × 3 × 4 × 80 = 960, поднято до MIN_HP=1000. damageDealt=9000 > 1000 → clamp 0.
+    expect(plan.changes[0]?.newMaxHp).toBe(1000);
+    expect(plan.changes[0]?.newCurrentHp).toBe(0);
+  });
+
+  it('регрессия (Циркуль): 2→8 учеников, 409 урона уже нанесено — должны прибавить HP за новых учеников', () => {
+    // Реальный кейс из БД 2026-05-07.
+    // До: 2 ученика, max=1728, current=1319 (Ульяна нанесла 409 урона).
+    // Добавлено 6 учеников (стало 8), нажата "Пересчитать HP".
+    // Старый код: newCurrent = min(1319, 6912) = 1319 → босс выглядел почти мёртвым.
+    // Правильно: newCurrent = 6912 − 409 = 6503 → 6 новых получают свой "вклад" в HP.
+    const existing: ExistingBoss[] = [
+      {
+        id: 'b1',
+        class_id: 'c1',
+        subject_id: 'Математика',
+        max_hp: 1728,
+        current_hp: 1319,
+        is_defeated: false,
+      },
+    ];
+    const plan = buildRecalcPlan({
+      classes: [{ id: 'c1', name: '6', studentCount: 8 }],
+      subjects: ['Математика'],
+      existing,
+      seasonWeeks: 3,
+      multiplierResolver: () => 120,
+    });
+    expect(plan.changes[0]?.newMaxHp).toBe(6912);
+    expect(plan.changes[0]?.newCurrentHp).toBe(6503);
   });
 
   it('defeated боссов пропускает полностью (не меняет ни max ни current)', () => {
