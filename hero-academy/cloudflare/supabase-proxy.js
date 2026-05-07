@@ -3,10 +3,9 @@
 // db.hero-academy.ru → CF Worker → gjezmurskhjngbostltn.supabase.co
 //
 // Forwards REST, Auth, Storage, Functions and Realtime WebSocket as-is.
-// Deploy:
-//   1. Cloudflare Dashboard → Workers & Pages → Create Worker
-//   2. Paste this code, Save & Deploy
-//   3. Settings → Triggers → Add Custom Domain → db.hero-academy.ru
+// Strips alt-svc (forces browser onto HTTP/2 — some mobile carriers
+// drop QUIC/UDP) and removes upstream Set-Cookie that targets
+// supabase.co (browser rejects them on db.hero-academy.ru anyway).
 
 const TARGET_HOST = 'gjezmurskhjngbostltn.supabase.co';
 
@@ -19,6 +18,16 @@ export default {
 
     const upstream = new Request(url.toString(), request);
     upstream.headers.set('Host', TARGET_HOST);
-    return fetch(upstream);
+
+    const resp = await fetch(upstream);
+    const headers = new Headers(resp.headers);
+    headers.delete('alt-svc');
+    headers.delete('set-cookie');
+
+    return new Response(resp.body, {
+      status: resp.status,
+      statusText: resp.statusText,
+      headers,
+    });
   },
 };
