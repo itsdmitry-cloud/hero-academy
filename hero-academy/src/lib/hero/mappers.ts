@@ -3,7 +3,8 @@
 // Used by both SSR hydration and client realtime updates.
 
 import type { ExtendedHeroState, ActivityEntry } from '@/lib/store/heroStore';
-import type { HeroRow, HeroStatsRow, ActivityLogRow } from './types';
+import type { PlayerArtifact } from '@/lib/utils/artifacts';
+import type { HeroRow, HeroStatsRow, ActivityLogRow, HeroArtifactRow } from './types';
 
 export function mapHero(row: HeroRow, _stats: HeroStatsRow | null): ExtendedHeroState {
   return {
@@ -202,4 +203,19 @@ export function mapActivity(rows: ActivityLogRow[]): ActivityEntry[] {
       };
     })
     .filter((x): x is ActivityEntry => x !== null);
+}
+
+export function mapInventory(rows: HeroArtifactRow[]): PlayerArtifact[] {
+  const now = Date.now();
+  return rows
+    .filter((row) => !row.expires_at || new Date(row.expires_at).getTime() >= now)
+    .map((row) => ({
+      id: row.id,
+      defId: row.artifact_id,
+      is_equipped: row.is_equipped,
+      ...(row.charges_remaining !== undefined && row.charges_remaining !== null
+        ? { charges_left: row.charges_remaining }
+        : {}),
+      ...(row.expires_at ? { expires_at: new Date(row.expires_at) } : {}),
+    } as PlayerArtifact));
 }

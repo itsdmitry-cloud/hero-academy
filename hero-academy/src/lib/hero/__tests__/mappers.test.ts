@@ -1,7 +1,7 @@
 // src/lib/hero/__tests__/mappers.test.ts
 import { describe, it, expect } from 'vitest';
-import { mapHero, mapStats, mapActivity } from '../mappers';
-import type { HeroRow, ActivityLogRow } from '../types';
+import { mapHero, mapStats, mapActivity, mapInventory } from '../mappers';
+import type { HeroRow, ActivityLogRow, HeroArtifactRow } from '../types';
 
 describe('hero mappers', () => {
   describe('mapHero', () => {
@@ -126,5 +126,45 @@ describe('hero mappers', () => {
     });
   });
 
-  it.todo('mapInventory');
+  describe('mapInventory', () => {
+    const baseArt = {
+      id: 'a1', name: 'Зелье', description: '', rarity: 'common' as const,
+      icon: '⚗️', effect: 'hp_restore', effect_value: 30,
+      duration_hours: 0, drop_rate: 0.1, stackable: false,
+      max_charges: 1, is_shopable: true,
+    };
+
+    it('returns empty for no rows', () => {
+      expect(mapInventory([])).toEqual([]);
+    });
+
+    it('drops expired artifacts (expires_at < now)', () => {
+      const rows: HeroArtifactRow[] = [
+        {
+          id: 'ha1', artifact_id: 'a1', hero_id: 'h1', slot_index: null,
+          is_equipped: false, quantity: 1, charges_remaining: 1,
+          acquired_at: '2026-01-01', expires_at: '2020-01-01T00:00:00Z',
+          source: 'shop', artifact: baseArt,
+        },
+      ];
+      expect(mapInventory(rows)).toEqual([]);
+    });
+
+    it('keeps unexpired and unconstrained artifacts', () => {
+      const rows: HeroArtifactRow[] = [
+        {
+          id: 'ha1', artifact_id: 'a1', hero_id: 'h1', slot_index: 0,
+          is_equipped: true, quantity: 1, charges_remaining: 3,
+          acquired_at: '2026-05-01', expires_at: null,
+          source: 'shop', artifact: baseArt,
+        },
+      ];
+      const result = mapInventory(rows);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('ha1');
+      expect(result[0].defId).toBe('a1');
+      expect(result[0].is_equipped).toBe(true);
+      expect(result[0].charges_left).toBe(3);
+    });
+  });
 });
