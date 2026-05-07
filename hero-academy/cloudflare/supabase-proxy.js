@@ -3,9 +3,9 @@
 // db.hero-academy.ru → CF Worker → gjezmurskhjngbostltn.supabase.co
 //
 // Forwards REST, Auth, Storage, Functions and Realtime WebSocket as-is.
-// alt-svc is stripped only as a safety net (HTTP/3 is also disabled at
-// the zone level via API). Set-Cookie is preserved so that Cloudflare's
-// own bot-protection cookies survive into POST requests.
+// Strips alt-svc (HTTP/3 also disabled at the zone) and rewrites
+// `Access-Control-Allow-Origin: *` to mirror the actual Origin so that
+// credentialed requests from supabase-js pass the browser's CORS check.
 
 const TARGET_HOST = 'gjezmurskhjngbostltn.supabase.co';
 
@@ -22,6 +22,14 @@ export default {
     const resp = await fetch(upstream);
     const headers = new Headers(resp.headers);
     headers.delete('alt-svc');
+
+    const origin = request.headers.get('Origin');
+    if (origin && headers.get('access-control-allow-origin') === '*') {
+      headers.set('access-control-allow-origin', origin);
+      headers.set('access-control-allow-credentials', 'true');
+      const vary = headers.get('vary');
+      headers.set('vary', vary ? `${vary}, Origin` : 'Origin');
+    }
 
     return new Response(resp.body, {
       status: resp.status,
