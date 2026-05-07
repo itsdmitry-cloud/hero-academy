@@ -5,26 +5,23 @@
  * Used by teacher's "Live" radar view to see HP/XP changes in real time.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import type { LiveStudentState } from '@/lib/teacher/types';
 
-export interface LiveStudentState {
-  hero_id: string;
-  user_id: string;
-  display_name: string;
-  hp: number;
-  hp_max: number;
-  xp: number;
-  level: number;
-  streak_current: number;
-  status: string;
-  lastUpdated: number; // timestamp for animation trigger
-}
+export type { LiveStudentState };
 
-export function useRealtimeClass(classId: string | null) {
+export function useRealtimeClass(
+  classId: string | null,
+  initialStudents?: LiveStudentState[],
+) {
   const supabase = createClient();
-  const [students, setStudents] = useState<LiveStudentState[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState<LiveStudentState[]>(initialStudents ?? []);
+  const [loading, setLoading] = useState(initialStudents ? false : true);
+  // Если передали SSR-снимок и classId совпадает с тем, для которого делали fetch,
+  // первый эффект-загрузку пропускаем — данные уже есть, realtime их актуализирует.
+  const ssrInitialClassId = useRef<string | null>(initialStudents ? classId : null);
+  const ssrFetchSkipped = useRef(false);
 
   // Shared fetcher — returns the next students state, does NOT mutate it.
   // Keeping state mutations out of this function means react-hooks/set-state-in-effect
@@ -77,6 +74,11 @@ export function useRealtimeClass(classId: string | null) {
 
   // Initial fetch
   useEffect(() => {
+    // Первый раз для ssr-классa — пропускаем сетевой запрос, данные уже отрисованы.
+    if (!ssrFetchSkipped.current && classId && classId === ssrInitialClassId.current) {
+      ssrFetchSkipped.current = true;
+      return;
+    }
     let cancelled = false;
     (async () => {
       const next = await loadStudents();
@@ -85,7 +87,7 @@ export function useRealtimeClass(classId: string | null) {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [loadStudents]);
+  }, [loadStudents, classId]);
 
   // Imperative refetch for callers (e.g. manual refresh)
   const fetchAll = useCallback(async () => {

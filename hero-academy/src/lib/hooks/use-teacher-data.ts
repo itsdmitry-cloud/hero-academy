@@ -1,62 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useTeacherStore } from '@/lib/store/teacherStore';
+import type {
+  ClassInfo, StudentRow, TeacherQuestRow, ClassStats, TeacherInitialData,
+} from '@/lib/teacher/types';
 
-/* ──────────── types ──────────── */
-export interface ClassInfo {
-  id: string;
-  name: string;
-  invite_code: string;
-  school_id: string;
-}
-
-export interface StudentRow {
-  id: string;
-  display_name: string;
-  avatar_url: string | null;
-  hero_id: string | null;
-  level: number;
-  xp: number;
-  xp_to_next: number;
-  hp: number;
-  hp_max: number;
-  gold: number;
-  streak: number;
-  streak_best: number;
-  status: string;
-}
-
-export interface TeacherQuestRow {
-  id: string;
-  title: string;
-  description: string;
-  subject: string;
-  type: string;
-  difficulty: string;
-  xp_reward: number;
-  gold_reward: number;
-  hp_damage: number;
-  deadline: string | null;
-  status: string;
-  context?: string;
-  created_at: string;
-  attempt_count: number;
-  completed_count: number;
-}
-
-export interface ClassStats {
-  student_count: number;
-  active_quests: number;
-  avg_xp: number;
-  total_xp: number;
-  class_streak: number;
-}
+// Re-export so existing imports `import { StudentRow } from '@/lib/hooks/use-teacher-data'` keep working.
+export type { ClassInfo, StudentRow, TeacherQuestRow, ClassStats, TeacherInitialData };
 
 /* ──────────── hook ──────────── */
-export function useTeacherData() {
+export function useTeacherData(initialData?: TeacherInitialData) {
   const supabase = createClient();
   const { user, profile } = useAuth();
 
@@ -68,9 +24,23 @@ export function useTeacherData() {
   const setActiveClassId = useTeacherStore((s) => s.setActiveClassId);
   const activeSubject = useTeacherStore((s) => s.activeSubject);
   const setActiveSubject = useTeacherStore((s) => s.setActiveSubject);
-  const [students, setStudents] = useState<StudentRow[]>([]);
-  const [quests, setQuests] = useState<TeacherQuestRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState<StudentRow[]>(initialData?.students ?? []);
+  const [quests, setQuests] = useState<TeacherQuestRow[]>(initialData?.quests ?? []);
+  const [loading, setLoading] = useState(initialData ? false : true);
+
+  // Synchronous SSR hydration of the teacher store. Заполняем единожды на первом
+  // рендере — useEffect здесь дал бы flash из persisted state.
+  const hydrated = useRef(false);
+  if (!hydrated.current && initialData && typeof window !== 'undefined') {
+    const storeState = useTeacherStore.getState();
+    if (storeState.classes.length === 0 && initialData.classes.length > 0) {
+      useTeacherStore.setState({ classes: initialData.classes });
+    }
+    if (!storeState.activeClassId && initialData.activeClassId) {
+      useTeacherStore.setState({ activeClassId: initialData.activeClassId });
+    }
+    hydrated.current = true;
+  }
 
   // Auto-initialise activeSubject to first when profile loads
   useEffect(() => {
@@ -163,6 +133,8 @@ export function useTeacherData() {
   const schoolId = profile?.school_id;
   useEffect(() => {
     if (!schoolId) return;
+    // SSR уже залил classes в store — пропускаем сетевой запрос.
+    if (initialData?.classes && initialData.classes.length > 0) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -178,12 +150,19 @@ export function useTeacherData() {
       }
     })();
     return () => { cancelled = true; };
-  }, [schoolId, supabase, activeClassId, setActiveClassId, setClasses]);
+  }, [schoolId, supabase, activeClassId, setActiveClassId, setClasses, initialData]);
 
   // Load class-specific data when activeClassId changes. State updates live
   // inside the async IIFE so react-hooks/set-state-in-effect stays quiet.
+  const ssrCoveredClassId = initialData?.activeClassId ?? null;
+  const ssrFetchSkipped = useRef(false);
   useEffect(() => {
     if (!activeClassId) return;
+    // Первый рендер с тем же активным классом — данные уже из SSR, fetch не нужен.
+    if (!ssrFetchSkipped.current && activeClassId === ssrCoveredClassId) {
+      ssrFetchSkipped.current = true;
+      return;
+    }
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -192,7 +171,7 @@ export function useTeacherData() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [activeClassId, fetchStudents, fetchQuests]);
+  }, [activeClassId, fetchStudents, fetchQuests, ssrCoveredClassId]);
 
   /* ── Teacher actions (routed through game pipeline) ── */
   const grantXp = useCallback(async (heroId: string, amount: number, reason: string, subject: string = '') => {
