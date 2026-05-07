@@ -18,6 +18,10 @@ export function useSupabaseSync() {
   useEffect(() => {
     if (!user) return;
 
+    // Skip if SSR already populated the store. Realtime keeps it fresh.
+    // On logout/account switch, synced flag resets via the hero clear path.
+    if (useHeroStore.getState().synced) return;
+
     async function syncHeroData() {
       if (!user) return;
 
