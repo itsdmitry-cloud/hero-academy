@@ -3,9 +3,10 @@
 // db.hero-academy.ru → CF Worker → gjezmurskhjngbostltn.supabase.co
 //
 // Forwards REST, Auth, Storage, Functions and Realtime WebSocket as-is.
-// Strips alt-svc (HTTP/3 also disabled at the zone) and rewrites
-// `Access-Control-Allow-Origin: *` to mirror the actual Origin so that
-// credentialed requests from supabase-js pass the browser's CORS check.
+// Sends `alt-svc: clear` so browsers drop any cached HTTP/3 hint —
+// many mobile carriers drop QUIC/UDP and the resulting hangs surface
+// as `Load failed` in Safari/iOS Chrome. Mirrors the request Origin
+// in CORS headers so credentialed supabase-js fetches pass the check.
 
 const TARGET_HOST = 'gjezmurskhjngbostltn.supabase.co';
 
@@ -21,7 +22,7 @@ export default {
 
     const resp = await fetch(upstream);
     const headers = new Headers(resp.headers);
-    headers.delete('alt-svc');
+    headers.set('alt-svc', 'clear');
 
     const origin = request.headers.get('Origin');
     if (origin && headers.get('access-control-allow-origin') === '*') {
