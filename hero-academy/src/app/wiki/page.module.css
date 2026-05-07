@@ -473,3 +473,201 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
 }
+
+/* SEASON GRID (BattlePassTab — Четыре Стихии) */
+.seasonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* ======================= MOBILE ADAPTATION ======================= */
+@media (max-width: 640px) {
+  .page {
+    padding: var(--space-4) var(--space-3);
+    gap: var(--space-6);
+  }
+
+  /* HEADER */
+  .header {
+    margin-bottom: var(--space-2);
+  }
+
+  .mainTitle {
+    font-size: var(--text-2xl);
+    line-height: 1.15;
+  }
+
+  .mainSubtitle {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-4);
+  }
+
+  /* TABS — full-width row, equal flex, no overflow */
+  .tabsContainer {
+    width: 100%;
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-xl);
+    margin-top: var(--space-3);
+  }
+
+  .tabBtn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: var(--space-2) var(--space-1);
+    font-size: var(--text-sm);
+    gap: 4px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .tabIcon {
+    font-size: var(--text-base);
+  }
+
+  /* LORE SECTIONS */
+  .loreContainer {
+    gap: var(--space-8);
+  }
+
+  .loreSection {
+    gap: var(--space-5);
+  }
+
+  .loreTitle {
+    font-size: var(--text-xl);
+  }
+
+  .loreParagraph {
+    font-size: var(--text-base);
+    text-align: left;
+    line-height: 1.55;
+  }
+
+  .loreImageWrapper {
+    width: 100%;
+    border-radius: var(--radius-xl);
+  }
+
+  .loreImage {
+    width: 100%;
+    height: auto;
+  }
+
+  .imageCaption {
+    font-size: var(--text-xs);
+    padding: var(--space-5) var(--space-3) var(--space-2);
+  }
+
+  /* RESOURCE CARDS */
+  .resourceCard {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .resourceCard:hover {
+    transform: none;
+  }
+
+  .resourceIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .resourceText h3 {
+    font-size: var(--text-base);
+  }
+
+  .resourceText p {
+    font-size: var(--text-xs);
+    line-height: 1.45;
+  }
+
+  /* MECHANIC ITEMS */
+  .mechanicList {
+    gap: var(--space-3);
+  }
+
+  .mechanicItem {
+    padding: var(--space-3);
+  }
+
+  /* SEASON GRID — single column on phones */
+  .seasonGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  /* INTRO + RARITY HEADERS */
+  .introTitle {
+    font-size: var(--text-xl);
+  }
+
+  .introText {
+    font-size: var(--text-sm);
+  }
+
+  .rarityHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .rarityInfo {
+    text-align: left;
+  }
+
+  .rarityTitle {
+    font-size: var(--text-xl);
+    flex-wrap: wrap;
+  }
+
+  /* ARTIFACT CARDS */
+  .artifactsTab {
+    gap: var(--space-6);
+  }
+
+  .raritySection {
+    gap: var(--space-3);
+  }
+
+  .card {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .card:hover {
+    transform: none;
+  }
+
+  .iconBox {
+    width: 50px;
+    height: 50px;
+    font-size: 30px;
+  }
+
+  /* LORE FOOTER */
+  .loreFooter {
+    padding: var(--space-6) var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .loreFooter h3 {
+    font-size: var(--text-xl);
+  }
+
+  .loreFooter p {
+    font-size: var(--text-base);
+  }
+}
+
+/* Очень узкие экраны (≤360px) — спрячем подписи на табах */
+@media (max-width: 360px) {
+  .tabBtn {
+    font-size: var(--text-xs);
+    padding: var(--space-2) 2px;
+  }
+}

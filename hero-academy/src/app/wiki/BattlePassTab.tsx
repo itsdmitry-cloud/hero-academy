@@ -90,7 +90,7 @@ export default function BattlePassTab() {
             Сезонных Сундуков и коллекционных реликвий, которые ты можешь заработать:
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1rem' }}>
+          <div className={styles.seasonGrid}>
             <div className={styles.resourceCard}>
               <div className={`${styles.resourceIcon}`} style={{ background: 'rgba(239,68,68,0.15)' }}>
                 <span style={{ fontSize: 28 }}>🔥</span>
