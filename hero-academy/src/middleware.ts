@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 // Routes accessible without authentication
-const publicRoutes = ['/', '/auth/login', '/auth/join', '/wiki'];
+const publicRoutes = ['/', '/landing.html', '/auth/login', '/auth/join', '/wiki'];
 
 export async function middleware(request: NextRequest) {
   // Refresh tokens/session and get the authenticated user in one pass
