@@ -5,7 +5,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { createClient } from '@/lib/supabase/client';
 import styles from './page.module.css';
+
+function dashboardPathForRole(role: string | null | undefined): string {
+  switch (role) {
+    case 'admin': return '/admin';
+    case 'teacher': return '/teacher';
+    case 'parent': return '/parent';
+    default: return '/hero';
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,9 +35,23 @@ export default function LoginPage() {
     if (err) {
       setError(err);
       setLoading(false);
-    } else {
-      router.push('/hero');
+      return;
     }
+
+    // Resolve destination by role — admin/teacher/parent don't have heroes
+    // and would otherwise loop on /hero → /onboarding (no hero row).
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/hero');
+      return;
+    }
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    router.push(dashboardPathForRole(profile?.role));
   }
 
   return (

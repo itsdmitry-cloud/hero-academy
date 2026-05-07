@@ -16,7 +16,19 @@ export default async function HeroPage() {
   const initialData = await getHeroPageData(supabase, user.id);
 
   if (!initialData.hero) {
-    redirect('/onboarding');
+    // Non-students don't have heroes — send them to their dashboard
+    // instead of looping through /onboarding forever.
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    switch (profile?.role) {
+      case 'admin': redirect('/admin');
+      case 'teacher': redirect('/teacher');
+      case 'parent': redirect('/parent');
+      default: redirect('/onboarding');
+    }
   }
 
   return <HeroPageClient initialData={initialData} />;
