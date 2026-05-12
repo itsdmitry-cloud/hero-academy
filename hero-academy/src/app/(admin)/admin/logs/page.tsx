@@ -54,6 +54,8 @@ const ACTION_LABELS: Record<string, { icon: string; label: string; color: string
   admin_undo: { icon: '↩️', label: 'Отмена действия', color: '#64748b' },
 };
 
+const DEMO_SCHOOL_NAME = 'Демо Школа';
+
 export default function LogsPage() {
   const supabase = createClient();
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -61,6 +63,8 @@ export default function LogsPage() {
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [students, setStudents] = useState<{ id: string; name: string; hero_id: string }[]>([]);
+  const [demoSchoolId, setDemoSchoolId] = useState<string | null>(null);
+  const [demoHeroIds, setDemoHeroIds] = useState<string[]>([]);
 
   // Filters
   const [schoolFilter, setSchoolFilter] = useState('all');
@@ -73,31 +77,43 @@ export default function LogsPage() {
   const [undoLoading, setUndoLoading] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Fetch schools
+  // Resolve demo school + its hero ids (used to filter demo data out of logs/filters)
+  useEffect(() => {
+    (async () => {
+      const { data: school } = await supabase.from('schools').select('id').eq('name', DEMO_SCHOOL_NAME).maybeSingle();
+      if (!school) return;
+      setDemoSchoolId(school.id);
+      const { data: demoUsers } = await supabase.from('users').select('id').eq('school_id', school.id);
+      const userIds = demoUsers?.map(u => u.id) ?? [];
+      if (userIds.length === 0) return;
+      const { data: demoHeroes } = await supabase.from('heroes').select('id').in('user_id', userIds);
+      setDemoHeroIds(demoHeroes?.map(h => h.id) ?? []);
+    })();
+  }, [supabase]);
+
+  // Fetch schools (exclude demo)
   useEffect(() => {
     supabase.from('schools').select('id, name').then(({ data }) => {
-      if (data) setSchools(data);
+      if (data) setSchools(data.filter(s => s.name !== DEMO_SCHOOL_NAME));
     });
   }, [supabase]);
 
-  // Fetch classes for school
+  // Fetch classes for school (exclude demo)
   useEffect(() => {
-    if (schoolFilter !== 'all') {
-      supabase.from('classes').select('id, name, school_id').eq('school_id', schoolFilter).then(({ data }) => {
-        if (data) setClasses(data);
-      });
-    } else {
-      supabase.from('classes').select('id, name, school_id').then(({ data }) => {
-        if (data) setClasses(data);
-      });
-    }
-  }, [schoolFilter, supabase]);
+    const base = supabase.from('classes').select('id, name, school_id');
+    const q = schoolFilter !== 'all' ? base.eq('school_id', schoolFilter) : base;
+    q.then(({ data }) => {
+      if (!data) return;
+      setClasses(demoSchoolId ? data.filter(c => c.school_id !== demoSchoolId) : data);
+    });
+  }, [schoolFilter, supabase, demoSchoolId]);
 
-  // Fetch students
+  // Fetch students (exclude demo school)
   useEffect(() => {
-    let q = supabase.from('users').select('id, display_name, class_id').eq('role', 'student');
+    let q = supabase.from('users').select('id, display_name, class_id, school_id').eq('role', 'student');
     if (schoolFilter !== 'all') q = q.eq('school_id', schoolFilter);
     if (classFilter !== 'all') q = q.eq('class_id', classFilter);
+    if (demoSchoolId) q = q.neq('school_id', demoSchoolId);
     q.then(async ({ data: usersData }) => {
       if (!usersData) { setStudents([]); return; }
       const userIds = usersData.map(u => u.id);
@@ -106,7 +122,7 @@ export default function LogsPage() {
       const heroMap = new Map(heroes?.map(h => [h.user_id, h.id]) ?? []);
       setStudents(usersData.map(u => ({ id: u.id, name: u.display_name, hero_id: heroMap.get(u.id) ?? '' })));
     });
-  }, [schoolFilter, classFilter, supabase]);
+  }, [schoolFilter, classFilter, supabase, demoSchoolId]);
 
   // Fetch logs — returns data, does NOT mutate state. State updates happen
   // at the call site (effect/handler), so react-hooks/set-state-in-effect
@@ -126,6 +142,8 @@ export default function LogsPage() {
       q = q.in('hero_id', heroIds);
     } else if (heroIds !== null && heroIds.length === 0) {
       return [] as LogEntry[];
+    } else if (demoHeroIds.length > 0) {
+      q = q.not('hero_id', 'in', `(${demoHeroIds.join(',')})`);
     }
     if (actionFilter !== 'all') q = q.eq('action', actionFilter);
 
@@ -157,7 +175,7 @@ export default function LogsPage() {
         school_id: user?.school_id ?? null,
       } as LogEntry;
     });
-  }, [supabase, schoolFilter, classFilter, studentFilter, actionFilter, limit, students]);
+  }, [supabase, schoolFilter, classFilter, studentFilter, actionFilter, limit, students, demoHeroIds]);
 
   // Auto-fetch logs when filters change. Every setState runs inside the
   // async IIFE callback — never in the sync effect body.
